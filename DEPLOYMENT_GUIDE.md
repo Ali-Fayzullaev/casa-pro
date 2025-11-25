@@ -40,8 +40,15 @@ This guide covers the steps to upload your project to GitHub and deploy it to yo
     ```
 
 3.  **Generate SSH Key for GitHub** (on the server):
+    Run this command:
     ```bash
     ssh-keygen -t ed25519 -C "server_deploy_key"
+    ```
+    **IMPORTANT**: When asked "Enter file in which to save the key", **JUST PRESS ENTER**. Do not type or paste anything.
+    Press Enter again for the passphrase (twice) to leave it empty.
+
+    Then, display the key:
+    ```bash
     cat ~/.ssh/id_ed25519.pub
     ```
     *Copy the output key.*

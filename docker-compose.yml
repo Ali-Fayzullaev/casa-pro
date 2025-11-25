@@ -48,6 +48,8 @@ services:
     build:
       context: ./pro-casa
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
     container_name: pro-casa-frontend
     restart: always
     environment:

@@ -17,6 +17,10 @@ COPY . .
 # Отключаем телеметрию Next.js
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Принимаем аргумент для сборки
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Билдим приложение
 RUN npm run build
 
