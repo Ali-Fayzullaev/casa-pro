@@ -57,7 +57,7 @@ export default function EditProjectPage() {
       const token = localStorage.getItem('token');
       
       const response = await fetch(
-        `http://localhost:3001/api/projects/${params.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${params.id}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -105,7 +105,7 @@ export default function EditProjectPage() {
       const token = localStorage.getItem('token');
       
       const response = await fetch(
-        `http://localhost:3001/api/projects/${params.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${params.id}`,
         {
           method: 'PUT',
           headers: {

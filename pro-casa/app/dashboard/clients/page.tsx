@@ -91,7 +91,7 @@ export default function ClientsPage() {
         params.append('search', search);
       }
 
-      const response = await fetch(`http://localhost:3001/api/clients?${params}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/clients?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

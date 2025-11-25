@@ -91,7 +91,7 @@ export default function ProjectDetailPage() {
       }
 
       const response = await fetch(
-        `http://localhost:3001/api/projects/${params.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${params.id}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -132,7 +132,7 @@ export default function ProjectDetailPage() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `http://localhost:3001/api/projects/${project.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${project.id}`,
         {
           method: 'DELETE',
           headers: {

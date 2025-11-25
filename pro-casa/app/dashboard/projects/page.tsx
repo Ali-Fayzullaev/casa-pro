@@ -75,7 +75,7 @@ export default function ProjectsPage() {
       if (cityFilter !== 'all') params.append('city', cityFilter);
 
       const response = await fetch(
-        `http://localhost:3001/api/projects?${params.toString()}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects?${params.toString()}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,

@@ -65,7 +65,7 @@ export default function BookApartmentPage() {
 
       // Получаем квартиру
       const aptRes = await fetch(
-        `http://localhost:3001/api/apartments/${params.apartmentId}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/apartments/${params.apartmentId}`,
         {
           headers: { 'Authorization': `Bearer ${token}` },
         }
@@ -75,7 +75,7 @@ export default function BookApartmentPage() {
 
       // Получаем клиентов брокера
       const clientsRes = await fetch(
-        'http://localhost:3001/api/clients',
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/clients`,
         {
           headers: { 'Authorization': `Bearer ${token}` },
         }
@@ -107,7 +107,7 @@ export default function BookApartmentPage() {
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + parseInt(expiresInHours));
 
-      const response = await fetch('http://localhost:3001/api/bookings', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

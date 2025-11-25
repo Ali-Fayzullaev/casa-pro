@@ -95,7 +95,7 @@ export default function ApartmentsGridPage() {
       
       // Получаем проект
       const projectRes = await fetch(
-        `http://localhost:3001/api/projects/${params.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${params.id}`,
         {
           headers: { 'Authorization': `Bearer ${token}` },
         }
@@ -105,7 +105,7 @@ export default function ApartmentsGridPage() {
 
       // Получаем квартиры
       const apartmentsRes = await fetch(
-        `http://localhost:3001/api/apartments?projectId=${params.id}&limit=1000`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/apartments?projectId=${params.id}&limit=1000`,
         {
           headers: { 'Authorization': `Bearer ${token}` },
         }
@@ -170,7 +170,7 @@ export default function ApartmentsGridPage() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `http://localhost:3001/api/apartments/${apartmentToDelete.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/apartments/${apartmentToDelete.id}`,
         {
           method: 'DELETE',
           headers: {

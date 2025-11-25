@@ -39,7 +39,7 @@ export default function ChessboardSelectPage() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        'http://localhost:3001/api/projects',
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,

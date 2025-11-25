@@ -40,13 +40,13 @@ export default function DashboardPage() {
 
       // Загружаем статистику
       const [clientsRes, bookingsRes, projectsRes] = await Promise.all([
-        fetch('http://localhost:3001/api/clients', {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/clients`, {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
-        fetch('http://localhost:3001/api/bookings?status=PENDING&status=CONFIRMED', {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings?status=PENDING&status=CONFIRMED`, {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
-        fetch('http://localhost:3001/api/projects', {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects`, {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
       ])

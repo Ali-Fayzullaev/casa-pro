@@ -71,7 +71,7 @@ export default function EditApartmentPage() {
       const token = localStorage.getItem('token');
       
       const response = await fetch(
-        `http://localhost:3001/api/apartments/${params.apartmentId}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/apartments/${params.apartmentId}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -112,7 +112,7 @@ export default function EditApartmentPage() {
       const token = localStorage.getItem('token');
       
       const response = await fetch(
-        `http://localhost:3001/api/apartments/${params.apartmentId}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/apartments/${params.apartmentId}`,
         {
           method: 'PUT',
           headers: {
@@ -160,7 +160,7 @@ export default function EditApartmentPage() {
       const token = localStorage.getItem('token');
       
       const response = await fetch(
-        `http://localhost:3001/api/apartments/${params.apartmentId}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/apartments/${params.apartmentId}`,
         {
           method: 'DELETE',
           headers: {

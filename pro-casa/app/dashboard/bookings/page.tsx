@@ -100,7 +100,7 @@ export default function BookingsPage() {
       
       if (statusFilter !== 'all') params.append('status', statusFilter);
 
-      const url = `http://localhost:3001/api/bookings?${params.toString()}`;
+      const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings?${params.toString()}`;
       console.log('Fetching from:', url);
 
       const response = await fetch(url, {
@@ -128,13 +128,13 @@ export default function BookingsPage() {
       setProcessing(true);
       const token = localStorage.getItem('token');
       
-      let url = `http://localhost:3001/api/bookings/${selectedBooking.id}`;
+      let url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings/${selectedBooking.id}`;
       let method = 'PUT';
       let body: any = {};
 
       if (actionType === 'complete') {
         // Оформление продажи
-        url = `http://localhost:3001/api/bookings/${selectedBooking.id}/complete-deal`;
+        url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings/${selectedBooking.id}/complete-deal`;
         method = 'POST';
         console.log('Completing deal for booking:', selectedBooking.id);
         console.log('Current booking status:', selectedBooking.status);

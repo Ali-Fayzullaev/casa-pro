@@ -51,7 +51,7 @@ export default function NewClientPage() {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:3001/api/clients', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/clients`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

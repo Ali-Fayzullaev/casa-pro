@@ -61,7 +61,7 @@ export default function UsersPage() {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:3001/api/admin/users', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/admin/users`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -100,7 +100,7 @@ export default function UsersPage() {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`http://localhost:3001/api/admin/users/${deleteUserId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/admin/users/${deleteUserId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -62,7 +62,7 @@ export default function EditClientPage() {
   const fetchClient = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3001/api/clients/${params.id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/clients/${params.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -106,7 +106,7 @@ export default function EditClientPage() {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`http://localhost:3001/api/clients/${params.id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/clients/${params.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

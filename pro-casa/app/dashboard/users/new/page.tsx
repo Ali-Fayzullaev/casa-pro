@@ -53,7 +53,7 @@ export default function NewUserPage() {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:3001/api/admin/users', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/admin/users`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

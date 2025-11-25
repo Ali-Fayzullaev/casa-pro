@@ -46,7 +46,7 @@ export default function NewApartmentPage() {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:3001/api/apartments', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/apartments`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

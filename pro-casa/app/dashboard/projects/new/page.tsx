@@ -45,7 +45,7 @@ export default function NewProjectPage() {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:3001/api/projects', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
