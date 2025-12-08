@@ -13,7 +13,7 @@ declare global {
 export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
   try {
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       res.status(401).json({ error: 'Unauthorized' });
       return;
@@ -21,13 +21,16 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
 
     const token = authHeader.substring(7);
     const payload = verifyToken(token);
-    
+
     req.user = payload;
     next();
   } catch (error) {
     res.status(401).json({ error: 'Invalid token' });
   }
 };
+
+// Alias for convenience
+export const auth = authenticate;
 
 // Проверка роли
 export const requireRole = (...roles: string[]) => {

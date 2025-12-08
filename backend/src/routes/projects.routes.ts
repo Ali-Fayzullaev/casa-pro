@@ -11,18 +11,42 @@ const createProjectSchema = z.object({
   name: z.string().min(1, 'Название обязательно'),
   description: z.string().optional(),
   city: z.string().min(1, 'Город обязателен'),
+  district: z.string().optional(),
   address: z.string().min(1, 'Адрес обязателен'),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
   class: z.string().optional(),
+  buildingStatus: z.enum(['UNDER_CONSTRUCTION', 'COMPLETED', 'READY_TO_MOVE']).optional(),
   deliveryDate: z.string().optional(),
+  developerName: z.string().optional(),
+  developerPhone: z.string().optional(),
+  crmUrl: z.string().optional(),
+  bonus: z.string().optional(),
+  promotions: z.string().optional(),
+  mortgagePrograms: z.array(z.string()).optional(),
+  videoUrl: z.string().optional(),
   images: z.array(z.string()).optional(),
 });
 
 const updateProjectSchema = createProjectSchema.partial();
 
-// GET /api/projects - список ЖК с фильтрацией
+// GET /api/projects - список ЖК с расширенной фильтрацией
 projectsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { city, search, page = '1', limit = '12' } = req.query;
+    const { 
+      city, 
+      district, 
+      buildingStatus, 
+      class: projectClass,
+      minPrice,
+      maxPrice,
+      minArea,
+      maxArea,
+      rooms,
+      search, 
+      page = '1', 
+      limit = '12' 
+    } = req.query;
     
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
@@ -35,11 +59,27 @@ projectsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
       where.city = city;
     }
 
+    // Фильтр по району
+    if (district) {
+      where.district = district;
+    }
+
+    // Фильтр по статусу строительства
+    if (buildingStatus) {
+      where.buildingStatus = buildingStatus;
+    }
+
+    // Фильтр по классу жилья
+    if (projectClass) {
+      where.class = projectClass;
+    }
+
     // Поиск по названию или адресу
     if (search) {
       where.OR = [
         { name: { contains: search as string, mode: 'insensitive' } },
         { address: { contains: search as string, mode: 'insensitive' } },
+        { developerName: { contains: search as string, mode: 'insensitive' } },
       ];
     }
 
@@ -76,10 +116,39 @@ projectsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
     // Получаем статистику по квартирам для каждого проекта
     const projectsWithStats = await Promise.all(
       projects.map(async (project) => {
+        // Условия фильтрации квартир
+        const apartmentWhere: any = { projectId: project.id };
+
+        // Фильтр по цене квартир
+        if (minPrice || maxPrice) {
+          apartmentWhere.price = {};
+          if (minPrice) apartmentWhere.price.gte = parseFloat(minPrice as string);
+          if (maxPrice) apartmentWhere.price.lte = parseFloat(maxPrice as string);
+        }
+
+        // Фильтр по площади
+        if (minArea || maxArea) {
+          apartmentWhere.area = {};
+          if (minArea) apartmentWhere.area.gte = parseFloat(minArea as string);
+          if (maxArea) apartmentWhere.area.lte = parseFloat(maxArea as string);
+        }
+
+        // Фильтр по комнатам
+        if (rooms) {
+          apartmentWhere.rooms = parseInt(rooms as string);
+        }
+
         const apartmentStats = await prisma.apartment.groupBy({
           by: ['status'],
-          where: { projectId: project.id },
+          where: apartmentWhere,
           _count: true,
+        });
+
+        // Получаем минимальную цену среди доступных квартир
+        const minPriceApt = await prisma.apartment.findFirst({
+          where: { projectId: project.id, status: 'AVAILABLE' },
+          orderBy: { price: 'asc' },
+          select: { price: true },
         });
 
         const stats = {
@@ -87,6 +156,7 @@ projectsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
           available: apartmentStats.find((s) => s.status === 'AVAILABLE')?._count || 0,
           reserved: apartmentStats.find((s) => s.status === 'RESERVED')?._count || 0,
           sold: apartmentStats.find((s) => s.status === 'SOLD')?._count || 0,
+          minPrice: minPriceApt?.price || null,
         };
 
         return {
@@ -178,16 +248,30 @@ projectsRouter.post('/', requireRole('DEVELOPER', 'ADMIN'), async (req: Request,
     const data = createProjectSchema.parse(req.body);
 
     // Для застройщиков автоматически присваиваем их ID
-    const developerId = req.user!.role === 'DEVELOPER' ? req.user!.userId : req.body.developerId;
-
-    if (!developerId) {
-      res.status(400).json({ error: 'Необходимо указать застройщика' });
-      return;
+    // Для админов можно указать developerId в body или использовать свой
+    let developerId = req.user!.userId;
+    if (req.user!.role === 'ADMIN' && req.body.developerId) {
+      developerId = req.body.developerId;
     }
 
     const project = await prisma.project.create({
       data: {
-        ...data,
+        name: data.name,
+        description: data.description,
+        city: data.city,
+        district: data.district,
+        address: data.address,
+        lat: data.lat,
+        lng: data.lng,
+        class: data.class,
+        buildingStatus: data.buildingStatus,
+        developerName: data.developerName,
+        developerPhone: data.developerPhone,
+        crmUrl: data.crmUrl,
+        bonus: data.bonus,
+        promotions: data.promotions,
+        mortgagePrograms: data.mortgagePrograms || [],
+        videoUrl: data.videoUrl,
         deliveryDate: data.deliveryDate ? new Date(data.deliveryDate) : undefined,
         images: data.images || [],
         developerId,

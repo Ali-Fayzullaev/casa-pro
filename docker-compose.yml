@@ -21,6 +21,46 @@ services:
     networks:
       - pro-casa-network
 
+  # MinIO Object Storage (S3 compatible)
+  minio:
+    image: minio/minio:latest
+    container_name: pro-casa-minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: minio_admin
+      MINIO_ROOT_PASSWORD: minio_secret_password
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web Console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pro-casa-network
+
+  # MinIO Client - для создания бакетов при старте
+  minio-init:
+    image: minio/mc:latest
+    container_name: pro-casa-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minio_admin minio_secret_password;
+      mc mb myminio/pro-casa-files --ignore-existing;
+      mc anonymous set download myminio/pro-casa-files;
+      echo 'MinIO bucket created successfully';
+      exit 0;
+      "
+    networks:
+      - pro-casa-network
+
   # Backend API
   backend:
     build:
@@ -35,10 +75,19 @@ services:
       PORT: 3001
       NODE_ENV: "development"
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://frontend:3000}
+      # MinIO configuration
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: "9000"
+      MINIO_ACCESS_KEY: minio_admin
+      MINIO_SECRET_KEY: minio_secret_password
+      MINIO_BUCKET: pro-casa-files
+      MINIO_USE_SSL: "false"
     ports:
       - "3001:3001"
     depends_on:
       postgres:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     networks:
       - pro-casa-network
@@ -64,6 +113,7 @@ services:
 
 volumes:
   postgres_data:
+  minio_data:
 
 networks:
   pro-casa-network:

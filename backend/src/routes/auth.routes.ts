@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '../lib/prisma';
 import { generateToken } from '../lib/jwt';
 import { z } from 'zod';
+import { auth } from '../middleware/auth.middleware';
 
 export const authRouter = Router();
 
@@ -65,11 +66,109 @@ authRouter.post('/login', async (req: Request, res: Response): Promise<void> => 
 });
 
 // GET /api/auth/me - получить текущего пользователя
-authRouter.get('/me', async (req: Request, res: Response) => {
+authRouter.get('/me', auth, async (req: Request, res: Response) => {
   try {
-    // Здесь будет middleware аутентификации
-    res.json({ message: 'Not implemented yet' });
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        balance: true,
+        curatorName: true,
+        curatorPhone: true,
+        curatorEmail: true,
+        curatorWhatsApp: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'Пользователь не найден' });
+      return;
+    }
+
+    res.json({
+      ...user,
+      balance: Number(user.balance),
+    });
   } catch (error) {
+    console.error('Get me error:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// PUT /api/auth/profile - обновить профиль
+authRouter.put('/profile', auth, async (req: Request, res: Response) => {
+  try {
+    const { firstName, lastName, phone } = req.body;
+
+    const user = await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: {
+        firstName,
+        lastName,
+        phone,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+      },
+    });
+
+    res.json(user);
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// PUT /api/auth/change-password - изменить пароль
+authRouter.put('/change-password', auth, async (req: Request, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ error: 'Заполните все поля' });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      res.status(400).json({ error: 'Пароль должен содержать минимум 6 символов' });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'Пользователь не найден' });
+      return;
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      res.status(400).json({ error: 'Неверный текущий пароль' });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: { password: hashedPassword },
+    });
+
+    res.json({ message: 'Пароль успешно изменен' });
+  } catch (error) {
+    console.error('Change password error:', error);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });

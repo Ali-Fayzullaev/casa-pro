@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authenticate, requireRole } from '../middleware/auth.middleware';
 import { prisma } from '../lib/prisma';
+import { BookingStatus } from '@prisma/client';
 
 export const bookingsRouter = Router();
 bookingsRouter.use(authenticate);
@@ -23,16 +24,16 @@ const updateBookingSchema = z.object({
 // GET /api/bookings - список бронирований с фильтрацией
 bookingsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { 
-      status, 
+    const {
+      status,
       clientId,
       apartmentId,
       projectId,
       brokerId,
-      page = '1', 
-      limit = '20' 
+      page = '1',
+      limit = '20'
     } = req.query;
-    
+
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
@@ -41,7 +42,11 @@ bookingsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
 
     // Фильтр по статусу
     if (status) {
-      where.status = status;
+      if (Array.isArray(status)) {
+        where.status = { in: status as BookingStatus[] };
+      } else {
+        where.status = status as BookingStatus;
+      }
     }
 
     // Фильтр по клиенту
@@ -298,6 +303,7 @@ bookingsRouter.post('/', requireRole('BROKER', 'ADMIN'), async (req: Request, re
                 select: {
                   id: true,
                   name: true,
+                  developerId: true,
                 },
               },
             },
@@ -307,6 +313,8 @@ bookingsRouter.post('/', requireRole('BROKER', 'ADMIN'), async (req: Request, re
               id: true,
               firstName: true,
               lastName: true,
+              phone: true,
+              email: true,
             },
           },
         },
@@ -316,6 +324,18 @@ bookingsRouter.post('/', requireRole('BROKER', 'ADMIN'), async (req: Request, re
         data: { status: 'RESERVED' },
       }),
     ]);
+
+    // Отправляем уведомление застройщику о новой брони
+    if (booking.apartment.project.developerId) {
+      await prisma.notification.create({
+        data: {
+          userId: booking.apartment.project.developerId,
+          type: 'BOOKING',
+          title: 'Новая бронь',
+          message: `Брокер ${booking.broker.firstName} ${booking.broker.lastName} забронировал квартиру №${apartment.number} в ЖК "${booking.apartment.project.name}". Тел: ${booking.broker.phone || 'не указан'}`,
+        },
+      });
+    }
 
     res.status(201).json(booking);
   } catch (error) {
@@ -485,8 +505,8 @@ bookingsRouter.post('/:id/complete-deal', requireRole('BROKER', 'ADMIN', 'DEVELO
     // Можно финализировать только подтвержденные брони
     if (booking.status !== 'CONFIRMED') {
       console.log('Cannot complete deal: status is', booking.status);
-      res.status(400).json({ 
-        error: `Можно оформить продажу только для подтвержденного бронирования. Текущий статус: ${booking.status}` 
+      res.status(400).json({
+        error: `Можно оформить продажу только для подтвержденного бронирования. Текущий статус: ${booking.status}`
       });
       return;
     }

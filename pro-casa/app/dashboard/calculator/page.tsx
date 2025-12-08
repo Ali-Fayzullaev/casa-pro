@@ -1,333 +1,273 @@
-'use client';
+"use client"
 
-import { useState } from 'react';
-import { Calculator, DollarSign, Percent, Calendar, TrendingDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { useState, useEffect } from "react"
+import { Calculator, DollarSign, Percent, Calendar, Save, RefreshCw } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
 
-interface CalculationResult {
-  monthlyPayment: number;
-  totalPayment: number;
-  totalInterest: number;
-  loanAmount: number;
-  downPayment: number;
-}
+export default function MortgageCalculatorPage() {
+  const [propertyPrice, setPropertyPrice] = useState<number>(25000000)
+  const [initialPayment, setInitialPayment] = useState<number>(5000000)
+  const [initialPaymentPercent, setInitialPaymentPercent] = useState<number>(20)
+  const [loanTerm, setLoanTerm] = useState<number>(15) // years
+  const [interestRate, setInterestRate] = useState<number>(14) // percent
 
-export default function CalculatorPage() {
-  const [price, setPrice] = useState('30000000');
-  const [downPaymentPercent, setDownPaymentPercent] = useState('20');
-  const [rate, setRate] = useState('14');
-  const [years, setYears] = useState('15');
-  const [result, setResult] = useState<CalculationResult | null>(null);
+  const [results, setResults] = useState({
+    monthlyPayment: 0,
+    loanAmount: 0,
+    totalPayment: 0,
+    overpayment: 0,
+    requiredIncome: 0
+  })
+
+  useEffect(() => {
+    calculateMortgage()
+  }, [propertyPrice, initialPayment, loanTerm, interestRate])
+
+  const handlePriceChange = (value: number) => {
+    setPropertyPrice(value)
+    setInitialPayment(Math.round(value * (initialPaymentPercent / 100)))
+  }
+
+  const handleInitialPaymentChange = (value: number) => {
+    setInitialPayment(value)
+    setInitialPaymentPercent(Math.round((value / propertyPrice) * 100))
+  }
+
+  const handleInitialPaymentPercentChange = (value: number) => {
+    setInitialPaymentPercent(value)
+    setInitialPayment(Math.round(propertyPrice * (value / 100)))
+  }
 
   const calculateMortgage = () => {
-    const priceNum = parseFloat(price);
-    const downPercent = parseFloat(downPaymentPercent);
-    const rateNum = parseFloat(rate);
-    const yearsNum = parseFloat(years);
+    const loanAmount = propertyPrice - initialPayment
+    const monthlyRate = interestRate / 100 / 12
+    const totalMonths = loanTerm * 12
 
-    if (!priceNum || !rateNum || !yearsNum) return;
+    // Formula: M = P [ i(1 + i)^n ] / [ (1 + i)^n – 1 ]
+    const monthlyPayment =
+      (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) /
+      (Math.pow(1 + monthlyRate, totalMonths) - 1)
 
-    // Первоначальный взнос
-    const downPayment = (priceNum * downPercent) / 100;
-    
-    // Сумма кредита
-    const loanAmount = priceNum - downPayment;
-    
-    // Месячная ставка
-    const monthlyRate = rateNum / 100 / 12;
-    
-    // Количество месяцев
-    const months = yearsNum * 12;
-    
-    // Аннуитетный платеж
-    const monthlyPayment = 
-      loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, months)) / 
-      (Math.pow(1 + monthlyRate, months) - 1);
-    
-    // Общая сумма выплат
-    const totalPayment = monthlyPayment * months;
-    
-    // Переплата
-    const totalInterest = totalPayment - loanAmount;
+    const totalPayment = monthlyPayment * totalMonths
+    const overpayment = totalPayment - loanAmount
+    // Assuming max DTI (Debt-to-Income) is 50%
+    const requiredIncome = monthlyPayment * 2
 
-    setResult({
-      monthlyPayment,
-      totalPayment,
-      totalInterest,
-      loanAmount,
-      downPayment,
-    });
-  };
+    setResults({
+      monthlyPayment: Math.round(monthlyPayment),
+      loanAmount: Math.round(loanAmount),
+      totalPayment: Math.round(totalPayment),
+      overpayment: Math.round(overpayment),
+      requiredIncome: Math.round(requiredIncome)
+    })
+  }
 
-  const formatMoney = (value: number) => {
-    return new Intl.NumberFormat('ru-KZ', {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
       currency: 'KZT',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
+      maximumFractionDigits: 0
+    }).format(value)
+  }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Calculator className="h-8 w-8" />
-          Ипотечный калькулятор
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Рассчитайте ежемесячный платеж и переплату по ипотеке
+        <h1 className="text-3xl font-bold tracking-tight">Ипотечный калькулятор</h1>
+        <p className="text-muted-foreground">
+          Рассчитайте ежемесячный платеж и оцените доступность ипотеки
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Форма расчета */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Параметры кредита</CardTitle>
-            <CardDescription>
-              Введите данные для расчета ипотеки
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="price" className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Стоимость квартиры
-              </Label>
-              <Input
-                id="price"
-                type="number"
-                placeholder="30000000"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                {price && formatMoney(parseFloat(price))}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="downPayment" className="flex items-center gap-2">
-                <TrendingDown className="h-4 w-4" />
-                Первоначальный взнос (%)
-              </Label>
-              <Select value={downPaymentPercent} onValueChange={setDownPaymentPercent}>
-                <SelectTrigger id="downPayment">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10%</SelectItem>
-                  <SelectItem value="15">15%</SelectItem>
-                  <SelectItem value="20">20%</SelectItem>
-                  <SelectItem value="30">30%</SelectItem>
-                  <SelectItem value="40">40%</SelectItem>
-                  <SelectItem value="50">50%</SelectItem>
-                </SelectContent>
-              </Select>
-              {price && (
-                <p className="text-xs text-muted-foreground">
-                  {formatMoney((parseFloat(price) * parseFloat(downPaymentPercent)) / 100)}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="rate" className="flex items-center gap-2">
-                <Percent className="h-4 w-4" />
-                Годовая процентная ставка
-              </Label>
-              <Input
-                id="rate"
-                type="number"
-                step="0.1"
-                placeholder="14"
-                value={rate}
-                onChange={(e) => setRate(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">{rate}% годовых</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="years" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Срок кредита
-              </Label>
-              <Select value={years} onValueChange={setYears}>
-                <SelectTrigger id="years">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5 лет</SelectItem>
-                  <SelectItem value="10">10 лет</SelectItem>
-                  <SelectItem value="15">15 лет</SelectItem>
-                  <SelectItem value="20">20 лет</SelectItem>
-                  <SelectItem value="25">25 лет</SelectItem>
-                  <SelectItem value="30">30 лет</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button onClick={calculateMortgage} className="w-full">
-              <Calculator className="mr-2 h-4 w-4" />
-              Рассчитать
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Результат расчета */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Результат расчета</CardTitle>
-            <CardDescription>
-              {result ? 'Ваш ежемесячный платеж и условия' : 'Заполните форму и нажмите "Рассчитать"'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {result ? (
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Calculator Inputs */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Параметры кредита</CardTitle>
+              <CardDescription>Введите данные для расчета</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              {/* Property Price */}
               <div className="space-y-4">
-                {/* Ежемесячный платеж */}
-                <div className="p-4 bg-primary/10 rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">
-                    Ежемесячный платеж
-                  </p>
-                  <p className="text-3xl font-bold text-primary">
-                    {formatMoney(result.monthlyPayment)}
-                  </p>
-                </div>
-
-                {/* Детали */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center pb-2 border-b">
-                    <span className="text-sm text-muted-foreground">
-                      Стоимость квартиры
-                    </span>
-                    <span className="font-medium">
-                      {formatMoney(parseFloat(price))}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center pb-2 border-b">
-                    <span className="text-sm text-muted-foreground">
-                      Первоначальный взнос
-                    </span>
-                    <span className="font-medium">
-                      {formatMoney(result.downPayment)}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center pb-2 border-b">
-                    <span className="text-sm text-muted-foreground">
-                      Сумма кредита
-                    </span>
-                    <span className="font-medium">
-                      {formatMoney(result.loanAmount)}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center pb-2 border-b">
-                    <span className="text-sm text-muted-foreground">
-                      Срок кредита
-                    </span>
-                    <span className="font-medium">{years} лет ({parseFloat(years) * 12} мес.)</span>
-                  </div>
-
-                  <div className="flex justify-between items-center pb-2 border-b">
-                    <span className="text-sm text-muted-foreground">
-                      Процентная ставка
-                    </span>
-                    <span className="font-medium">{rate}%</span>
-                  </div>
-
-                  <div className="flex justify-between items-center pb-2 border-b">
-                    <span className="text-sm text-muted-foreground">
-                      Общая сумма выплат
-                    </span>
-                    <span className="font-medium">
-                      {formatMoney(result.totalPayment)}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Переплата по кредиту
-                    </span>
-                    <span className="font-bold text-red-600">
-                      {formatMoney(result.totalInterest)}
-                    </span>
+                <div className="flex justify-between items-center">
+                  <Label className="text-base">Стоимость недвижимости</Label>
+                  <div className="relative w-40">
+                    <Input
+                      type="number"
+                      value={propertyPrice}
+                      onChange={(e) => handlePriceChange(Number(e.target.value))}
+                      className="text-right pr-8 font-bold"
+                    />
+                    <span className="absolute right-3 top-2.5 text-muted-foreground text-sm">₸</span>
                   </div>
                 </div>
-
-                {/* Визуализация */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span>Основной долг</span>
-                    <span>Проценты</span>
-                  </div>
-                  <div className="h-4 w-full rounded-full overflow-hidden flex">
-                    <div
-                      className="bg-green-500"
-                      style={{
-                        width: `${(result.loanAmount / result.totalPayment) * 100}%`,
-                      }}
-                    />
-                    <div
-                      className="bg-red-500"
-                      style={{
-                        width: `${(result.totalInterest / result.totalPayment) * 100}%`,
-                      }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{((result.loanAmount / result.totalPayment) * 100).toFixed(1)}%</span>
-                    <span>{((result.totalInterest / result.totalPayment) * 100).toFixed(1)}%</span>
-                  </div>
+                <Slider
+                  value={[propertyPrice]}
+                  min={5000000}
+                  max={100000000}
+                  step={500000}
+                  onValueChange={(vals) => handlePriceChange(vals[0])}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>5 млн ₸</span>
+                  <span>100 млн ₸</span>
                 </div>
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Calculator className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  Введите параметры и нажмите "Рассчитать"
-                </p>
+
+              {/* Initial Payment */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <Label className="text-base">Первоначальный взнос</Label>
+                  <div className="flex gap-2">
+                    <div className="relative w-24">
+                      <Input
+                        type="number"
+                        value={initialPaymentPercent}
+                        onChange={(e) => handleInitialPaymentPercentChange(Number(e.target.value))}
+                        className="text-right pr-6 font-bold"
+                      />
+                      <span className="absolute right-3 top-2.5 text-muted-foreground text-sm">%</span>
+                    </div>
+                    <div className="relative w-40">
+                      <Input
+                        type="number"
+                        value={initialPayment}
+                        onChange={(e) => handleInitialPaymentChange(Number(e.target.value))}
+                        className="text-right pr-8 font-bold"
+                      />
+                      <span className="absolute right-3 top-2.5 text-muted-foreground text-sm">₸</span>
+                    </div>
+                  </div>
+                </div>
+                <Slider
+                  value={[initialPaymentPercent]}
+                  min={0}
+                  max={90}
+                  step={5}
+                  onValueChange={(vals) => handleInitialPaymentPercentChange(vals[0])}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>0%</span>
+                  <span>90%</span>
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              {/* Loan Term */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <Label className="text-base">Срок кредита</Label>
+                  <div className="relative w-32">
+                    <Input
+                      type="number"
+                      value={loanTerm}
+                      onChange={(e) => setLoanTerm(Number(e.target.value))}
+                      className="text-right pr-10 font-bold"
+                    />
+                    <span className="absolute right-3 top-2.5 text-muted-foreground text-sm">лет</span>
+                  </div>
+                </div>
+                <Slider
+                  value={[loanTerm]}
+                  min={1}
+                  max={30}
+                  step={1}
+                  onValueChange={(vals) => setLoanTerm(vals[0])}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>1 год</span>
+                  <span>30 лет</span>
+                </div>
+              </div>
+
+              {/* Interest Rate */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <Label className="text-base">Процентная ставка</Label>
+                  <div className="relative w-32">
+                    <Input
+                      type="number"
+                      value={interestRate}
+                      onChange={(e) => setInterestRate(Number(e.target.value))}
+                      className="text-right pr-6 font-bold"
+                    />
+                    <span className="absolute right-3 top-2.5 text-muted-foreground text-sm">%</span>
+                  </div>
+                </div>
+                <Slider
+                  value={[interestRate]}
+                  min={0.1}
+                  max={30}
+                  step={0.1}
+                  onValueChange={(vals) => setInterestRate(vals[0])}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>0.1%</span>
+                  <span>30%</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Results Sidebar */}
+        <div className="space-y-6">
+          <Card className="bg-primary text-primary-foreground border-primary">
+            <CardHeader>
+              <CardTitle className="text-primary-foreground">Ежемесячный платеж</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-4xl font-bold">
+                {formatCurrency(results.monthlyPayment)}
+              </div>
+              <p className="text-primary-foreground/80 mt-2 text-sm">
+                Необходимый доход: ~{formatCurrency(results.requiredIncome)}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Результаты расчета</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-muted-foreground">Сумма кредита</span>
+                <span className="font-semibold">{formatCurrency(results.loanAmount)}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-muted-foreground">Проценты банку</span>
+                <span className="font-semibold">{formatCurrency(results.overpayment)}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-muted-foreground">Общая выплата</span>
+                <span className="font-semibold">{formatCurrency(results.totalPayment)}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-muted-foreground">Срок</span>
+                <span className="font-semibold">{loanTerm} лет ({loanTerm * 12} мес)</span>
+              </div>
+            </CardContent>
+            <CardFooter className="flex-col gap-3">
+              <Button className="w-full">
+                <Save className="mr-2 h-4 w-4" />
+                Сохранить расчет
+              </Button>
+              <Button variant="outline" className="w-full">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Сбросить
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
       </div>
-
-      {/* Информация */}
-      <Card>
-        <CardHeader>
-          <CardTitle>О калькуляторе</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground space-y-2">
-          <p>
-            <strong>Аннуитетный платеж</strong> - это равный ежемесячный платеж, который включает
-            в себя основной долг и проценты. В начале срока большая часть платежа идет на проценты,
-            к концу - на погашение основного долга.
-          </p>
-          <p>
-            <strong>Обратите внимание:</strong> Расчет является предварительным. Точные условия
-            уточняйте в банке. Могут применяться дополнительные комиссии и страховки.
-          </p>
-        </CardContent>
-      </Card>
     </div>
-  );
+  )
 }

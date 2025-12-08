@@ -1,281 +1,582 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { Users, DollarSign, TrendingUp, Wallet, Plus, Calculator, Calendar, UserPlus, Building2, Home, Phone, MessageCircle, Eye, Mail } from "lucide-react"
+import { StatCard } from "@/components/ui/stat-card"
+import { ProgressBar } from "@/components/ui/progress-bar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Users, Building2, Calendar, TrendingUp, Plus, UserPlus, CheckCircle2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { API_URL } from "@/lib/config"
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 interface DashboardStats {
   totalClients: number
-  activeBookings: number
-  totalProjects: number
-  monthlyGrowth: number
+  totalDeals: number
+  totalIncome: number
+  balance: number
+  clientsTrend: number
+  dealsTrend: number
+  salesChart: Array<{ month: string; deals: number; income: number }>
+}
+
+interface Notification {
+  id: string
+  type: string
+  title: string
+  message: string
+  isRead: boolean
+  createdAt: string
+}
+
+interface CourseProgress {
+  id: string
+  course: {
+    title: string
+  }
+  progressPercent: number
+  isCompleted: boolean
+}
+
+interface RecentClient {
+  id: string
+  firstName: string
+  lastName: string
+  phone: string
+  status: string
+  createdAt: string
+}
+
+interface RecentProperty {
+  id: string
+  title: string
+  address: string
+  price: number
+  status: string
+  images: string[]
+  createdAt: string
 }
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<any>(null)
   const [stats, setStats] = useState<DashboardStats>({
     totalClients: 0,
-    activeBookings: 0,
-    totalProjects: 0,
-    monthlyGrowth: 0,
+    totalDeals: 0,
+    totalIncome: 0,
+    balance: 0,
+    clientsTrend: 0,
+    dealsTrend: 0,
+    salesChart: [],
   })
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [courseProgress, setCourseProgress] = useState<CourseProgress[]>([])
+  const [recentClients, setRecentClients] = useState<RecentClient[]>([])
+  const [recentProperties, setRecentProperties] = useState<RecentProperty[]>([])
   const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
     const userData = localStorage.getItem("user")
     if (userData) {
       setUser(JSON.parse(userData))
     }
-    fetchStats()
+    fetchDashboardData()
   }, [])
 
-  const fetchStats = async () => {
-    try {
-      const token = localStorage.getItem('token')
-      if (!token) return
+  const fetchDashboardData = async () => {
+    const token = localStorage.getItem("token")
+    if (!token) return
 
-      // Загружаем статистику
-      const [clientsRes, bookingsRes, projectsRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/clients`, {
-          headers: { 'Authorization': `Bearer ${token}` },
+    try {
+      const [statsRes, notificationsRes, coursesRes, clientsRes, propertiesRes] = await Promise.all([
+        fetch(`${API_URL}/dashboard/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings?status=PENDING&status=CONFIRMED`, {
-          headers: { 'Authorization': `Bearer ${token}` },
+        fetch(`${API_URL}/notifications?limit=5`, {
+          headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects`, {
-          headers: { 'Authorization': `Bearer ${token}` },
+        fetch(`${API_URL}/courses/progress/my`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/dashboard/recent-clients`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/dashboard/recent-properties`, {
+          headers: { Authorization: `Bearer ${token}` },
         }),
       ])
 
-      if (clientsRes.ok && bookingsRes.ok && projectsRes.ok) {
-        const clientsData = await clientsRes.json()
-        const bookingsData = await bookingsRes.json()
-        const projectsData = await projectsRes.json()
-
-        // Рассчитываем рост (процент новых клиентов за месяц)
-        const currentMonth = new Date().getMonth()
-        const currentYear = new Date().getFullYear()
-        const newClientsThisMonth = clientsData.clients?.filter((c: any) => {
-          const createdDate = new Date(c.createdAt)
-          return createdDate.getMonth() === currentMonth && 
-                 createdDate.getFullYear() === currentYear
-        }).length || 0
-        
-        const totalClients = clientsData.total || clientsData.clients?.length || 0
-        const monthlyGrowth = totalClients > 0 
-          ? Math.round((newClientsThisMonth / totalClients) * 100) 
-          : 0
-
-        setStats({
-          totalClients,
-          activeBookings: bookingsData.bookings?.filter((b: any) => 
-            b.status === 'PENDING' || b.status === 'CONFIRMED'
-          ).length || 0,
-          totalProjects: projectsData.pagination?.total || projectsData.projects?.length || 0,
-          monthlyGrowth,
-        })
+      if (statsRes.ok) {
+        const statsData = await statsRes.json()
+        setStats(statsData)
       }
+
+      if (notificationsRes.ok) {
+        const notificationsData = await notificationsRes.json()
+        setNotifications(notificationsData.notifications || [])
+      }
+
+      if (coursesRes.ok) {
+        const coursesData = await coursesRes.json()
+        setCourseProgress(Array.isArray(coursesData) ? coursesData : [])
+      }
+
+      if (clientsRes.ok) {
+        const clientsData = await clientsRes.json()
+        setRecentClients(clientsData || [])
+      }
+
+      if (propertiesRes.ok) {
+        const propertiesData = await propertiesRes.json()
+        setRecentProperties(propertiesData || [])
+      }
+
     } catch (error) {
-      console.error('Error fetching stats:', error)
+      console.error("Failed to fetch dashboard data:", error)
     } finally {
       setLoading(false)
     }
   }
 
-  // Фильтруем быстрые действия по роли
-  const getAllQuickActions = () => [
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return "Доброе утро"
+    if (hour < 18) return "Добрый день"
+    return "Добрый вечер"
+  }
+
+  const getCurrentDate = () => {
+    return new Date().toLocaleDateString("ru-RU", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+  }
+
+  const quickActions = user?.role === "DEVELOPER" ? [
     {
-      title: "Добавить клиента",
-      description: "Создать карточку нового клиента",
-      icon: UserPlus,
-      href: "/dashboard/clients/new",
-      color: "text-blue-500",
-      roles: ["BROKER", "ADMIN"],
-    },
-    {
-      title: "Создать ЖК",
-      description: "Добавить новый жилой комплекс",
+      label: "Добавить ЖК",
       icon: Building2,
       href: "/dashboard/projects/new",
-      color: "text-purple-500",
-      roles: ["DEVELOPER", "ADMIN"],
+      variant: "default" as const,
     },
     {
-      title: "Расчет ипотеки",
-      description: "Рассчитать ежемесячный платеж",
-      icon: CheckCircle2,
-      href: "/dashboard/calculator",
-      color: "text-green-500",
-      roles: ["BROKER", "ADMIN"],
+      label: "Каталог ЖК",
+      icon: Home,
+      href: "/dashboard/projects",
+      variant: "outline" as const,
+    },
+  ] : [
+    {
+      label: "Добавить клиента",
+      icon: UserPlus,
+      href: "/dashboard/clients/new",
+      variant: "default" as const,
+    },
+    {
+      label: "Новый объект",
+      icon: Plus,
+      href: "/dashboard/properties/new",
+      variant: "outline" as const,
+    },
+    {
+      label: "Калькулятор",
+      icon: Calculator,
+      href: "/dashboard/mortgage?tab=calculator",
+      variant: "outline" as const,
+    },
+    {
+      label: "Бронь",
+      icon: Calendar,
+      href: "/dashboard/bookings/new",
+      variant: "outline" as const,
     },
   ]
 
-  const quickActions = getAllQuickActions().filter(action => 
-    action.roles.includes(user?.role || "BROKER")
-  )
-
-  const recentActivity = [
-    {
-      type: "client",
-      message: "Добавлен новый клиент",
-      time: "2 минуты назад",
-    },
-    {
-      type: "booking",
-      message: "Создана новая бронь",
-      time: "30 минут назад",
-    },
-    {
-      type: "project",
-      message: "Обновлен ЖК «Комфорт»",
-      time: "1 час назад",
-    },
-  ]
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-muted-foreground">Загрузка...</div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
+    <div className="space-y-6">
+      {/* Personalized Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
-          Добро пожаловать{user?.firstName ? `, ${user.firstName}` : ""}!
+          {getGreeting()}, {user?.firstName || "Брокер"}!
         </h1>
-        <p className="text-muted-foreground mt-1">
-          Вот что происходит в вашей системе сегодня
+        <p className="text-muted-foreground">
+          Сегодня: {getCurrentDate()}
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {user?.role !== 'DEVELOPER' && (
-          <Card className="border-border/50 hover:border-border transition-colors">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">
-                {user?.role === 'BROKER' ? 'Мои клиенты' : 'Всего клиентов'}
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{loading ? '...' : stats.totalClients}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {stats.totalClients === 0 ? 'Начните с добавления первого клиента' : 'В системе'}
-              </p>
+      {/* KPI Cards - разные для девелопера и брокера */}
+      {user?.role === "DEVELOPER" ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <StatCard
+            title="Мои проекты"
+            value={stats.totalDeals || 0}
+            icon={Building2}
+          />
+          <StatCard
+            title="Всего квартир"
+            value={stats.totalClients || 0}
+            icon={Home}
+          />
+          <StatCard
+            title="Активных броней"
+            value={stats.balance || 0}
+            icon={Calendar}
+          />
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Всего клиентов"
+            value={stats.totalClients}
+            icon={Users}
+            trend={{ value: stats.clientsTrend, isPositive: true }}
+          />
+          <StatCard
+            title="Сделки"
+            value={stats.totalDeals}
+            icon={TrendingUp}
+            trend={{ value: stats.dealsTrend, isPositive: true }}
+          />
+          <StatCard
+            title="Доход"
+            value={`${stats.totalIncome.toLocaleString()} ₸`}
+            icon={DollarSign}
+          />
+          <StatCard
+            title="Баланс"
+            value={`${stats.balance.toLocaleString()} ₸`}
+            icon={Wallet}
+          />
+        </div>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Sales Chart - только для брокеров */}
+          {user?.role !== "DEVELOPER" && stats.salesChart && stats.salesChart.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>График продаж</CardTitle>
+                <CardDescription>Динамика сделок за последние 6 месяцев</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={stats.salesChart}>
+                    <XAxis 
+                      dataKey="month" 
+                      stroke="#888888"
+                      fontSize={12}
+                    />
+                    <YAxis 
+                      stroke="#888888"
+                      fontSize={12}
+                    />
+                    <Tooltip />
+                    <Line 
+                      type="monotone" 
+                      dataKey="deals" 
+                      stroke="#8884d8" 
+                      strokeWidth={2}
+                      name="Сделки"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="income" 
+                      stroke="#82ca9d" 
+                      strokeWidth={2}
+                      name="Доход (₸)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
             </CardContent>
           </Card>
-        )}
+          )}
 
-        <Card className="border-border/50 hover:border-border transition-colors">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">
-              {user?.role === 'BROKER' ? 'Мои брони' : 
-               user?.role === 'DEVELOPER' ? 'Брони на мои квартиры' : 
-               'Активные брони'}
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{loading ? '...' : stats.activeBookings}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats.activeBookings === 0 ? 'Нет активных броней' : 'Активных бронирований'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50 hover:border-border transition-colors">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">
-              {user?.role === 'DEVELOPER' ? 'Мои проекты' : 'Жилых комплексов'}
-            </CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{loading ? '...' : stats.totalProjects}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats.totalProjects === 0 ? 'Добавьте новостройки' : 'Жилых комплексов'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50 hover:border-border transition-colors">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Рост за месяц</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{loading ? '...' : `${stats.monthlyGrowth}%`}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats.monthlyGrowth > 0 ? 'По сравнению с прошлым месяцем' : 'Начните работу для роста'}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Быстрые действия</h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          {quickActions.map((action) => (
-            <Card
-              key={action.title}
-              className="border-border/50 hover:border-border hover:shadow-sm transition-all cursor-pointer group"
-              onClick={() => router.push(action.href)}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg bg-muted/50 group-hover:bg-muted transition-colors`}>
-                      <action.icon className={`h-5 w-5 ${action.color}`} />
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Plus className="h-4 w-4" />
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Быстрые действия</CardTitle>
+              <CardDescription>Часто используемые функции</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className={`grid gap-3 ${user?.role === "DEVELOPER" ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4"}`}>
+                {quickActions.map((action) => (
+                  <Button
+                    key={action.label}
+                    variant={action.variant}
+                    className="h-auto flex-col gap-2 p-4"
+                    asChild
+                  >
+                    <a href={action.href}>
+                      <action.icon className="h-5 w-5" />
+                      <span className="text-xs">{action.label}</span>
+                    </a>
                   </Button>
-                </div>
-                <CardTitle className="text-base mt-2">{action.title}</CardTitle>
-                <CardDescription className="text-sm">
-                  {action.description}
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <Card className="border-border/50">
-        <CardHeader>
-          <CardTitle>Последняя активность</CardTitle>
-          <CardDescription>Недавние действия в системе</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentActivity.map((activity, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-3 pb-4 border-b border-border/50 last:border-0 last:pb-0"
-              >
-                <div className="p-2 rounded-lg bg-muted/50">
-                  {activity.type === "client" && <Users className="h-4 w-4" />}
-                  {activity.type === "booking" && <Calendar className="h-4 w-4" />}
-                  {activity.type === "project" && <Building2 className="h-4 w-4" />}
-                </div>
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium">{activity.message}</p>
-                  <p className="text-xs text-muted-foreground">{activity.time}</p>
-                </div>
+                ))}
               </div>
-            ))}
-            {recentActivity.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Пока нет активности
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+
+          {/* Recent Clients - только для брокеров */}
+          {user?.role !== "DEVELOPER" && recentClients.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Новые клиенты</CardTitle>
+                <CardDescription>Последние добавленные клиенты</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {recentClients.map((client) => (
+                    <div
+                      key={client.id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => window.location.href = `/dashboard/clients/${client.id}`}
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium">
+                          {client.firstName} {client.lastName}
+                        </p>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {client.phone}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{client.status}</Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            window.location.href = `tel:${client.phone}`
+                          }}
+                          title="Позвонить"
+                        >
+                          <Phone className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            window.open(`https://wa.me/${client.phone.replace(/[^0-9]/g, '')}`, '_blank')
+                          }}
+                          title="Написать в WhatsApp"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            window.location.href = `/dashboard/clients/${client.id}`
+                          }}
+                          title="Открыть карточку"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Recent Properties - только для брокеров */}
+          {user?.role !== "DEVELOPER" && recentProperties.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Новые объекты</CardTitle>
+                <CardDescription>Последние добавленные объекты</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {recentProperties.map((property) => (
+                    <div
+                      key={property.id}
+                      className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => window.location.href = `/dashboard/properties/${property.id}`}
+                    >
+                      {property.images && property.images[0] ? (
+                        <img
+                          src={property.images[0]}
+                          alt={property.title}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
+                          <Building2 className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{property.title}</p>
+                        <p className="text-sm text-muted-foreground truncate">{property.address}</p>
+                        <p className="text-sm font-semibold text-primary">{property.price.toLocaleString()} ₸</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{property.status}</Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            window.location.href = `/dashboard/properties/${property.id}`
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Notifications Feed */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{user?.role === "DEVELOPER" ? "Брони от брокеров" : "Уведомления"}</CardTitle>
+              <CardDescription>{user?.role === "DEVELOPER" ? "Новые брони на ваши квартиры" : "Последние события и сообщения"}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {notifications.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {user?.role === "DEVELOPER" ? "Нет новых броней" : "Нет новых уведомлений"}
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className="flex items-start gap-3 p-3 rounded-lg border"
+                    >
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm">{notification.title}</p>
+                          {!notification.isRead && (
+                            <Badge variant="secondary" className="h-5 text-xs">
+                              Новое
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {notification.message}
+                        </p>
+                        {/* Контакты брокера для девелопера */}
+                        {user?.role === "DEVELOPER" && (notification as any).brokerPhone && (
+                          <div className="mt-2 p-2 bg-muted rounded text-sm">
+                            <p className="font-medium">{(notification as any).brokerName}</p>
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <Phone className="h-3 w-3" />
+                              <span>{(notification as any).brokerPhone}</span>
+                            </div>
+                            {(notification as any).brokerEmail && (
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <Mail className="h-3 w-3" />
+                                <span>{(notification as any).brokerEmail}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(notification.createdAt).toLocaleDateString("ru-RU")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - только для брокеров */}
+        {user?.role !== "DEVELOPER" && (
+        <div className="space-y-6">
+          {/* Learning Progress */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Обучение</CardTitle>
+              <CardDescription>Ваш прогресс</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {courseProgress.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Курсы не назначены
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {courseProgress.slice(0, 3).map((progress) => (
+                    <div key={progress.id}>
+                      <ProgressBar
+                        value={progress.progressPercent}
+                        label={progress.course.title}
+                        size="sm"
+                      />
+                    </div>
+                  ))}
+                  {courseProgress.length > 3 && (
+                    <Button variant="ghost" size="sm" className="w-full" asChild>
+                      <a href="/dashboard/profile">Посмотреть все курсы</a>
+                    </Button>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Balance Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Финансы</CardTitle>
+              <CardDescription>Ваш баланс</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Заработано</span>
+                  <span className="font-semibold">
+                    {stats.totalIncome.toLocaleString()} ₸
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Casa Fee</span>
+                  <span className="font-semibold text-muted-foreground">
+                    {(stats.totalIncome - stats.balance).toLocaleString()} ₸
+                  </span>
+                </div>
+                <div className="h-px bg-border" />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Текущий баланс</span>
+                  <span className="text-lg font-bold text-green-600">
+                    {stats.balance.toLocaleString()} ₸
+                  </span>
+                </div>
+                <Button variant="outline" size="sm" className="w-full" asChild>
+                  <a href="/dashboard/profile">История платежей</a>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        )}
+      </div>
     </div>
   )
 }

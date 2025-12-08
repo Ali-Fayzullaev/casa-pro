@@ -18,4 +18,4 @@ COPY . .
 EXPOSE 3001
 
 # Запускаем через tsx (не компилируем, используем runtime env vars)
-CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && npx tsx src/index.ts"]
+CMD ["sh", "-c", "npx prisma generate && npx prisma db push --accept-data-loss && npx tsx src/index.ts"]

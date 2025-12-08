@@ -14,17 +14,29 @@ const createClientSchema = z.object({
   middleName: z.string().optional(),
   phone: z.string().min(10, 'Телефон обязателен'),
   email: z.string().email('Неверный email').optional(),
+  clientType: z.enum(['BUYER', 'SELLER', 'NEW_BUILDING']).optional(),
+  budget: z.number().optional(),
+  city: z.string().optional(),
   notes: z.string().optional(),
   status: z.enum(['NEW', 'IN_PROGRESS', 'DEAL_CLOSED', 'REJECTED']).default('NEW'),
+  monthlyIncome: z.number().optional(),
+  initialPayment: z.number().optional(),
 });
 
 const updateClientSchema = createClientSchema.partial();
 
-// GET /api/clients - список клиентов с фильтрацией
+// GET /api/clients - список клиентов с расширенной фильтрацией
 clientsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { status, search, page = '1', limit = '10' } = req.query;
-    
+    const { 
+      status, 
+      clientType, 
+      city, 
+      search, 
+      page = '1', 
+      limit = '10' 
+    } = req.query;
+
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
@@ -32,8 +44,18 @@ clientsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
     const where: any = {};
 
     // Фильтр по статусу
-    if (status) {
+    if (status && status !== 'ALL') {
       where.status = status;
+    }
+
+    // Фильтр по типу клиента
+    if (clientType && clientType !== 'ALL') {
+      where.clientType = clientType;
+    }
+
+    // Фильтр по городу
+    if (city && city !== 'ALL') {
+      where.city = city;
     }
 
     // Поиск по имени, фамилии, ИИН или телефону
@@ -41,8 +63,10 @@ clientsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
       where.OR = [
         { firstName: { contains: search as string, mode: 'insensitive' } },
         { lastName: { contains: search as string, mode: 'insensitive' } },
+        { middleName: { contains: search as string, mode: 'insensitive' } },
         { iin: { contains: search as string } },
         { phone: { contains: search as string } },
+        { email: { contains: search as string, mode: 'insensitive' } },
       ];
     }
 
@@ -63,6 +87,12 @@ clientsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
               firstName: true,
               lastName: true,
               email: true,
+            },
+          },
+          _count: {
+            select: {
+              bookings: true,
+              mortgageCalculations: true,
             },
           },
         },
@@ -114,6 +144,28 @@ clientsRouter.get('/:id', async (req: Request, res: Response): Promise<void> => 
         },
         documents: true,
         mortgageCalculations: true,
+        sellerProperties: {
+          select: {
+            id: true,
+            title: true,
+            propertyType: true,
+            address: true,
+            price: true,
+            status: true,
+            images: true,
+          },
+        },
+        buyerProperties: {
+          select: {
+            id: true,
+            title: true,
+            propertyType: true,
+            address: true,
+            price: true,
+            status: true,
+            images: true,
+          },
+        },
       },
     });
 
@@ -266,5 +318,79 @@ clientsRouter.delete('/:id', requireRole('BROKER', 'ADMIN'), async (req: Request
   } catch (error) {
     console.error('Delete client error:', error);
     res.status(500).json({ error: 'Ошибка удаления клиента' });
+  }
+});
+
+// POST /api/clients/:id/link-property - привязать объект к клиенту
+clientsRouter.post('/:id/link-property', requireRole('BROKER', 'ADMIN'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { propertyId, role } = req.body; // role: 'seller' | 'buyer'
+
+    if (!propertyId || !role || !['seller', 'buyer'].includes(role)) {
+      res.status(400).json({ error: 'Неверные параметры. Укажите propertyId и role (seller/buyer)' });
+      return;
+    }
+
+    const client = await prisma.client.findUnique({ where: { id } });
+    if (!client) {
+      res.status(404).json({ error: 'Клиент не найден' });
+      return;
+    }
+
+    const property = await prisma.property.findUnique({ where: { id: propertyId } });
+    if (!property) {
+      res.status(404).json({ error: 'Объект не найден' });
+      return;
+    }
+
+    // Проверка прав доступа
+    if (req.user?.role === 'BROKER' && client.brokerId !== req.user.userId) {
+      res.status(403).json({ error: 'Доступ запрещен' });
+      return;
+    }
+
+    const updateData = role === 'seller' ? { sellerId: id } : { buyerId: id };
+
+    await prisma.property.update({
+      where: { id: propertyId },
+      data: updateData,
+    });
+
+    res.json({ message: `Клиент успешно привязан к объекту как ${role === 'seller' ? 'продавец' : 'покупатель'}` });
+  } catch (error) {
+    console.error('Link property error:', error);
+    res.status(500).json({ error: 'Ошибка привязки объекта' });
+  }
+});
+
+// DELETE /api/clients/:id/unlink-property - отвязать объект от клиента
+clientsRouter.delete('/:id/unlink-property', requireRole('BROKER', 'ADMIN'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { propertyId, role } = req.body;
+
+    if (!propertyId || !role || !['seller', 'buyer'].includes(role)) {
+      res.status(400).json({ error: 'Неверные параметры' });
+      return;
+    }
+
+    const property = await prisma.property.findUnique({ where: { id: propertyId } });
+    if (!property) {
+      res.status(404).json({ error: 'Объект не найден' });
+      return;
+    }
+
+    const updateData = role === 'seller' ? { sellerId: null } : { buyerId: null };
+
+    await prisma.property.update({
+      where: { id: propertyId },
+      data: updateData,
+    });
+
+    res.json({ message: 'Объект успешно отвязан от клиента' });
+  } catch (error) {
+    console.error('Unlink property error:', error);
+    res.status(500).json({ error: 'Ошибка отвязки объекта' });
   }
 });

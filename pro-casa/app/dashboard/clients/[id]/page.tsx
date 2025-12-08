@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Edit, Trash2, Mail, Phone, Calendar, FileText } from 'lucide-react';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { ArrowLeft, Edit, Trash2, Mail, Phone, Calendar, FileText, Calculator, ChevronDown, ChevronUp, Building2, Home, Plus, Link2, Unlink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -23,6 +23,55 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { API_URL } from '@/lib/config';
+import { toast } from '@/hooks/use-toast';
+
+interface MortgageCalculation {
+  id: string;
+  propertyPrice: number;
+  initialPayment: number;
+  loanAmount: number;
+  interestRate: number;
+  termMonths: number;
+  monthlyPayment: number;
+  totalPayment: number;
+  overpayment: number;
+  bankName?: string;
+  programName?: string;
+  apartmentInfo?: string;
+  createdAt: string;
+}
+
+interface LinkedProperty {
+  id: string;
+  title: string;
+  propertyType: string;
+  address: string;
+  price: number;
+  status: string;
+  images: string[];
+}
 
 interface Client {
   id: string;
@@ -47,7 +96,16 @@ interface Client {
   };
   bookings: any[];
   documents: any[];
-  mortgageCalculations: any[];
+  mortgageCalculations: MortgageCalculation[];
+  sellerProperties: LinkedProperty[];
+  buyerProperties: LinkedProperty[];
+}
+
+interface AvailableProperty {
+  id: string;
+  title: string;
+  address: string;
+  price: number;
 }
 
 const statusLabels = {
@@ -67,9 +125,21 @@ const statusColors = {
 export default function ClientDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const fromCRM = searchParams.get('from') === 'crm';
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [showCalculations, setShowCalculations] = useState(false);
+  const [showBookings, setShowBookings] = useState(false);
+  const [showProperties, setShowProperties] = useState(true);
+  
+  // Link property dialog
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [availableProperties, setAvailableProperties] = useState<AvailableProperty[]>([]);
+  const [selectedPropertyId, setSelectedPropertyId] = useState('');
+  const [linkRole, setLinkRole] = useState<'seller' | 'buyer'>('seller');
+  const [linking, setLinking] = useState(false);
 
   useEffect(() => {
     fetchClient();
@@ -78,7 +148,7 @@ export default function ClientDetailPage() {
   const fetchClient = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/clients/${params.id}`, {
+      const response = await fetch(`${API_URL}/clients/${params.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -103,7 +173,7 @@ export default function ClientDetailPage() {
       setDeleting(true);
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/clients/${params.id}`, {
+      const response = await fetch(`${API_URL}/clients/${params.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -120,6 +190,79 @@ export default function ClientDetailPage() {
       alert('Ошибка при удалении клиента');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  // Fetch available properties for linking
+  const fetchAvailableProperties = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/properties?limit=100`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableProperties(data.properties || []);
+      }
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+    }
+  };
+
+  // Link property to client
+  const handleLinkProperty = async () => {
+    if (!selectedPropertyId) {
+      toast({ title: 'Выберите объект', variant: 'destructive' });
+      return;
+    }
+
+    setLinking(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/clients/${params.id}/link-property`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ propertyId: selectedPropertyId, role: linkRole }),
+      });
+
+      if (response.ok) {
+        toast({ title: 'Объект успешно привязан' });
+        setShowLinkDialog(false);
+        setSelectedPropertyId('');
+        fetchClient();
+      } else {
+        const error = await response.json();
+        toast({ title: error.error || 'Ошибка', variant: 'destructive' });
+      }
+    } catch (error) {
+      toast({ title: 'Ошибка привязки объекта', variant: 'destructive' });
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  // Unlink property from client
+  const handleUnlinkProperty = async (propertyId: string, role: 'seller' | 'buyer') => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/clients/${params.id}/unlink-property`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ propertyId, role }),
+      });
+
+      if (response.ok) {
+        toast({ title: 'Объект отвязан' });
+        fetchClient();
+      }
+    } catch (error) {
+      toast({ title: 'Ошибка', variant: 'destructive' });
     }
   };
 
@@ -165,9 +308,10 @@ export default function ClientDetailPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.back()}
+            onClick={() => fromCRM ? router.push('/dashboard/crm') : router.back()}
           >
             <ArrowLeft className="h-4 w-4" />
+            {fromCRM && <span className="ml-2">В CRM</span>}
           </Button>
           <div>
             <h1 className="text-3xl font-bold">
@@ -313,52 +457,350 @@ export default function ClientDetailPage() {
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Linked Properties Section */}
+      <Collapsible open={showProperties} onOpenChange={setShowProperties}>
         <Card>
           <CardHeader>
-            <CardTitle>Брони</CardTitle>
-            <CardDescription>Забронированные квартиры</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Home className="h-5 w-5" />
+                  Связанные объекты ({(client.sellerProperties?.length || 0) + (client.buyerProperties?.length || 0)})
+                </CardTitle>
+                <CardDescription>Объекты, где клиент - продавец или покупатель</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    fetchAvailableProperties();
+                    setShowLinkDialog(true);
+                  }}
+                >
+                  <Link2 className="h-4 w-4 mr-1" />
+                  Привязать
+                </Button>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    {showProperties ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{client.bookings.length}</p>
-            {client.bookings.length > 0 && (
-              <Button variant="link" className="mt-2 p-0 h-auto">
-                Посмотреть все брони
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+          <CollapsibleContent>
+            <CardContent className="pt-0 space-y-4">
+              {/* Seller Properties */}
+              {client.sellerProperties && client.sellerProperties.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Продаёт:</p>
+                  <div className="space-y-2">
+                    {client.sellerProperties.map((property) => (
+                      <div 
+                        key={property.id} 
+                        className="flex items-center gap-3 p-3 border rounded-lg bg-orange-50/50 hover:bg-orange-50 transition-colors cursor-pointer"
+                        onClick={() => router.push(`/dashboard/properties/${property.id}`)}
+                      >
+                        {property.images?.[0] ? (
+                          <img src={property.images[0]} alt={property.title} className="w-12 h-12 object-cover rounded" />
+                        ) : (
+                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                            <Home className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{property.title}</p>
+                          <p className="text-sm text-muted-foreground truncate">{property.address}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{property.status}</Badge>
+                          <p className="font-semibold text-sm whitespace-nowrap">{property.price?.toLocaleString()} ₸</p>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnlinkProperty(property.id, 'seller');
+                            }}
+                          >
+                            <Unlink className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Документы</CardTitle>
-            <CardDescription>Загруженные файлы</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{client.documents.length}</p>
-            {client.documents.length > 0 && (
-              <Button variant="link" className="mt-2 p-0 h-auto">
-                Посмотреть документы
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+              {/* Buyer Properties */}
+              {client.buyerProperties && client.buyerProperties.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Покупает:</p>
+                  <div className="space-y-2">
+                    {client.buyerProperties.map((property) => (
+                      <div 
+                        key={property.id} 
+                        className="flex items-center gap-3 p-3 border rounded-lg bg-green-50/50 hover:bg-green-50 transition-colors cursor-pointer"
+                        onClick={() => router.push(`/dashboard/properties/${property.id}`)}
+                      >
+                        {property.images?.[0] ? (
+                          <img src={property.images[0]} alt={property.title} className="w-12 h-12 object-cover rounded" />
+                        ) : (
+                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                            <Home className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{property.title}</p>
+                          <p className="text-sm text-muted-foreground truncate">{property.address}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{property.status}</Badge>
+                          <p className="font-semibold text-sm whitespace-nowrap">{property.price?.toLocaleString()} ₸</p>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnlinkProperty(property.id, 'buyer');
+                            }}
+                          >
+                            <Unlink className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
+              {(!client.sellerProperties || client.sellerProperties.length === 0) && 
+               (!client.buyerProperties || client.buyerProperties.length === 0) && (
+                <p className="text-muted-foreground text-sm text-center py-4">
+                  Нет связанных объектов. Нажмите "Привязать" чтобы добавить.
+                </p>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Link Property Dialog */}
+      <Dialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Привязать объект к клиенту</DialogTitle>
+            <DialogDescription>
+              Выберите объект и укажите роль клиента (продавец или покупатель)
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Роль клиента</Label>
+              <Select value={linkRole} onValueChange={(v) => setLinkRole(v as 'seller' | 'buyer')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="seller">Продавец</SelectItem>
+                  <SelectItem value="buyer">Покупатель</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Объект</Label>
+              <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите объект" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableProperties.map((prop) => (
+                    <SelectItem key={prop.id} value={prop.id}>
+                      {prop.title} - {prop.address} ({prop.price?.toLocaleString()} ₸)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowLinkDialog(false)}>
+              Отмена
+            </Button>
+            <Button onClick={handleLinkProperty} disabled={linking || !selectedPropertyId}>
+              {linking ? 'Привязка...' : 'Привязать'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bookings Section */}
+      <Collapsible open={showBookings} onOpenChange={setShowBookings}>
         <Card>
           <CardHeader>
-            <CardTitle>Расчеты ипотеки</CardTitle>
-            <CardDescription>Сохраненные расчеты</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Брони ({client.bookings.length})
+                </CardTitle>
+                <CardDescription>Забронированные квартиры</CardDescription>
+              </div>
+              {client.bookings.length > 0 && (
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    {showBookings ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+              )}
+            </div>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{client.mortgageCalculations.length}</p>
-            {client.mortgageCalculations.length > 0 && (
-              <Button variant="link" className="mt-2 p-0 h-auto">
-                Посмотреть расчеты
-              </Button>
-            )}
-          </CardContent>
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              {client.bookings.length > 0 ? (
+                <div className="space-y-3">
+                  {client.bookings.map((booking: any) => (
+                    <div key={booking.id} className="border rounded-lg p-3 bg-muted/50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">Кв. {booking.apartment?.number || 'N/A'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {booking.apartment?.project?.name || 'ЖК не указан'}
+                          </p>
+                        </div>
+                        <Badge variant={booking.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                          {booking.status === 'ACTIVE' ? 'Активна' : booking.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        До: {new Date(booking.expiresAt).toLocaleDateString('ru-RU')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">Нет броней</p>
+              )}
+            </CardContent>
+          </CollapsibleContent>
         </Card>
-      </div>
+      </Collapsible>
+
+      {/* Mortgage Calculations Section */}
+      <Collapsible open={showCalculations} onOpenChange={setShowCalculations}>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Calculator className="h-5 w-5" />
+                  Расчёты ипотеки ({client.mortgageCalculations.length})
+                </CardTitle>
+                <CardDescription>Сохранённые ипотечные расчёты</CardDescription>
+              </div>
+              {client.mortgageCalculations.length > 0 && (
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    {showCalculations ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+              )}
+            </div>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              {client.mortgageCalculations.length > 0 ? (
+                <div className="space-y-4">
+                  {client.mortgageCalculations.map((calc) => (
+                    <div key={calc.id} className="border rounded-lg p-4 bg-muted/50">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <p className="font-semibold text-lg">{calc.programName || 'Расчёт'}</p>
+                          <p className="text-sm text-muted-foreground">{calc.bankName}</p>
+                        </div>
+                        <Badge variant="outline">
+                          {calc.interestRate}%
+                        </Badge>
+                      </div>
+                      
+                      {calc.apartmentInfo && (
+                        <p className="text-sm text-blue-600 mb-3">
+                          📍 {calc.apartmentInfo}
+                        </p>
+                      )}
+                      
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Стоимость</p>
+                          <p className="font-medium">{formatCurrency(Number(calc.propertyPrice))}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Первый взнос</p>
+                          <p className="font-medium">{formatCurrency(Number(calc.initialPayment))}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Сумма кредита</p>
+                          <p className="font-medium">{formatCurrency(Number(calc.loanAmount))}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Срок</p>
+                          <p className="font-medium">{Math.round(calc.termMonths / 12)} лет</p>
+                        </div>
+                        <div className="col-span-2 pt-2 border-t">
+                          <p className="text-muted-foreground">Ежемесячный платёж</p>
+                          <p className="font-bold text-lg text-green-600">{formatCurrency(Number(calc.monthlyPayment))}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Общая сумма</p>
+                          <p className="font-medium">{formatCurrency(Number(calc.totalPayment))}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Переплата</p>
+                          <p className="font-medium text-orange-500">{formatCurrency(Number(calc.overpayment))}</p>
+                        </div>
+                      </div>
+                      
+                      <p className="text-xs text-muted-foreground mt-3">
+                        Создан: {new Date(calc.createdAt).toLocaleDateString('ru-RU')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">Нет сохранённых расчётов</p>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Documents Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Документы ({client.documents.length})
+          </CardTitle>
+          <CardDescription>Загруженные файлы клиента</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {client.documents.length > 0 ? (
+            <div className="space-y-2">
+              {client.documents.map((doc: any) => (
+                <div key={doc.id} className="flex items-center justify-between p-2 border rounded">
+                  <span className="text-sm">{doc.name}</span>
+                  <Button variant="ghost" size="sm">Скачать</Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-sm">Нет загруженных документов</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

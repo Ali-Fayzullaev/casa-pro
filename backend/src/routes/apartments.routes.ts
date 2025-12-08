@@ -347,3 +347,45 @@ apartmentsRouter.delete('/:id', requireRole('DEVELOPER', 'ADMIN'), async (req: R
     res.status(500).json({ error: 'Ошибка удаления квартиры' });
   }
 });
+
+// PUT /api/apartments/:id/status - изменить статус квартиры (для брокеров)
+apartmentsRouter.put('/:id/status', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // Валидация статуса
+    if (!['AVAILABLE', 'RESERVED', 'SOLD'].includes(status)) {
+      res.status(400).json({ error: 'Недопустимый статус. Используйте: AVAILABLE, RESERVED, SOLD' });
+      return;
+    }
+
+    const existing = await prisma.apartment.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: 'Квартира не найдена' });
+      return;
+    }
+
+    const apartment = await prisma.apartment.update({
+      where: { id },
+      data: { status },
+      include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+          },
+        },
+      },
+    });
+
+    res.json(apartment);
+  } catch (error) {
+    console.error('Update apartment status error:', error);
+    res.status(500).json({ error: 'Ошибка обновления статуса квартиры' });
+  }
+});

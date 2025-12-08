@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Building2, Grid3x3, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,12 +28,21 @@ interface Project {
 
 export default function ChessboardSelectPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Проверяем параметр projectId для автоматического перехода
+  const projectIdParam = searchParams.get('projectId');
+
   useEffect(() => {
+    // Если есть projectId, сразу переходим к шахматке этого проекта
+    if (projectIdParam) {
+      router.push(`/dashboard/projects/${projectIdParam}/apartments`);
+      return;
+    }
     fetchProjects();
-  }, []);
+  }, [projectIdParam]);
 
   const fetchProjects = async () => {
     try {

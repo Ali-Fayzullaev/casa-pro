@@ -1,18 +1,39 @@
 FROM node:20-alpine AS base
 
-# Устанавливаем зависимости только когда нужно
+# Устанавливаем зависимости
 FROM base AS deps
 WORKDIR /app
 
+# Для alpine нужны дополнительные пакеты для некоторых npm модулей
+RUN apk add --no-cache libc6-compat
+
 # Копируем package файлы
-COPY package*.json ./
-RUN npm ci
+COPY package.json package-lock.json* ./
+
+# Устанавливаем зависимости с retry
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm ci || npm ci || npm ci
 
 # Builder stage
 FROM base AS builder
 WORKDIR /app
+
+# Установка PATH для node_modules/.bin
+ENV PATH=/app/node_modules/.bin:$PATH
+
+# Сначала копируем node_modules из deps
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+
+# Копируем package.json для npm
+COPY package.json ./
+
+# Копируем остальные файлы исходного кода
+COPY app ./app
+COPY components ./components
+COPY hooks ./hooks
+COPY lib ./lib
+COPY public ./public
+COPY next.config.ts tsconfig.json postcss.config.mjs ./
 
 # Отключаем телеметрию Next.js
 ENV NEXT_TELEMETRY_DISABLED=1

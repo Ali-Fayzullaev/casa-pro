@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, User, Home, Clock, Check, X, AlertCircle, DollarSign } from 'lucide-react';
+import { Calendar, User, Home, Clock, Check, X, AlertCircle, DollarSign, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,6 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { API_URL } from '@/lib/config';
 
 interface Booking {
   id: string;
@@ -50,6 +51,7 @@ interface Booking {
     rooms: number;
     area: string;
     price: string;
+    status?: 'AVAILABLE' | 'RESERVED' | 'SOLD';
     project: {
       id: string;
       name: string;
@@ -100,7 +102,7 @@ export default function BookingsPage() {
       
       if (statusFilter !== 'all') params.append('status', statusFilter);
 
-      const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings?${params.toString()}`;
+      const url = `${API_URL}/bookings?${params.toString()}`;
       console.log('Fetching from:', url);
 
       const response = await fetch(url, {
@@ -128,13 +130,13 @@ export default function BookingsPage() {
       setProcessing(true);
       const token = localStorage.getItem('token');
       
-      let url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings/${selectedBooking.id}`;
+      let url = `${API_URL}/bookings/${selectedBooking.id}`;
       let method = 'PUT';
       let body: any = {};
 
       if (actionType === 'complete') {
         // Оформление продажи
-        url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings/${selectedBooking.id}/complete-deal`;
+        url = `${API_URL}/bookings/${selectedBooking.id}/complete-deal`;
         method = 'POST';
         console.log('Completing deal for booking:', selectedBooking.id);
         console.log('Current booking status:', selectedBooking.status);
@@ -269,12 +271,21 @@ export default function BookingsPage() {
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Бронирования</h1>
-          <p className="text-muted-foreground">
-            Управление бронями квартир
-          </p>
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={() => router.push('/dashboard/crm?tab=bookings')}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Бронирования</h1>
+            <p className="text-muted-foreground">
+              Управление бронями квартир
+            </p>
+          </div>
         </div>
+        <Button onClick={() => router.push('/dashboard/bookings/new')}>
+          <Plus className="mr-2 h-4 w-4" />
+          Быстрое бронирование
+        </Button>
       </div>
 
       {/* Фильтры */}
@@ -320,7 +331,7 @@ export default function BookingsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                 {/* Клиент */}
                 <div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">

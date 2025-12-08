@@ -36,6 +36,48 @@ usersAdminRouter.get('/', async (req: Request, res: Response): Promise<void> => 
   }
 });
 
+// GET /api/admin/users/:id/full - получить полные данные пользователя (ADMIN only)
+// ВАЖНО: этот роут должен быть ДО /:id чтобы не конфликтовать
+usersAdminRouter.get('/:id/full', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    console.log('Admin fetching full user data:', id);
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        balance: true,
+        curatorName: true,
+        curatorPhone: true,
+        curatorEmail: true,
+        curatorWhatsApp: true,
+        createdAt: true,
+        courseProgress: {
+          include: {
+            course: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'Пользователь не найден' });
+      return;
+    }
+
+    res.json({ ...user, balance: Number(user.balance) });
+  } catch (error) {
+    console.error('Get user full error:', error);
+    res.status(500).json({ error: 'Ошибка получения данных пользователя' });
+  }
+});
+
 // POST /api/admin/users - создать пользователя (ADMIN only)
 usersAdminRouter.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -239,6 +281,55 @@ usersAdminRouter.post('/:id/reset-password', async (req: Request, res: Response)
   } catch (error) {
     console.error('Reset password error:', error);
     res.status(500).json({ error: 'Ошибка сброса пароля' });
+  }
+});
+
+// PUT /api/admin/users/:id/curator - установить куратора для брокера (ADMIN only)
+usersAdminRouter.put('/:id/curator', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { curatorName, curatorPhone, curatorEmail, curatorWhatsApp } = req.body;
+
+    console.log('Admin setting curator for user:', id);
+
+    // Проверка существования
+    const user = await prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'Пользователь не найден' });
+      return;
+    }
+
+    // Обновляем данные куратора
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        curatorName,
+        curatorPhone,
+        curatorEmail,
+        curatorWhatsApp,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        curatorName: true,
+        curatorPhone: true,
+        curatorEmail: true,
+        curatorWhatsApp: true,
+      },
+    });
+
+    res.json({
+      message: 'Данные куратора успешно обновлены',
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error('Set curator error:', error);
+    res.status(500).json({ error: 'Ошибка обновления данных куратора' });
   }
 });
 
