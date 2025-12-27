@@ -28,13 +28,13 @@ const updateClientSchema = createClientSchema.partial();
 // GET /api/clients - список клиентов с расширенной фильтрацией
 clientsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { 
-      status, 
-      clientType, 
-      city, 
-      search, 
-      page = '1', 
-      limit = '10' 
+    const {
+      status,
+      clientType,
+      city,
+      search,
+      page = '1',
+      limit = '10'
     } = req.query;
 
     const pageNum = parseInt(page as string);
