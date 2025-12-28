@@ -20,6 +20,13 @@ export interface Deal {
         email?: string | null;
     } | null;
 
+    // Broker Info (for Admin)
+    broker?: {
+        id: string;
+        firstName: string;
+        lastName: string;
+    } | null;
+
     // Object Info
     objectType: string;
     objectId?: string | null;

@@ -63,10 +63,13 @@ export function KanbanBoard({ initialDeals = [] }: KanbanBoardProps) {
     const copyFormLink = (formId: string) => {
         const userStr = localStorage.getItem('user');
         if (userStr) {
-            const { userId } = JSON.parse(userStr);
+            const user = JSON.parse(userStr);
+            const userId = user.id; // User object has 'id', not 'userId'
             const url = `${window.location.origin}/forms/${formId}?brokerId=${userId}`;
             navigator.clipboard.writeText(url);
-            toast.success("Ссылка скопирована");
+            toast.success("Ссылка скопирована в буфер обмена", {
+                description: "Отправьте ссылку потенциальному клиенту"
+            });
         }
     };
 
@@ -307,9 +310,7 @@ export function KanbanBoard({ initialDeals = [] }: KanbanBoardProps) {
                         </PopoverContent>
                     </Popover>
 
-                    <Button variant="ghost" size="sm">
-                        ... ЕЩЕ
-                    </Button>
+
                     <Link href="/dashboard/crm/new">
                         <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium uppercase text-xs px-4">
                             <Plus className="h-3 w-3 mr-2" /> Новая сделка

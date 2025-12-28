@@ -19,7 +19,7 @@ import { toast } from "@/hooks/use-toast"
 
 interface Deal {
   id: string
-  title: string
+  title?: string
   dealType: string
   status: string
   amount: number
@@ -28,13 +28,13 @@ interface Deal {
   notes?: string
   createdAt: string
   updatedAt: string
-  client: {
+  client?: {
     id: string
     firstName: string
     lastName: string
     phone: string
     email?: string
-  }
+  } | null
   property?: {
     id: string
     title: string
@@ -53,7 +53,7 @@ interface Deal {
       name: string
     }
   }
-  broker: {
+  broker?: {
     id: string
     firstName: string
     lastName: string
@@ -65,26 +65,65 @@ export default function DealDetailPage() {
   const router = useRouter()
   const params = useParams()
   const dealId = params.id as string
-  
+
   const [deal, setDeal] = useState<Deal | null>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [brokers, setBrokers] = useState<any[]>([])
 
   useEffect(() => {
+    fetchCurrentUser()
     if (dealId) {
       fetchDeal()
     }
   }, [dealId])
 
+  useEffect(() => {
+    if (currentUser?.role === 'ADMIN') {
+      fetchBrokers()
+    }
+  }, [currentUser])
+
+  const fetchCurrentUser = async () => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    try {
+      const res = await fetch(`${API_URL}/users/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setCurrentUser(data)
+      }
+    } catch (e) {
+      console.error("Failed to fetch user", e)
+    }
+  }
+
+  const fetchBrokers = async () => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    try {
+      const res = await fetch(`${API_URL}/users?role=BROKER&limit=100`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setBrokers(data.users)
+      }
+    } catch (e) {
+      console.error("Failed to fetch brokers", e)
+    }
+  }
+
   const fetchDeal = async () => {
     const token = localStorage.getItem("token")
     if (!token) return
-
     try {
       const res = await fetch(`${API_URL}/deals/${dealId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-
       if (res.ok) {
         const data = await res.json()
         setDeal(data)
@@ -124,6 +163,36 @@ export default function DealDetailPage() {
       }
     } catch (error) {
       console.error("Failed to update deal:", error)
+      toast({ title: "Ошибка", description: "Ошибка при обновлении", variant: "destructive" })
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const handleBrokerChange = async (brokerId: string) => {
+    const token = localStorage.getItem("token")
+    if (!token || !deal) return
+
+    setUpdating(true)
+    try {
+      const res = await fetch(`${API_URL}/deals/${dealId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ brokerId }),
+      })
+
+      if (res.ok) {
+        const updated = await res.json()
+        setDeal(updated)
+        toast({ title: "Успешно", description: "Брокер переназначен" })
+      } else {
+        toast({ title: "Ошибка", description: "Не удалось переназначить брокера", variant: "destructive" })
+      }
+    } catch (error) {
+      console.error("Failed to update broker:", error)
       toast({ title: "Ошибка", description: "Ошибка при обновлении", variant: "destructive" })
     } finally {
       setUpdating(false)
@@ -207,7 +276,7 @@ export default function DealDetailPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">{deal.title}</h2>
+            <h2 className="text-3xl font-bold tracking-tight">{deal.notes || `Сделка #${deal.id.slice(-4)}`}</h2>
             <p className="text-muted-foreground">ID: {deal.id.slice(0, 8)}</p>
           </div>
         </div>
@@ -251,8 +320,8 @@ export default function DealDetailPage() {
             <CardDescription>Изменить статус сделки</CardDescription>
           </CardHeader>
           <CardContent>
-            <Select 
-              value={deal.status} 
+            <Select
+              value={deal.status}
               onValueChange={handleStatusChange}
               disabled={updating}
             >
@@ -279,36 +348,42 @@ export default function DealDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div>
-              <p className="font-medium">{deal.client.firstName} {deal.client.lastName}</p>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Телефон:</span>
-              <span>{deal.client.phone}</span>
-            </div>
-            {deal.client.email && (
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">Email:</span>
-                <span>{deal.client.email}</span>
-              </div>
+            {deal.client ? (
+              <>
+                <div>
+                  <p className="font-medium">{deal.client.firstName} {deal.client.lastName}</p>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">Телефон:</span>
+                  <span>{deal.client.phone}</span>
+                </div>
+                {deal.client.email && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">Email:</span>
+                    <span>{deal.client.email}</span>
+                  </div>
+                )}
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/dashboard/clients/${deal.client!.id}`)}
+                  >
+                    Карточка
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(getWhatsAppLink(deal.client!.phone), "_blank")}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-1" />
+                    WhatsApp
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-muted-foreground">Клиент не привязан</p>
             )}
-            <div className="flex gap-2 pt-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => router.push(`/dashboard/clients/${deal.client.id}`)}
-              >
-                Карточка
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(getWhatsAppLink(deal.client.phone), "_blank")}
-              >
-                <MessageCircle className="h-4 w-4 mr-1" />
-                WhatsApp
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
@@ -341,8 +416,8 @@ export default function DealDetailPage() {
                   <span className="text-muted-foreground">Цена: </span>
                   <span className="font-medium">{formatCurrency(deal.apartment.price)}</span>
                 </div>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   className="mt-2"
                   onClick={() => router.push(`/dashboard/projects/${deal.apartment?.project.id}`)}
@@ -360,8 +435,8 @@ export default function DealDetailPage() {
                   <span className="text-muted-foreground">Цена: </span>
                   <span className="font-medium">{formatCurrency(deal.property.price)}</span>
                 </div>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   className="mt-2"
                   onClick={() => router.push(`/dashboard/properties/${deal.property?.id}`)}
@@ -384,8 +459,35 @@ export default function DealDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <p className="font-medium">{deal.broker.firstName} {deal.broker.lastName}</p>
-            <p className="text-sm text-muted-foreground">{deal.broker.email}</p>
+            {deal.broker ? (
+              currentUser?.role === 'ADMIN' ? (
+                <Select
+                  value={deal.broker.id}
+                  onValueChange={handleBrokerChange}
+                  disabled={updating}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите брокера">
+                      {deal.broker.firstName} {deal.broker.lastName}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {brokers.map((broker) => (
+                      <SelectItem key={broker.id} value={broker.id}>
+                        {broker.firstName} {broker.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <>
+                  <p className="font-medium">{deal.broker.firstName} {deal.broker.lastName}</p>
+                  <p className="text-sm text-muted-foreground">{deal.broker.email}</p>
+                </>
+              )
+            ) : (
+              <p className="text-muted-foreground">Брокер не назначен</p>
+            )}
           </CardContent>
         </Card>
 
@@ -410,19 +512,53 @@ export default function DealDetailPage() {
         </Card>
 
         {/* Заметки */}
-        {deal.notes && (
-          <Card className="md:col-span-3">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Заметки
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-wrap">{deal.notes}</p>
-            </CardContent>
-          </Card>
-        )}
+        <Card className="md:col-span-3">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Заметки
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <textarea
+              className="w-full min-h-[150px] p-3 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="Добавьте заметки о сделке..."
+              value={deal.notes || ''}
+              onChange={(e) => setDeal({ ...deal, notes: e.target.value })}
+            />
+            <Button
+              onClick={async () => {
+                const token = localStorage.getItem("token");
+                if (!token) return;
+
+                setUpdating(true);
+                try {
+                  const res = await fetch(`${API_URL}/deals/${dealId}`, {
+                    method: "PUT",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ notes: deal.notes }),
+                  });
+
+                  if (res.ok) {
+                    toast({ title: "Успешно", description: "Заметки сохранены" });
+                  } else {
+                    toast({ title: "Ошибка", description: "Не удалось сохранить", variant: "destructive" });
+                  }
+                } catch (error) {
+                  toast({ title: "Ошибка", description: "Ошибка при сохранении", variant: "destructive" });
+                } finally {
+                  setUpdating(false);
+                }
+              }}
+              disabled={updating}
+            >
+              Сохранить заметки
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

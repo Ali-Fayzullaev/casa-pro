@@ -147,7 +147,13 @@ publicFormsRouter.post('/:id/submit', async (req: Request, res: Response): Promi
                 amount: parseFloat(budgetVal) || 0, // Map Budget
                 commission: 0,
                 casaFee: 0,
-                notes: `Заявка с сайта (${form.title})\n${isFallback ? '[WARNING: No brokers assigned to form, sent to Admin]\n' : ''}\n${fullNoteContent}`, // Full dump + Specific notes
+                notes: `Заявка с сайта (${form.title})
+[FORM_ID: ${form.id}]
+${isFallback ? '[WARNING: No brokers assigned to form, sent to Admin]\n' : ''}
+${brokerId ? `[PERSONAL LINK - Broker ID: ${brokerId}]` : form.distributionType === 'ROUND_ROBIN' ? '[AUTO-DISTRIBUTED via Round Robin]' : '[MANUAL ASSIGNMENT]'}
+
+Данные формы:
+${fullNoteContent}`,
                 source: brokerId ? 'FORM_PERSONAL' : 'BOT_DISTRIBUTION',
                 stage: DealStage.CONSULTATION,
                 status: DealStatus.IN_PROGRESS,
@@ -169,8 +175,16 @@ publicFormsRouter.post('/:id/submit', async (req: Request, res: Response): Promi
 
         res.json({ success: true, message: 'Application received', dealId: deal.id });
 
-    } catch (error) {
-        console.error('Submit form error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+    } catch (error: any) {
+        console.error('Submit form error - DETAILED:', {
+            error: error.message,
+            stack: error.stack,
+            formId: req.params.id,
+            body: req.body
+        });
+        res.status(500).json({
+            error: 'Internal server error',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });

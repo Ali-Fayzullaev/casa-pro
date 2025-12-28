@@ -12,10 +12,21 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Trash2 } from "lucide-react";
 import { getApiUrl, getAuthHeaders } from "@/lib/api-config";
 import { toast } from "sonner";
 import { Deal } from "./types";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function DealsTable() {
     const [deals, setDeals] = useState<Deal[]>([]);
@@ -39,6 +50,24 @@ export function DealsTable() {
             toast.error("Не удалось загрузить список сделок");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        try {
+            const res = await fetch(getApiUrl(`/deals/${id}`), {
+                method: 'DELETE',
+                headers: getAuthHeaders(),
+            });
+
+            if (res.ok) {
+                toast.success('Сделка удалена');
+                fetchDeals(); // Refresh list
+            } else {
+                toast.error('Не удалось удалить сделку (нужны права админа)');
+            }
+        } catch (error) {
+            toast.error('Ошибка при удалении');
         }
     };
 
@@ -114,6 +143,29 @@ export function DealsTable() {
                                 </TableCell>
                                 <TableCell>
                                     {new Date(deal.updatedAt).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="hover:bg-destructive/10 hover:text-destructive">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Удалить сделку?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Это действие необратимо. Сделка будет удалена из системы.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDelete(deal.id)} className="bg-destructive hover:bg-destructive/90">
+                                                    Удалить
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </TableCell>
                             </TableRow>
                         ))}

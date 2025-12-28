@@ -145,7 +145,18 @@ dealsRouter.put('/:id', async (req: Request, res: Response): Promise<void> => {
       updateData.completedAt = new Date();
     }
 
-    // Log stage change if needed (future feature)
+    // Check if broker changed and notify
+    if (updateData.brokerId && updateData.brokerId !== existing.brokerId) {
+      await prisma.notification.create({
+        data: {
+          userId: updateData.brokerId,
+          type: 'DEAL',
+          title: 'Вам назначена сделка',
+          message: `Вы назначены ответственным за сделку #${existing.id.slice(-4)}`,
+          isRead: false
+        }
+      });
+    }
 
     const updated = await prisma.deal.update({
       where: { id: req.params.id },
@@ -164,6 +175,25 @@ dealsRouter.put('/:id', async (req: Request, res: Response): Promise<void> => {
     }
     console.error('Update deal error:', error);
     res.status(500).json({ error: 'Ошибка обновления сделки' });
+  }
+});
+
+// DELETE /api/deals/:id - удалить сделку (Admin only)
+dealsRouter.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (req.user?.role !== 'ADMIN') {
+      res.status(403).json({ error: 'Только администратор может удалять сделки' });
+      return;
+    }
+
+    await prisma.deal.delete({
+      where: { id: req.params.id }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete deal error:', error);
+    res.status(500).json({ error: 'Ошибка удаления сделки' });
   }
 });
 

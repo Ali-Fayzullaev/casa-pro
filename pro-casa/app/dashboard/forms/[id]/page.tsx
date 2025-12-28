@@ -165,18 +165,100 @@ export default function EditFormPage({ params }: { params: Promise<{ id: string 
                             />
                         </div>
 
-                        <div className="flex items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                                <Label className="text-base">Авто-распределение (Round Robin)</Label>
-                                <div className="text-sm text-muted-foreground">
-                                    Система по очереди назначает заявки.
+
+                        {/* Auto-distribution toggle - only show for ROUND_ROBIN forms */}
+                        {distributionType === 'ROUND_ROBIN' && (
+                            <div className="flex items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                    <Label className="text-base">Авто-распределение (Round Robin)</Label>
+                                    <div className="text-sm text-muted-foreground">
+                                        Система по очереди назначает заявки.
+                                    </div>
+                                </div>
+                                <Switch
+                                    checked={true}
+                                    onCheckedChange={(checked) => setDistributionType(checked ? 'ROUND_ROBIN' : 'MANUAL')}
+                                />
+                            </div>
+                        )}
+
+                        {distributionType === 'MANUAL' && (
+                            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                                <div className="text-sm text-blue-900">
+                                    <strong>Персональная форма:</strong> Заявки будут назначаться только выбранным менеджерам вручную.
                                 </div>
                             </div>
-                            <Switch
-                                checked={distributionType === 'ROUND_ROBIN'}
-                                onCheckedChange={(checked) => setDistributionType(checked ? 'ROUND_ROBIN' : 'MANUAL')}
-                            />
-                        </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Field Editor */}
+                <Card className="md:col-span-2">
+                    <CardHeader>
+                        <CardTitle>Поля формы</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {fields.map((field, index) => (
+                            <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
+                                <div className="flex-1 space-y-2">
+                                    <Input
+                                        placeholder="Название поля"
+                                        value={field.label}
+                                        onChange={(e) => {
+                                            const newFields = [...fields];
+                                            newFields[index].label = e.target.value;
+                                            setFields(newFields);
+                                        }}
+                                    />
+                                </div>
+                                <div className="w-32">
+                                    <select
+                                        className="w-full px-3 py-2 border rounded-md"
+                                        value={field.type}
+                                        onChange={(e) => {
+                                            const newFields = [...fields];
+                                            newFields[index].type = e.target.value;
+                                            setFields(newFields);
+                                        }}
+                                    >
+                                        <option value="text">Текст</option>
+                                        <option value="tel">Телефон</option>
+                                        <option value="email">Email</option>
+                                        <option value="number">Число</option>
+                                    </select>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Label className="text-sm">Обязательно</Label>
+                                    <Switch
+                                        checked={field.required}
+                                        onCheckedChange={(checked) => {
+                                            const newFields = [...fields];
+                                            newFields[index].required = checked;
+                                            setFields(newFields);
+                                        }}
+                                    />
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                        const newFields = fields.filter((_, i) => i !== index);
+                                        setFields(newFields);
+                                    }}
+                                >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                            </div>
+                        ))}
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setFields([...fields, { label: '', type: 'text', required: false }]);
+                            }}
+                            className="w-full"
+                        >
+                            + Добавить поле
+                        </Button>
                     </CardContent>
                 </Card>
 

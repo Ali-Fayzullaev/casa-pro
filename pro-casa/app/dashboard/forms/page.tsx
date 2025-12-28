@@ -30,7 +30,10 @@ export default function FormsListPage() {
         if (userStr) {
             const u = JSON.parse(userStr);
             setUserRole(u.role);
-            setUserId(u.userId || u.id);
+            // User object has 'id' field, not 'userId' (userId is only in JWT token)
+            const id = u.id;
+            setUserId(id);
+            console.log('User ID extracted:', id, 'Full user:', u); // Debug log
         }
         fetchForms();
     }, []);
@@ -51,17 +54,29 @@ export default function FormsListPage() {
         }
     };
 
-    // Filter for brokers client-side
+    // Filter for brokers: only show MANUAL (personal) forms they're assigned to
+    // ROUND_ROBIN (automatic) forms are completely hidden from brokers
     const visibleForms = userRole === 'BROKER'
-        ? forms.filter(f => f.brokers.some(b => b.id === userId))
+        ? forms.filter(f => f.distributionType === 'MANUAL' && f.brokers.some(b => b.id === userId))
         : forms;
 
     const copyLink = (id: string, brokerId?: string) => {
         let url = `${window.location.origin}/forms/${id}`;
-        if (brokerId) url += `?brokerId=${brokerId}`;
+        if (brokerId) {
+            url += `?brokerId=${brokerId}`;
+            console.log('Copying personal link with brokerId:', brokerId); // Debug log
+        }
 
         navigator.clipboard.writeText(url);
-        toast.success(brokerId ? "Персональная ссылка скопирована" : "Общая ссылка скопирована");
+
+        // Show appropriate toast message
+        if (brokerId) {
+            toast.success("Персональная ссылка скопирована", {
+                description: "Заявки с этой ссылки будут закреплены за вами"
+            });
+        } else {
+            toast.success("Общая ссылка скопирована");
+        }
     };
 
     return (
@@ -94,44 +109,55 @@ export default function FormsListPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-4">
-                                <div className="flex flex-col gap-2">
-                                    <span className="text-xs font-medium text-muted-foreground uppercase">Ваши ссылки</span>
-
-                                    {/* Admin Action Buttons */}
-                                    {userRole === 'ADMIN' && (
-                                        <div className="flex gap-2">
-                                            <Button variant="outline" size="sm" className="flex-1 justify-start" onClick={() => copyLink(form.id)}>
-                                                <Copy className="mr-2 h-3 w-3" /> Общая
+                            <div className="space-y-2">
+                                {/* Automatic (ROUND_ROBIN) Forms */}
+                                {form.distributionType === 'ROUND_ROBIN' && userRole === 'ADMIN' && (
+                                    <>
+                                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => copyLink(form.id)}>
+                                            <Copy className="mr-2 h-3 w-3" /> Общая ссылка
+                                        </Button>
+                                        <Link href={`/dashboard/forms/${form.id}`} className="w-full">
+                                            <Button variant="secondary" size="sm" className="w-full justify-start">
+                                                <ExternalLink className="mr-2 h-3 w-3" /> Редактировать
                                             </Button>
-                                            <Link href={`/dashboard/forms/${form.id}`} className="flex-1">
-                                                <Button variant="outline" size="sm" className="w-full justify-start">
-                                                    <ExternalLink className="mr-2 h-3 w-3" /> Ред.
+                                        </Link>
+                                    </>
+                                )}
+
+                                {/* Personal (MANUAL) Forms */}
+                                {form.distributionType === 'MANUAL' && (
+                                    <>
+                                        {userRole === 'ADMIN' && (
+                                            <Link href={`/dashboard/forms/${form.id}`} className="w-full">
+                                                <Button variant="secondary" size="sm" className="w-full justify-start">
+                                                    <ExternalLink className="mr-2 h-3 w-3" /> Редактировать
                                                 </Button>
                                             </Link>
-                                        </div>
-                                    )}
+                                        )}
+                                        {userRole === 'BROKER' && (
+                                            <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => copyLink(form.id, userId)}>
+                                                <Copy className="mr-2 h-3 w-3" /> Моя персональная ссылка
+                                            </Button>
+                                        )}
+                                    </>
+                                )}
 
-                                    {/* Broker sees Personal Link */}
-                                    {(userRole === 'BROKER' || userRole === 'ADMIN') && (
-                                        <Button variant="secondary" size="sm" className="justify-start w-full" onClick={() => copyLink(form.id, userId)}>
-                                            <Copy className="mr-2 h-3 w-3" /> {userRole === 'ADMIN' ? 'Пример персональной' : 'Персональная ссылка'}
-                                        </Button>
-                                    )}
-
-                                    <Link href={`/forms/${form.id}?brokerId=${userId}`} target="_blank" className="w-full">
-                                        <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground">
-                                            <ExternalLink className="mr-2 h-3 w-3" /> Просмотр
+                                {/* Statistics Link (Admin only) */}
+                                {userRole === 'ADMIN' && (
+                                    <Link href={`/dashboard/forms/${form.id}/stats`} className="w-full">
+                                        <Button variant="outline" size="sm" className="w-full justify-start mt-2">
+                                            <svg className="mr-2 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                            </svg>
+                                            Статистика
                                         </Button>
                                     </Link>
-                                </div>
+                                )}
 
+                                {/* Broker Count (moved participants to edit page) */}
                                 {userRole === 'ADMIN' && form.brokers.length > 0 && (
-                                    <div className="flex flex-col gap-2 pt-2 border-t">
-                                        <span className="text-xs font-medium text-muted-foreground uppercase">Участники ({form.brokers.length})</span>
-                                        <div className="text-sm truncate">
-                                            {form.brokers.map(b => `${b.firstName} ${b.lastName}`).join(', ')}
-                                        </div>
+                                    <div className="text-xs text-muted-foreground pt-2 border-t">
+                                        {form.brokers.length} {form.brokers.length === 1 ? 'участник' : 'участников'}
                                     </div>
                                 )}
                             </div>

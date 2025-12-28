@@ -17,6 +17,14 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DealCardProps {
     deal: Deal;
@@ -75,7 +83,7 @@ export function DealCard({ deal }: DealCardProps) {
                 {/* Header: Title + Amount */}
                 <div className="flex justify-between items-start gap-2">
                     <div className="font-semibold text-sm leading-tight line-clamp-2">
-                        {deal.title}
+                        {deal.notes || `Сделка #${deal.id.slice(-4)}`}
                     </div>
                 </div>
 
@@ -85,6 +93,13 @@ export function DealCard({ deal }: DealCardProps) {
 
                 {/* Details */}
                 <div className="space-y-1.5 pt-1">
+                    {/* Broker (Admin View) */}
+                    {(deal as any).broker && (
+                        <div className="flex items-center text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded w-fit gap-1.5 mb-1">
+                            <span className="font-medium">{(deal as any).broker.firstName} {(deal as any).broker.lastName}</span>
+                        </div>
+                    )}
+
                     {/* Client */}
                     {deal.client && (
                         <div className="flex items-center text-xs text-muted-foreground gap-2">
@@ -121,8 +136,26 @@ export function DealCard({ deal }: DealCardProps) {
                         </div>
                     </div>
 
-                    {/* More actions placeholder */}
-                    <MoreHorizontal className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                    {/* More actions */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 -mr-1 text-muted-foreground hover:text-primary"
+                                onPointerDown={(e: any) => e.stopPropagation()} // Prevent drag start
+                            >
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" onPointerDown={(e: any) => e.stopPropagation()}>
+                            <DropdownMenuItem asChild>
+                                <Link href={`/dashboard/deals/${deal.id}`} className="cursor-pointer">
+                                    Подробнее
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </CardContent>
         </Card>

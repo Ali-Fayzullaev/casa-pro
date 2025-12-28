@@ -70,7 +70,12 @@ export default function PublicFormPage() {
         setSubmitting(true);
 
         try {
-            const payload = { ...formData, brokerId };
+            const payload: any = { ...formData };
+            // Only include brokerId if it's actually present and valid (not null/undefined/string 'undefined')
+            if (brokerId && brokerId !== 'undefined' && brokerId !== 'null') {
+                payload.brokerId = brokerId;
+            }
+
             const res = await fetch(`/api/public/forms/${id}/submit`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
