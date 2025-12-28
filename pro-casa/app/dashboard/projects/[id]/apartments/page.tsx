@@ -37,6 +37,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { getApiUrl } from '@/lib/api-config';
 
 interface Apartment {
   id: string;
@@ -69,13 +70,13 @@ export default function ApartmentsGridPage() {
   const [apartmentToDelete, setApartmentToDelete] = useState<Apartment | null>(null);
   const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
-  
+
   // Получаем роль пользователя
-  const user = typeof window !== 'undefined' 
+  const user = typeof window !== 'undefined'
     ? JSON.parse(localStorage.getItem('user') || '{}')
     : {};
   const canAddApartment = user.role === 'DEVELOPER' || user.role === 'ADMIN';
-  
+
   // Фильтры
   const [roomsFilter, setRoomsFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -92,10 +93,10 @@ export default function ApartmentsGridPage() {
   const fetchProjectAndApartments = async () => {
     try {
       const token = localStorage.getItem('token');
-      
+
       // Получаем проект
       const projectRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${params.id}`,
+        getApiUrl(`/projects/${params.id}`),
         {
           headers: { 'Authorization': `Bearer ${token}` },
         }
@@ -105,7 +106,7 @@ export default function ApartmentsGridPage() {
 
       // Получаем квартиры
       const apartmentsRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/apartments?projectId=${params.id}&limit=1000`,
+        getApiUrl(`/apartments?projectId=${params.id}&limit=1000`),
         {
           headers: { 'Authorization': `Bearer ${token}` },
         }
@@ -165,12 +166,12 @@ export default function ApartmentsGridPage() {
 
   const handleDeleteApartment = async () => {
     if (!apartmentToDelete) return;
-    
+
     setDeleting(true);
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/apartments/${apartmentToDelete.id}`,
+        getApiUrl(`/apartments/${apartmentToDelete.id}`),
         {
           method: 'DELETE',
           headers: {
@@ -188,12 +189,12 @@ export default function ApartmentsGridPage() {
         title: 'Успешно',
         description: 'Квартира удалена',
       });
-      
+
       // Закрыть диалог с деталями если удаленная квартира открыта
       if (selectedApartment?.id === apartmentToDelete.id) {
         setSelectedApartment(null);
       }
-      
+
       // Обновить список квартир
       fetchProjectAndApartments();
     } catch (error: any) {
@@ -447,8 +448,8 @@ export default function ApartmentsGridPage() {
                     selectedApartment.status === 'AVAILABLE'
                       ? 'bg-green-500'
                       : selectedApartment.status === 'RESERVED'
-                      ? 'bg-yellow-500'
-                      : 'bg-gray-500'
+                        ? 'bg-yellow-500'
+                        : 'bg-gray-500'
                   }
                 >
                   {getStatusLabel(selectedApartment.status)}
@@ -457,7 +458,7 @@ export default function ApartmentsGridPage() {
 
               <div className="flex gap-2 pt-4">
                 {selectedApartment.status === 'AVAILABLE' && user.role !== 'DEVELOPER' && (
-                  <Button 
+                  <Button
                     className="flex-1"
                     onClick={() => {
                       router.push(`/dashboard/projects/${params.id}/apartments/${selectedApartment.id}/book`);
@@ -468,8 +469,8 @@ export default function ApartmentsGridPage() {
                 )}
                 {canAddApartment && (
                   <>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="flex-1"
                       onClick={() => {
                         router.push(`/dashboard/projects/${params.id}/apartments/${selectedApartment.id}/edit`);
@@ -477,8 +478,8 @@ export default function ApartmentsGridPage() {
                     >
                       Редактировать
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => {
                         setApartmentToDelete(selectedApartment);
                         setShowDeleteDialog(true);

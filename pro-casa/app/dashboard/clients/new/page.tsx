@@ -21,12 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { getApiUrl } from '@/lib/api-config';
 
 export default function NewClientPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   const [formData, setFormData] = useState({
     iin: '',
     firstName: '',
@@ -50,8 +51,8 @@ export default function NewClientPage() {
 
     try {
       const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/clients`, {
+
+      const response = await fetch(getApiUrl('/clients'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

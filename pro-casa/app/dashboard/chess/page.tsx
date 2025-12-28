@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { getApiUrl } from '@/lib/api-config';
 
 interface Project {
   id: string;
@@ -48,7 +49,7 @@ export default function ChessboardSelectPage() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects`,
+        getApiUrl('/projects'),
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -124,7 +125,7 @@ export default function ChessboardSelectPage() {
                     <span className="text-muted-foreground">Всего квартир:</span>
                     <span className="font-medium ml-2">{project.apartmentStats.total}</span>
                   </div>
-                  
+
                   <div className="flex gap-2 flex-wrap">
                     <Badge variant="outline" className="bg-green-50">
                       Доступно: {project.apartmentStats.available}

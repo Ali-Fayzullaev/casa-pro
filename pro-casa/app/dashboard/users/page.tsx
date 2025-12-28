@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { getApiUrl } from '@/lib/api-config';
 
 interface User {
   id: string;
@@ -60,8 +61,8 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/admin/users`, {
+
+      const response = await fetch(getApiUrl('/admin/users'), {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -99,8 +100,8 @@ export default function UsersPage() {
 
     try {
       const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/admin/users/${deleteUserId}`, {
+
+      const response = await fetch(getApiUrl(`/admin/users/${deleteUserId}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -217,7 +218,7 @@ export default function UsersPage() {
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                     <Users className="h-6 w-6 text-primary" />
                   </div>
-                  
+
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium">
@@ -232,7 +233,7 @@ export default function UsersPage() {
                       <p className="text-sm text-muted-foreground">{user.phone}</p>
                     )}
                   </div>
-                  
+
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">
                       Создан: {formatDate(user.createdAt)}

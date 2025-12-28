@@ -21,12 +21,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { getApiUrl } from '@/lib/api-config';
 
 export default function NewUserPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -38,7 +39,7 @@ export default function NewUserPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.password.length < 6) {
       toast({
         title: '❌ Ошибка',
@@ -52,8 +53,8 @@ export default function NewUserPage() {
 
     try {
       const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/admin/users`, {
+
+      const response = await fetch(getApiUrl('/admin/users'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

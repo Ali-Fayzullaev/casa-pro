@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { FileUpload } from '@/components/file-upload';
-import { API_URL } from '@/lib/config';
+import { getApiUrl } from '@/lib/api-config';
 
 interface Project {
   name: string;
@@ -41,7 +41,7 @@ export default function EditProjectPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  
+
   const [formData, setFormData] = useState<Project>({
     name: '',
     description: '',
@@ -59,9 +59,9 @@ export default function EditProjectPage() {
   const fetchProject = async () => {
     try {
       const token = localStorage.getItem('token');
-      
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${params.id}`,
+        getApiUrl(`/projects/${params.id}`),
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -72,7 +72,7 @@ export default function EditProjectPage() {
       if (!response.ok) throw new Error('Failed to fetch project');
 
       const data = await response.json();
-      
+
       // Форматируем дату для input[type="date"]
       let deliveryDate = '';
       if (data.deliveryDate) {
@@ -103,14 +103,14 @@ export default function EditProjectPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     setSubmitting(true);
 
     try {
       const token = localStorage.getItem('token');
-      
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${params.id}`,
+        getApiUrl(`/projects/${params.id}`),
         {
           method: 'PUT',
           headers: {

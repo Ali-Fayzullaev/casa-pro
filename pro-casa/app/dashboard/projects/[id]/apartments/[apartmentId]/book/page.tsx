@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { getApiUrl } from '@/lib/api-config';
 
 interface Client {
   id: string;
@@ -65,7 +66,7 @@ export default function BookApartmentPage() {
 
       // Получаем квартиру
       const aptRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/apartments/${params.apartmentId}`,
+        getApiUrl(`/apartments/${params.apartmentId}`),
         {
           headers: { 'Authorization': `Bearer ${token}` },
         }
@@ -75,7 +76,7 @@ export default function BookApartmentPage() {
 
       // Получаем клиентов брокера
       const clientsRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/clients`,
+        getApiUrl('/clients'),
         {
           headers: { 'Authorization': `Bearer ${token}` },
         }
@@ -91,7 +92,7 @@ export default function BookApartmentPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!clientId) {
       setError('Выберите клиента');
       return;
@@ -102,12 +103,12 @@ export default function BookApartmentPage() {
 
     try {
       const token = localStorage.getItem('token');
-      
+
       // Рассчитываем время истечения
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + parseInt(expiresInHours));
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings`, {
+      const response = await fetch(getApiUrl('/bookings'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -298,8 +299,8 @@ export default function BookApartmentPage() {
                 >
                   Отмена
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={submitting || !clientId}
                   className="flex-1"
                 >

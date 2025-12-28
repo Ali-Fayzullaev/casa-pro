@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { getApiUrl } from '@/lib/api-config';
 
 interface Analytics {
   clients: {
@@ -61,16 +62,16 @@ export default function AnalyticsPage() {
       const token = localStorage.getItem('token');
 
       const [clientsRes, projectsRes, apartmentsRes, bookingsRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/clients`, {
+        fetch(getApiUrl('/clients'), {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects`, {
+        fetch(getApiUrl('/projects'), {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/apartments`, {
+        fetch(getApiUrl('/apartments'), {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings`, {
+        fetch(getApiUrl('/bookings'), {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
       ]);
@@ -97,7 +98,7 @@ export default function AnalyticsPage() {
       // Расчет статистики проектов
       const projectStats = {
         total: projects.length,
-        totalApartments: projects.reduce((sum: number, p: any) => 
+        totalApartments: projects.reduce((sum: number, p: any) =>
           sum + (p.apartmentStats?.total || 0), 0
         ),
       };
@@ -121,7 +122,7 @@ export default function AnalyticsPage() {
 
       // Расчет доходов
       const soldApartments = apartments.filter((a: any) => a.status === 'SOLD');
-      const totalSales = soldApartments.reduce((sum: number, a: any) => 
+      const totalSales = soldApartments.reduce((sum: number, a: any) =>
         sum + parseFloat(a.price || 0), 0
       );
       const avgPrice = soldApartments.length > 0 ? totalSales / soldApartments.length : 0;

@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { getApiUrl } from '@/lib/api-config';
 
 interface ClientFormData {
   iin: string;
@@ -41,7 +42,7 @@ export default function EditClientPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  
+
   const [formData, setFormData] = useState<ClientFormData>({
     iin: '',
     firstName: '',
@@ -62,7 +63,7 @@ export default function EditClientPage() {
   const fetchClient = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/clients/${params.id}`, {
+      const response = await fetch(getApiUrl(`/clients/${params.id}`), {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -105,8 +106,8 @@ export default function EditClientPage() {
 
     try {
       const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/clients/${params.id}`, {
+
+      const response = await fetch(getApiUrl(`/clients/${params.id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

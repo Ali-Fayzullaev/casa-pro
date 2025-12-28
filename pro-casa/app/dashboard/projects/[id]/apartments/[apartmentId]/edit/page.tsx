@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { getApiUrl } from '@/lib/api-config';
 
 interface Apartment {
   id: string;
@@ -52,7 +53,7 @@ export default function EditApartmentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     number: '',
     floor: '',
@@ -69,9 +70,9 @@ export default function EditApartmentPage() {
   const fetchApartment = async () => {
     try {
       const token = localStorage.getItem('token');
-      
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/apartments/${params.apartmentId}`,
+        getApiUrl(`/apartments/${params.apartmentId}`),
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -82,7 +83,7 @@ export default function EditApartmentPage() {
       if (!response.ok) throw new Error('Failed to fetch apartment');
 
       const apartment: Apartment = await response.json();
-      
+
       setFormData({
         number: apartment.number,
         floor: apartment.floor.toString(),
@@ -105,14 +106,14 @@ export default function EditApartmentPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     setSubmitting(true);
 
     try {
       const token = localStorage.getItem('token');
-      
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/apartments/${params.apartmentId}`,
+        getApiUrl(`/apartments/${params.apartmentId}`),
         {
           method: 'PUT',
           headers: {
@@ -158,9 +159,9 @@ export default function EditApartmentPage() {
 
     try {
       const token = localStorage.getItem('token');
-      
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/apartments/${params.apartmentId}`,
+        getApiUrl(`/apartments/${params.apartmentId}`),
         {
           method: 'DELETE',
           headers: {

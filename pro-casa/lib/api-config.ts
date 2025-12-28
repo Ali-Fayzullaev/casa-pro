@@ -1,15 +1,14 @@
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+export const API_BASE_URL = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL}/api`;
 
 export const getApiUrl = (path: string) => {
     // If path is absolute (http...), return as is
     if (path.startsWith('http')) return path;
 
-    // Clean path to ensure no double slashes
+    // Clean path to ensure no double slashes and no leading slash
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
 
-    // If API_BASE_URL is absolute, join normally
-    // If API_BASE_URL is relative (/api), just join
     return `${API_BASE_URL}/${cleanPath}`;
 };
 
