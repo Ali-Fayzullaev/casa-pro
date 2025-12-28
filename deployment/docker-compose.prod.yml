@@ -61,7 +61,7 @@ services:
       context: ../pro-casa
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: https://pro.casa.kz/api
+        NEXT_PUBLIC_API_URL: https://pro.casa.kz
     container_name: pro-casa-frontend
     restart: always
     environment:
