@@ -28,9 +28,10 @@ import {
 
 interface DealCardProps {
     deal: Deal;
+    onDelete?: () => void;
 }
 
-export function DealCard({ deal }: DealCardProps) {
+export function DealCard({ deal, onDelete }: DealCardProps) {
     const {
         attributes,
         listeners,
@@ -153,6 +154,12 @@ export function DealCard({ deal }: DealCardProps) {
                                 <Link href={`/dashboard/deals/${deal.id}`} className="cursor-pointer">
                                     Подробнее
                                 </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => onDelete?.()}
+                                className="text-red-600 focus:text-red-600 cursor-pointer"
+                            >
+                                Удалить
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

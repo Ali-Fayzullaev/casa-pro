@@ -15,9 +15,10 @@ interface KanbanColumnProps {
     deals: Deal[];
     color?: string;
     onQuickAdd?: (title: string, amount: string, phone: string, notes: string) => void;
+    onDeleteDeal?: (id: string) => void;
 }
 
-export function KanbanColumn({ stage, title, deals, color = "bg-gray-100", onQuickAdd }: KanbanColumnProps) {
+export function KanbanColumn({ stage, title, deals, color = "bg-gray-100", onQuickAdd, onDeleteDeal }: KanbanColumnProps) {
     const { setNodeRef } = useDroppable({
         id: stage,
         data: {
@@ -136,7 +137,7 @@ export function KanbanColumn({ stage, title, deals, color = "bg-gray-100", onQui
 
                 <SortableContext items={deals.map((d) => d.id)}>
                     {deals.map((deal) => (
-                        <DealCard key={deal.id} deal={deal} />
+                        <DealCard key={deal.id} deal={deal} onDelete={() => onDeleteDeal?.(deal.id)} />
                     ))}
                 </SortableContext>
             </div>

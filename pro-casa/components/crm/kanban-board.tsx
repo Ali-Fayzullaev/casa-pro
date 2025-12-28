@@ -165,6 +165,28 @@ export function KanbanBoard({ initialDeals = [] }: KanbanBoardProps) {
         }
     };
 
+    const handleDeleteDeal = async (dealId: string) => {
+        if (!confirm("Вы уверены, что хотите удалить эту сделку?")) return;
+
+        try {
+            const res = await fetch(getApiUrl(`/deals/${dealId}`), {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Ошибка удаления");
+            }
+
+            toast.success("Сделка удалена");
+            setDeals(deals.filter(d => d.id !== dealId));
+        } catch (error: any) {
+            console.error('Delete Deal Error:', error);
+            toast.error(error.message || "Ошибка удаления");
+        }
+    };
+
     const reorderDeals = async (items: { id: string, order: number, stage: string }[]) => {
         try {
             await fetch(getApiUrl('/deals/reorder'), {
@@ -335,6 +357,7 @@ export function KanbanBoard({ initialDeals = [] }: KanbanBoardProps) {
                             color={col.color}
                             deals={filteredDeals.filter(d => d.stage === col.id)}
                             onQuickAdd={(title, amount, phone, notes) => handleCreateDeal(col.id, title, amount, phone, notes)}
+                            onDeleteDeal={handleDeleteDeal}
                         />
                     ))}
                 </div>

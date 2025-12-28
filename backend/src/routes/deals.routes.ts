@@ -178,12 +178,21 @@ dealsRouter.put('/:id', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// DELETE /api/deals/:id - удалить сделку (Admin only)
+// DELETE /api/deals/:id - удалить сделку
 dealsRouter.delete('/:id', async (req: Request, res: Response): Promise<void> => {
   try {
-    if (req.user?.role !== 'ADMIN') {
-      res.status(403).json({ error: 'Только администратор может удалять сделки' });
+    const existing = await prisma.deal.findUnique({ where: { id: req.params.id } });
+    if (!existing) {
+      res.status(404).json({ error: 'Сделка не найдена' });
       return;
+    }
+
+    // Admin can delete anything, Broker can only delete their own
+    if (req.user?.role !== 'ADMIN') {
+      if (existing.brokerId !== req.user?.userId) {
+        res.status(403).json({ error: 'Вы не можете удалить эту сделку' });
+        return;
+      }
     }
 
     await prisma.deal.delete({
