@@ -1,97 +1,103 @@
-# Руководство по развертыванию Casa PRO v1.2 (pro.casa.kz)
+# 🚀 Полное Руководство по Деплою (pro.casa.kz)
 
-Этот документ описывает процесс развертывания проекта на боевой сервер с доменом `pro.casa.kz`.
+Следуйте этим шагам строго по порядку на вашем сервере.
 
-## Предварительные требования
-- Сервер с Ubuntu (или другой Linux).
-- Установленный Docker и Docker Compose (скрипт `deploy_scripts/server_setup.sh` делает это).
-- Домен `pro.casa.kz`, направленный на IP адрес сервера (A-запись).
+## Шаг 1: Подготовка файлов
 
-## 1. Подготовка на сервере
-
-1. Клонируйте репозиторий:
+1. **Зайдите на сервер** и перейдите в папку проекта:
    ```bash
-   git clone https://github.com/AGGIB/pro-casa.git
-   cd pro-casa
-   ```
-
-2. Создайте файл `.env` в папке `deployment` (или в корне, но запускать будем из `deployment`):
-   ```bash
+   cd ~/pro-casa
+   git pull origin main
    cd deployment
-   nano .env
    ```
 
-   **Пример содержимого .env:**
-   ```env
-   # Database
+2. **Создайте файл конфигурации `.env`**:
+   Скопируйте команду ниже целиком и вставьте в терминал (это создаст файл с нужными настройками):
+
+   ```bash
+   cat <<EOF > .env
+   # --- Database ---
    POSTGRES_USER=pro_casa_admin
-   POSTGRES_PASSWORD=SlojniyParolDB2025!
+   POSTGRES_PASSWORD=SecureValut_2025_Pass!
+   POSTGRES_DB=pro_casa_db
    
-   # JWT
-   JWT_SECRET=SuperSecretKeyForJWT_ChangeMe!
+   # --- Backend Security ---
+   JWT_SECRET=$(openssl rand -hex 32)
+   CORS_ORIGIN=https://pro.casa.kz
+   NODE_ENV=production
+   PORT=3001
    
-   # MinIO
+   # --- MinIO (Файловое хранилище) ---
    MINIO_ROOT_USER=minio_admin
-   MINIO_ROOT_PASSWORD=MinioSecretPassword2025!
+   MINIO_ROOT_PASSWORD=Minio_STORAGE_2025!
+   MINIO_ENDPOINT=minio
+   MINIO_BUCKET=pro-casa-files
+   
+   # --- Frontend ---
+   NEXT_PUBLIC_API_URL=https://pro.casa.kz/api
+   EOF
    ```
 
-## 2. Запуск (Первый раз - без SSL)
+## Шаг 2: Проверка DNS
 
-По умолчанию `nginx.conf` настроен на работу по HTTP (порт 80) и перенаправление на HTTPS. Но так как сертификатов еще нет, Nginx может не стартовать, если включен SSL блок.
-*В текущей конфигурации я оставил включенным HTTP и закомментировал SSL сертификаты, чтобы вы могли сначала получить их.*
+**ВАЖНО:** Перед продолжением убедитесь, что вы создали **A-запись** у регистратора домена.
+- **Host:** `@` (или `pro.casa.kz`)
+- **IP:** Ваш IP адрес сервера (тот же, куда вы подключены по SSH).
 
-1. Запустите контейнеры:
+*Если вы только что создали запись, подождите 5-10 минут.*
+
+## Шаг 3: Чистый запуск (HTTP)
+
+1. Очистите старые контейнеры во избежание конфликтов:
+   ```bash
+   docker rm -f pro-casa-frontend pro-casa-backend pro-casa-db pro-casa-minio pro-casa-nginx pro-casa-certbot pro-casa-minio-init || true
+   ```
+
+2. Запустите проект:
    ```bash
    docker compose -f docker-compose.prod.yml up -d --build
    ```
 
-2. Проверьте статус:
-   ```bash
-   docker compose -f docker-compose.prod.yml ps
-   ```
+3. Проверьте, что сайт открывается по адресу **http://pro.casa.kz** (может быть "Небезопасно", это нормально).
 
-3. Теперь сайт должен быть доступен по `http://pro.casa.kz`.
+## Шаг 4: Получение SSL сертификата
 
-## 3. Настройка SSL (HTTPS)
-
-Мы используем Certbot для получения бесплатного сертификата Let's Encrypt.
-
-1. Запустите получение сертификата (Nginx должен работать на 80 порту!):
+1. Запустите Certbot:
    ```bash
    docker compose -f docker-compose.prod.yml run --rm certbot
    ```
-   Следуйте инструкциям (введите email, согласитесь с условиями).
+   *Следуйте инструкциям: введите Email -> Agree (A) -> No Share (N).*
 
-2. После успешного получения сертификатов, они появятся в папке `deployment/certbot/conf`.
+   **Если ошибка `NXDOMAIN`:** Значит DNS еще не обновился. Подождите 15 минут и попробуйте снова.
 
-3. **Включите SSL в Nginx:**
-   Отредактируйте `nginx.conf`:
+## Шаг 5: Включение HTTPS
+
+Только после успешного получения сертификата!
+
+1. Откройте конфиг Nginx:
    ```bash
    nano nginx.conf
    ```
-   Раскомментируйте строки в блоке `server { listen 443 ssl; ... }`:
+
+2. **Раскомментируйте 2 строки** (уберите знак `#` в начале) в блоке `server { listen 443 ssl ... }`:
+   
+   *Было:*
+   ```nginx
+   # ssl_certificate /etc/letsencrypt/live/pro.casa.kz/fullchain.pem;
+   # ssl_certificate_key /etc/letsencrypt/live/pro.casa.kz/privkey.pem;
+   ```
+   
+   *Стало:*
    ```nginx
    ssl_certificate /etc/letsencrypt/live/pro.casa.kz/fullchain.pem;
    ssl_certificate_key /etc/letsencrypt/live/pro.casa.kz/privkey.pem;
    ```
 
-4. Перезапустите Nginx:
+3. Сохраните: `Ctrl+O`, `Enter`, `Ctrl+X`.
+
+4. Примените настройки:
    ```bash
    docker compose -f docker-compose.prod.yml restart nginx
    ```
 
-## 4. Обновление приложения
-
-Если вы внесли изменения в код и запушили в GitHub:
-
-1. Зайдите на сервер:
-   ```bash
-   cd pro-casa
-   git pull origin main
-   ```
-
-2. Пересоберите и перезапустите:
-   ```bash
-   cd deployment
-   docker compose -f docker-compose.prod.yml up -d --build
-   ```
+**Готово!** Ваш сайт доступен по https://pro.casa.kz 🚀

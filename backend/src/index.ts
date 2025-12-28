@@ -18,6 +18,8 @@ import { propertiesRouter } from './routes/properties.routes';
 import { dashboardRouter } from './routes/dashboard.routes';
 import { uploadRouter } from './routes/upload.routes';
 import { paymentsRouter } from './routes/payments.routes';
+import { formsRouter } from './routes/forms.routes';
+import { publicFormsRouter } from './routes/public-forms.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { initializeBucket } from './lib/minio';
 
@@ -28,7 +30,7 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : 'http://localhost:3000',
+  origin: true, // Allow any origin in development
   credentials: true,
 }));
 app.use(express.json());
@@ -57,6 +59,8 @@ app.use('/api/properties', propertiesRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/payments', paymentsRouter);
+app.use('/api/forms', formsRouter);
+app.use('/api/public/forms', publicFormsRouter);
 
 // Error handling
 app.use(errorHandler);
@@ -65,7 +69,7 @@ app.use(errorHandler);
 app.listen(PORT, async () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-  
+
   // Initialize MinIO bucket
   await initializeBucket();
 });

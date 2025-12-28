@@ -111,6 +111,13 @@ const menuItems: MenuSection[] = [
     url: "/dashboard/profile",
     roles: ["ADMIN", "BROKER", "DEVELOPER"],
   },
+  // 6. Формы (Admin)
+  {
+    title: "Формы",
+    icon: FileText,
+    url: "/dashboard/forms",
+    roles: ["ADMIN", "BROKER"],
+  },
 ]
 
 // Admin-only menu item
@@ -137,7 +144,7 @@ export function AppSidebar() {
     if (userData) {
       setUser(JSON.parse(userData))
     }
-    
+
     // Load saved open menus state
     const savedOpenMenus = localStorage.getItem("openMenus")
     if (savedOpenMenus) {

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware';
 import { prisma } from '../lib/prisma';
+import { DealStage, DealStatus } from '@prisma/client';
 
 export const dealsRouter = Router();
 dealsRouter.use(authenticate);
@@ -15,21 +16,25 @@ const createDealSchema = z.object({
   objectId: z.string().optional(),
   clientId: z.string().optional(),
   notes: z.string().optional(),
+  stage: z.nativeEnum(DealStage).optional(),
+  color: z.string().optional(),
 });
 
 const updateDealSchema = z.object({
   amount: z.number().positive().optional(),
   commission: z.number().min(0).optional(),
   casaFee: z.number().min(0).optional(),
-  status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+  status: z.nativeEnum(DealStatus).optional(),
+  stage: z.nativeEnum(DealStage).optional(),
+  color: z.string().optional(),
   notes: z.string().optional(),
 });
 
 // GET /api/deals - список сделок
 dealsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { status, page = '1', limit = '20' } = req.query;
-    
+    const { status, stage, page = '1', limit = '50' } = req.query;
+
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
@@ -37,13 +42,17 @@ dealsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
     const where: any = {};
     if (req.user?.role === 'BROKER') where.brokerId = req.user.userId;
     if (status) where.status = status;
+    if (stage) where.stage = stage;
 
     const [deals, total] = await Promise.all([
       prisma.deal.findMany({
         where,
         skip,
         take: limitNum,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [
+          { order: 'asc' },
+          { createdAt: 'desc' }
+        ],
         include: {
           broker: { select: { id: true, firstName: true, lastName: true } },
           client: { select: { id: true, firstName: true, lastName: true, phone: true } },
@@ -136,6 +145,8 @@ dealsRouter.put('/:id', async (req: Request, res: Response): Promise<void> => {
       updateData.completedAt = new Date();
     }
 
+    // Log stage change if needed (future feature)
+
     const updated = await prisma.deal.update({
       where: { id: req.params.id },
       data: updateData,
@@ -155,3 +166,4 @@ dealsRouter.put('/:id', async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ error: 'Ошибка обновления сделки' });
   }
 });
+

@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, ClientType, BuildingStatus, ApartmentStatus, BookingStatus, DealStatus } from '@prisma/client';
+import { PrismaClient, UserRole, ClientType, BuildingStatus, ApartmentStatus, BookingStatus, DealStatus, DealStage } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 import bcrypt from 'bcryptjs';
 
@@ -21,12 +21,14 @@ async function main() {
   await prisma.client.deleteMany();
   await prisma.apartment.deleteMany();
   await prisma.project.deleteMany();
+  await prisma.leadForm.deleteMany(); // Clean Forms
 
   const deletedUsers = await prisma.user.deleteMany();
   console.log(`Deleted ${deletedUsers.count} users`);
 
   console.log('🧹 Database cleaned');
 
+  // ... (Users creation remains same) ...
   // 2. Create Users (Admin, Developers, Brokers)
   const passwordHash = await bcrypt.hash('password123', 10);
 
@@ -70,6 +72,7 @@ async function main() {
 
   console.log('👥 Users created');
 
+  // ... (Projects & Apartments creation remains same) ...
   // 3. Create Projects & Apartments
   const projectNames = ['Green Quarter', 'Nova City', 'Sensata Park', 'Grand Turan', 'Highvill'];
   const districts = ['Есильский', 'Алматинский', 'Сарыаркинский', 'Нура'];
@@ -97,7 +100,6 @@ async function main() {
       },
     });
 
-    // Create Apartments for each project
     for (let i = 0; i < 20; i++) {
       await prisma.apartment.create({
         data: {
@@ -118,7 +120,7 @@ async function main() {
   // 4. Create Clients
   const clients = [];
   for (const broker of brokers) {
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) { // Increased clients per broker
       const client = await prisma.client.create({
         data: {
           firstName: faker.person.firstName(),
@@ -128,8 +130,8 @@ async function main() {
           clientType: faker.helpers.arrayElement([ClientType.BUYER, ClientType.SELLER, ClientType.NEW_BUILDING]),
           budget: parseFloat(faker.finance.amount({ min: 20000000, max: 60000000, dec: 0 })),
           brokerId: broker.id,
-          status: 'NEW', // Valid enum value
-          iin: faker.string.numeric(12), // Required field
+          status: 'NEW',
+          iin: faker.string.numeric(12),
         },
       });
       clients.push(client);
@@ -138,6 +140,7 @@ async function main() {
 
   console.log('🧑‍🤝‍🧑 Clients created');
 
+  // ... (Mortgage, Courses, Notifications remain same) ...
   // 5. Create Mortgage Programs
   const banks = ['Halyk Bank', 'Kaspi Bank', 'BCC', 'Freedom Finance'];
   for (const bank of banks) {
@@ -148,9 +151,8 @@ async function main() {
         interestRate: faker.number.float({ min: 12, max: 18, fractionDigits: 1 }),
         minDownPayment: faker.number.int({ min: 20, max: 50 }),
         maxTerm: 20,
-        propertyType: 'NEW_BUILDING', // Required field
-        requirements: 'Standard requirements: ID, income proof, etc.', // Required field
-        // description removed
+        propertyType: 'NEW_BUILDING',
+        requirements: 'Standard requirements: ID, income proof, etc.',
         isActive: true,
       },
     });
@@ -171,12 +173,10 @@ async function main() {
         title: c.title,
         description: c.description,
         content: 'Course content placeholder...',
-        duration: 120, // minutes
-        // points removed as it doesn't exist in schema
+        duration: 120,
       },
     });
 
-    // Assign to some brokers
     for (const broker of brokers) {
       await prisma.courseProgress.create({
         data: {
@@ -208,25 +208,57 @@ async function main() {
 
   console.log('🔔 Notifications created');
 
-  // 8. Create Bookings & Deals
-  // Find an available apartment and a client
-  const availableApartment = await prisma.apartment.findFirst({ where: { status: ApartmentStatus.AVAILABLE } });
-  const client = clients[0];
-  const broker = brokers[0];
+  // 8. Create DEALS for Kanban
+  const stages = [DealStage.CONSULTATION, DealStage.CONTRACT, DealStage.PROMOTION, DealStage.SHOWINGS];
+  const dealColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
-  if (availableApartment && client && broker) {
-    await prisma.booking.create({
-      data: {
-        clientId: client.id,
-        apartmentId: availableApartment.id,
-        brokerId: broker.id,
-        status: BookingStatus.PENDING,
-        expiresAt: faker.date.future(),
-      },
-    });
+  for (const broker of brokers) {
+    // Each broker gets 10 random deals
+    for (let i = 0; i < 10; i++) {
+      const client = faker.helpers.arrayElement(clients.filter(c => c.brokerId === broker.id));
+      if (!client) continue;
+
+      await prisma.deal.create({
+        data: {
+          brokerId: broker.id,
+          clientId: client.id,
+          amount: parseFloat(faker.finance.amount({ min: 10000000, max: 50000000, dec: 2 })),
+          commission: parseFloat(faker.finance.amount({ min: 100000, max: 500000, dec: 2 })),
+          casaFee: 50000,
+          status: DealStatus.IN_PROGRESS,
+          stage: faker.helpers.arrayElement(stages),
+          color: faker.helpers.arrayElement(dealColors),
+          source: faker.helpers.arrayElement(['MANUAL', 'FORM', 'BOT']),
+          objectType: 'APARTMENT',
+          notes: faker.lorem.sentence(),
+        }
+      });
+    }
   }
 
-  console.log('🤝 Sample Booking created');
+  console.log('💼 Deals for Kanban created');
+
+  // 8. Create Bookings (Old logic)
+  // ...
+
+  // 9. Create Sample Forms
+  await prisma.leadForm.create({
+    data: {
+      title: 'Consultation Request',
+      fields: [
+        { label: 'Имя', type: 'text', required: true },
+        { label: 'Телефон', type: 'tel', required: true },
+        { label: 'Район', type: 'select', required: false, options: ['Есиль', 'Нура'] }
+      ],
+      distributionType: 'ROUND_ROBIN',
+      brokers: {
+        connect: brokers.map(b => ({ id: b.id }))
+      }
+    }
+  });
+
+  console.log('📝 Sample Forms created');
+
   console.log('✅ Seed completed successfully');
 }
 

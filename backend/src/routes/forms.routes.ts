@@ -1,0 +1,112 @@
+import { Router, Request, Response } from 'express';
+import { z } from 'zod';
+import { authenticate } from '../middleware/auth.middleware';
+import { prisma } from '../lib/prisma';
+import { UserRole, DealStage } from '@prisma/client';
+
+export const formsRouter = Router();
+
+// Validation schemas
+const fieldSchema = z.object({
+    label: z.string(),
+    type: z.enum(['text', 'tel', 'email', 'select', 'number']),
+    required: z.boolean(),
+    options: z.array(z.string()).optional(), // for select
+});
+
+const createFormSchema = z.object({
+    title: z.string().min(3),
+    fields: z.array(fieldSchema),
+    distributionType: z.enum(['MANUAL', 'ROUND_ROBIN']),
+    brokerIds: z.array(z.string()).optional(), // Brokers to include in rotation
+});
+
+// Middleware for public access? No, different route prefix or handle here.
+// We'll keep public separate or use /public path in index.ts
+// For now, let's mix but checking auth only for admin actions.
+
+// === ADMIN ROUTES ===
+
+// POST /api/forms - Create form
+formsRouter.post('/', authenticate, async (req: Request, res: Response): Promise<void> => {
+    try {
+        if (req.user?.role !== 'ADMIN') {
+            res.status(403).json({ error: 'Access denied' });
+            return;
+        }
+
+        const data = createFormSchema.parse(req.body);
+
+        const form = await prisma.leadForm.create({
+            data: {
+                title: data.title,
+                fields: data.fields as any,
+                distributionType: data.distributionType,
+                brokers: {
+                    connect: data.brokerIds?.map(id => ({ id })) || []
+                }
+            }
+        });
+
+        res.status(201).json(form);
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            res.status(400).json({ error: error.errors });
+            return;
+        }
+        console.error('Create form error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// GET /api/forms - List all forms
+formsRouter.get('/', authenticate, async (req: Request, res: Response): Promise<void> => {
+    try {
+        const forms = await prisma.leadForm.findMany({
+            include: {
+                brokers: { select: { id: true, firstName: true, lastName: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(forms);
+    } catch (error) {
+        console.error('Get forms error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// PUT /api/forms/:id - Update form
+formsRouter.put('/:id', authenticate, async (req: Request, res: Response): Promise<void> => {
+    try {
+        if (req.user?.role !== 'ADMIN') {
+            res.status(403).json({ error: 'Access denied' });
+            return;
+        }
+
+        const data = createFormSchema.parse(req.body);
+
+        // Update basic fields
+        await prisma.leadForm.update({
+            where: { id: req.params.id },
+            data: {
+                title: data.title,
+                fields: data.fields as any,
+                distributionType: data.distributionType,
+                // Easy way to handle many-to-many updates: set (replace all)
+                brokers: {
+                    set: data.brokerIds?.map(id => ({ id })) || []
+                }
+            }
+        });
+
+        const updated = await prisma.leadForm.findUnique({
+            where: { id: req.params.id },
+            include: { brokers: { select: { id: true, firstName: true, lastName: true } } }
+        });
+
+        res.json(updated);
+    } catch (error) {
+        console.error('Update form error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});

@@ -41,6 +41,7 @@ model User {
   curator        User?            @relation("CuratorBrokers", fields: [curatorId], references: [id])
   brokers        User[]           @relation("CuratorBrokers")
   payments       Payment[]
+  forms          LeadForm[]       @relation("FormBrokers")
 
   @@map("users")
 }
@@ -337,12 +338,17 @@ model MortgageProgram {
   @@map("mortgage_programs")
 }
 
+
 model Deal {
   id          String     @id @default(cuid())
   amount      Decimal    @db.Decimal(15, 2)
   commission  Decimal    @db.Decimal(15, 2) // broker commission
   casaFee     Decimal    @map("casa_fee") @db.Decimal(15, 2) // Casa fee
   status      DealStatus @default(IN_PROGRESS)
+  stage       DealStage  @default(CONSULTATION) // New: Kanban stage
+  order       Int        @default(0) // New: Order in column
+  color       String     @default("#3B82F6") // New: Card color
+  source      String     @default("MANUAL") // New: MANUAL, FORM, BOT
   objectType  String     @map("object_type") // PROPERTY, APARTMENT, BOOKING
   objectId    String?    @map("object_id") // ID объекта (property/apartment)
   clientId    String?    @map("client_id") // покупатель
@@ -359,8 +365,24 @@ model Deal {
   @@index([brokerId])
   @@index([clientId])
   @@index([status])
+  @@index([stage])
   @@index([completedAt])
   @@map("deals")
+}
+
+model LeadForm {
+  id               String   @id @default(cuid())
+  title            String
+  fields           Json     // [{ label, type, required, options }]
+  distributionType String   @default("MANUAL") @map("distribution_type") // MANUAL, ROUND_ROBIN
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  brokers User[] @relation("FormBrokers") // Brokers enabled for this form
+
+  @@map("lead_forms")
 }
 
 model Task {
@@ -382,6 +404,7 @@ model Task {
   @@map("tasks")
 }
 
+// ... (Property model remains unchanged) ...
 // Secondary Real Estate (Вторичная недвижимость)
 model Property {
   id          String         @id @default(cuid())
@@ -459,3 +482,11 @@ enum PaymentType {
   INCOME
   EXPENSE
 }
+
+enum DealStage {
+  CONSULTATION // Консультация
+  CONTRACT     // Договор
+  PROMOTION    // Продвижение
+  SHOWINGS     // Показы
+}
+
