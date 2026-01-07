@@ -1,46 +1,62 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding production database...');
+  console.log('🌱 Starting PRODUCTION seed (Clean & Admin only)...');
 
-  // Очищаем существующие данные
+  // 1. Clean up database (Delete everything)
+  // Deleting in correct order to avoid foreign key constraints
   await prisma.booking.deleteMany();
-  await prisma.apartment.deleteMany();
-  await prisma.project.deleteMany();
-  await prisma.client.deleteMany();
-  await prisma.user.deleteMany();
+  await prisma.deal.deleteMany();
+  await prisma.task.deleteMany();
+  await prisma.notification.deleteMany();
+  await prisma.courseProgress.deleteMany();
+  await prisma.clientDocument.deleteMany();
+  await prisma.mortgageCalculation.deleteMany();
 
-  console.log('✅ Cleared existing data');
+  await prisma.property.deleteMany();
+  await prisma.payment.deleteMany();
 
-  // Создаем только администратора
-  const hashedPassword = await bcrypt.hash('admin123', 10);
-  
+  await prisma.client.deleteMany(); // Clients depend on brokers
+  await prisma.apartment.deleteMany(); // Apartments depend on projects
+  await prisma.project.deleteMany(); // Projects depend on developers
+
+  await prisma.course.deleteMany();
+  await prisma.mortgageProgram.deleteMany();
+  await prisma.leadForm.deleteMany();
+
+  await prisma.user.deleteMany(); // Users are referenced by almost everything
+
+  console.log('🧹 Database completely cleaned');
+
+  // 2. Create Admin User
+  const passwordHash = await bcrypt.hash('admin123', 10);
+
   const admin = await prisma.user.create({
     data: {
       email: 'admin@casa.kz',
-      password: hashedPassword,
-      firstName: 'Администратор',
-      lastName: 'Системы',
-      role: 'ADMIN',
-      phone: '+77001234567',
+      password: passwordHash,
+      firstName: 'Admin',
+      lastName: 'ProCasa',
+      role: UserRole.ADMIN,
+      phone: '+77000000000',
+      isActive: true,
     },
   });
 
-  console.log('✅ Created admin user');
-  console.log('📧 Email: admin@casa.kz');
-  console.log('🔑 Password: admin123');
-  console.log('');
-  console.log('⚠️  ВАЖНО: Смените пароль администратора после первого входа!');
-  console.log('');
-  console.log('🎉 Production database seeded successfully!');
+  console.log('👤 Admin user created: admin@casa.kz / admin123');
+
+  // 3. Optional: Create basic dictionaries (can be commented out if total empty is needed)
+  // For now, we leave it completely empty except Admin as requested.
+
+  console.log('✅ Production seed completed successfully');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error seeding database:', e);
+    console.error(e);
     process.exit(1);
   })
   .finally(async () => {
