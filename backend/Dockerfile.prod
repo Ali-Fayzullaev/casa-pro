@@ -1,0 +1,51 @@
+FROM node:20-slim AS builder
+
+WORKDIR /app
+
+# Устанавливаем OpenSSL для Prisma
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+# Копируем файлы зависимостей
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# Устанавливаем зависимости
+RUN npm ci
+
+# Копируем исходный код
+COPY . .
+
+# Генерируем клиент Prisma
+RUN npx prisma generate
+
+# Собираем TypeScript код
+RUN npm run build
+
+# ==========================================
+# Runner Stage
+# ==========================================
+FROM node:20-slim AS runner
+
+WORKDIR /app
+
+# Устанавливаем OpenSSL для Prisma (нужен в runtime)
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+ENV NODE_ENV=production
+
+# Копируем package.json
+COPY --from=builder /app/package*.json ./
+
+# Копируем node_modules (включая Prisma Client)
+COPY --from=builder /app/node_modules ./node_modules
+
+# Копируем собранный код
+COPY --from=builder /app/dist ./dist
+
+# Копируем prisma схему (для миграций)
+COPY --from=builder /app/prisma ./prisma
+
+EXPOSE 3001
+
+# Запуск скомпилированного кода
+CMD ["node", "dist/index.js"]

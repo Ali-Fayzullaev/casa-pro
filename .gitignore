@@ -30,3 +30,7 @@ yarn-error.log*
 
 # Docker
 postgres_data/
+minio_data/
+deployment/.env.production
+deployment/certbot/
+deployment/nginx.init.conf
