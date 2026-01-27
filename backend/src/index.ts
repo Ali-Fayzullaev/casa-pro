@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import { authRouter } from './routes/auth.routes';
 import { usersRouter } from './routes/users.routes';
 import { usersAdminRouter } from './routes/users.admin.routes';
@@ -20,6 +21,11 @@ import { uploadRouter } from './routes/upload.routes';
 import { paymentsRouter } from './routes/payments.routes';
 import { formsRouter } from './routes/forms.routes';
 import { publicFormsRouter } from './routes/public-forms.routes';
+import { sellersRouter } from './routes/sellers.routes';
+import { crmPropertiesRouter } from './routes/crm-properties.routes';
+import { buyersRouter } from './routes/buyers.routes';
+import { uploadsRouter } from './routes/uploads.routes';
+import { analyticsRouter } from './routes/analytics.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { initializeBucket } from './lib/minio';
 
@@ -35,6 +41,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check
 app.get('/health', (_req, res) => {
@@ -61,6 +68,13 @@ app.use('/api/upload', uploadRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/forms', formsRouter);
 app.use('/api/public/forms', publicFormsRouter);
+
+// CASA CRM Routes
+app.use('/api/sellers', sellersRouter);
+app.use('/api/crm-properties', crmPropertiesRouter);
+app.use('/api/buyers', buyersRouter);
+app.use('/api/uploads', uploadsRouter);
+app.use('/api/analytics', analyticsRouter);
 
 // Error handling
 app.use(errorHandler);

@@ -68,6 +68,8 @@ services:
       dockerfile: Dockerfile
     container_name: pro-casa-backend
     restart: always
+    env_file:
+      - ./backend/.env
     environment:
       DATABASE_URL: "postgresql://pro_casa_user:pro_casa_dev_password@postgres:5432/pro_casa_db?schema=public"
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
@@ -82,6 +84,7 @@ services:
       MINIO_SECRET_KEY: minio_secret_password
       MINIO_BUCKET: pro-casa-files
       MINIO_USE_SSL: "false"
+
     ports:
       - "3001:3001"
     depends_on:
@@ -98,11 +101,11 @@ services:
       context: ./pro-casa
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
     container_name: pro-casa-frontend
     restart: always
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
       NODE_ENV: "production"
     ports:
       - "3000:3000"

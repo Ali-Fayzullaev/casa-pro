@@ -33,6 +33,8 @@ COPY components ./components
 COPY hooks ./hooks
 COPY lib ./lib
 COPY public ./public
+COPY types ./types
+COPY components.json eslint.config.mjs ./
 COPY next.config.ts tsconfig.json postcss.config.mjs ./
 
 # Отключаем телеметрию Next.js

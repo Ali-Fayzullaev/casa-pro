@@ -42,6 +42,10 @@ model User {
   brokers        User[]           @relation("CuratorBrokers")
   payments       Payment[]
   forms          LeadForm[]       @relation("FormBrokers")
+  // CASA CRM Relations
+  sellers        Seller[]         @relation("BrokerSellers")
+  crmProperties  CrmProperty[]    @relation("BrokerCrmProperties")
+  buyers         Buyer[]          @relation("BrokerBuyers")
 
   @@map("users")
 }
@@ -490,3 +494,557 @@ enum DealStage {
   SHOWINGS     // Показы
 }
 
+// =========================================
+// CASA CRM - SELLER-PROPERTY SYSTEM
+// =========================================
+
+// Класс объекта недвижимости (авто-расчёт)
+enum PropertyClass {
+  OLD_FUND       // Старфонд (yearBuilt <= 1980)
+  ECONOMY        // Эконом
+  COMFORT        // Комфорт
+  COMFORT_PLUS   // Комфорт+
+  BUSINESS       // Бизнес-класс (все 13 условий)
+}
+
+// Тип CASA-стратегии (авто-расчёт на основе правил)
+enum StrategyType {
+  MARKET_SALE           // S1: Рыночная продажа
+  URGENT_SALE           // S2: Срочная продажа
+  SALE_TO_PURCHASE      // S3: Продажа для покупки
+  EXPECTATION_ALIGNMENT // S4: Выравнивание ожиданий
+  LIMITED_ENGAGEMENT    // S5: Ограниченное участие
+  INVESTMENT_EXIT       // S6: Инвестиционный выход
+  LEGAL_COMPLEX         // S7: Юридически сложный
+  LOW_LIQUIDITY         // S8: Низкая ликвидность
+  ALTERNATIVE_EXIT      // S9: Альтернативный выход
+  REJECT_OBJECT         // S10: Отказ от объекта
+  HIGH_TICKET_SALE      // S11: Высокий чек
+  PRICE_DISCOVERY       // S12: Поиск цены
+}
+
+// Уровень ликвидности (авто-расчёт)
+enum LiquidityLevel {
+  HIGH           // 81-100 баллов
+  ABOVE_AVERAGE  // 61-80 баллов
+  AVERAGE        // 41-60 баллов
+  BELOW_AVERAGE  // 21-40 баллов
+  LOW            // 0-20 баллов
+}
+
+// Тип финансирования (авто-расчёт)
+enum FinanceType {
+  MORTGAGE_AVAILABLE  // Доступна ипотека
+  MORTGAGE_LIMITED    // Ограниченная ипотека
+  CASH_ONLY           // Только наличные
+}
+
+// Этапы воронки продавца
+enum SellerFunnelStage {
+  CONTACT           // Контакт
+  INTERVIEW         // Интервью
+  STRATEGY          // Стратегия
+  CONTRACT_SIGNING  // Подписание договора
+}
+
+// Этапы воронки объекта
+enum PropertyFunnelStage {
+  CREATED       // Создан (не активен)
+  PREPARATION   // Подготовка
+  LEADS         // Лиды
+  SHOWS         // Показы
+  DEAL          // Сделка
+  POST_SERVICE  // Постобслуживание
+}
+
+// Причина продажи
+enum SaleReason {
+  RELOCATION        // Переезд
+  SIZE_CHANGE       // Улучшение жилищных условий
+  INHERITANCE       // Наследство
+  DIVORCE           // Развод
+  FINANCIAL_NEED    // Финансовая необходимость
+  INVESTMENT        // Инвестиционная продажа
+  OTHER             // Другое
+}
+
+// Дедлайн продажи
+enum SaleDeadline {
+  URGENT_30_DAYS    // До 30 дней
+  NORMAL_90_DAYS    // 1-2 месяца
+  FLEXIBLE_180_DAYS // Более 2 месяцев
+  NO_RUSH           // Без спешки
+}
+
+// Оценка рынка со слов клиента
+enum MarketAssessment {
+  ADEQUATE     // Адекватное
+  OVERPRICED   // Завышенное
+  UNCERTAIN    // Неопределённое
+}
+
+// Готовность следовать рекомендациям
+enum ReadyToFollow {
+  YES
+  PARTIAL
+  NO
+}
+
+// Тип здания
+enum BuildingType {
+  MONOLITH       // Монолит
+  BRICK          // Кирпич
+  PANEL          // Панель
+  MONOLITH_BRICK // Монолит-кирпич
+  BLOCK          // Блочный
+}
+
+// Тип планировки
+enum LayoutType {
+  EURO_FREE      // Евро / свободная
+  ISOLATED       // Изолированные комнаты
+  ADJACENT       // Смежные комнаты
+  WALK_THROUGH   // Проходные комнаты
+  STUDIO         // Студия
+}
+
+// Состояние ремонта
+enum RepairState {
+  NONE           // Без ремонта
+  COSMETIC       // Косметический
+  CAPITAL        // Капитальный
+  EURO           // Евроремонт
+  DESIGNER       // Дизайнерский
+}
+
+// Фактическое состояние
+enum ActualCondition {
+  EXCELLENT         // Отличное
+  GOOD              // Хорошее
+  NEEDS_INVESTMENT  // Требует вложений
+  CRITICAL          // Критическое
+}
+
+// Тип паркинга
+enum ParkingType {
+  UNDERGROUND    // Подземный
+  ABOVE_GROUND   // Закрытый наземный
+  OPEN           // Открытый
+  NONE           // Нет
+}
+
+// Качество локации
+enum LocationQuality {
+  TOP            // Топ-локация
+  GOOD           // Хорошая
+  ABOVE_AVERAGE  // Выше средней
+  NORMAL         // Нормальная
+  WEAK           // Слабая
+  REMOTE         // Удалённая
+}
+
+// Тип вида из окна
+enum ViewType {
+  PANORAMIC          // Панорамный
+  PARK_WATER         // Парк / вода
+  STREET             // Улица
+  COURTYARD          // Двор
+  WELL_COURTYARD     // Двор-колодец
+  ADJACENT_BUILDINGS // Соседние дома
+  INDUSTRIAL         // Промзона / ТЭЦ / стройка
+}
+
+// Тип лобби
+enum LobbyType {
+  PREMIUM        // Премиум (консьерж / ресепшн)
+  MODERN         // Современный
+  STANDARD       // Стандартный
+  SIMPLE         // Простой
+  NEEDS_REPAIR   // Требует ремонта
+}
+
+// Система доступа
+enum AccessSystemType {
+  FACE_ID           // Face ID / Smart-access
+  SMART_ACCESS      // Smart-access
+  ELECTRONIC_CARD   // Электронная карта
+  INTERCOM          // Домофон
+  CODE_LOCK         // Кодовый замок
+  KEY               // Ключ
+}
+
+// Состояние МОП
+enum MopState {
+  EXCELLENT      // Отличное
+  GOOD           // Хорошее
+  SATISFACTORY   // Удовлетворительное
+  NEEDS_REPAIR   // Требует ремонта
+  CRITICAL       // Критическое
+}
+
+// Тип обременения
+enum EncumbranceType {
+  NONE              // Нет
+  SHARES            // Доли
+  ENCUMBRANCE       // Обременения
+  INHERITANCE       // Наследство
+  POWER_OF_ATTORNEY // Доверенность
+}
+
+// Тип остекления
+enum GlazingType {
+  PANORAMIC    // Панорамное
+  ENLARGED     // Увеличенное
+  STANDARD     // Стандартное
+}
+
+// =========================================
+// SELLER MODEL (Продавец)
+// =========================================
+
+model Seller {
+  id        String   @id @default(cuid())
+  
+  // === Основные данные ===
+  firstName  String   @map("first_name")
+  lastName   String   @map("last_name")
+  middleName String?  @map("middle_name")
+  phone      String
+  email      String?
+  iin        String?  @unique
+  city       String?
+  source     String?  // Источник контакта (Instagram, WhatsApp, Referral)
+  
+  // === 1️⃣ Причина продажи и сроки ===
+  reason           SaleReason?
+  reasonOther      String?          @map("reason_other")
+  deadline         SaleDeadline?
+  
+  // === 2️⃣ Ценовые ожидания ===
+  expectedPrice    Decimal?         @map("expected_price") @db.Decimal(15, 2)
+  minPrice         Decimal?         @map("min_price") @db.Decimal(15, 2)
+  marketAssessment MarketAssessment? @map("market_assessment")
+  readyToNegotiate Boolean          @default(true) @map("ready_to_negotiate")
+  
+  // === 3️⃣ Планы после продажи ===
+  plansToPurchase    Boolean        @default(false) @map("plans_to_purchase")
+  plansMortgage      Boolean        @default(false) @map("plans_mortgage")
+  nextPurchaseFormat String?        @map("next_purchase_format")
+  purchaseBudget     Decimal?       @map("purchase_budget") @db.Decimal(15, 2)
+  
+  // === 4️⃣ Финансовые возможности ===
+  incomeSource     String?          @map("income_source")
+  incomeAmount     Decimal?         @map("income_amount") @db.Decimal(15, 2)
+  hasDebts         Boolean          @default(false) @map("has_debts")
+  loanPaymentAmount Decimal?        @map("loan_payment_amount") @db.Decimal(15, 2)
+  
+  // === 5️⃣ Готовность работать с Casa ===
+  readyToFollowRecommendations ReadyToFollow? @map("ready_to_follow")
+  readyForExclusive Boolean        @default(false) @map("ready_for_exclusive")
+  trustLevel        Int            @default(3) @map("trust_level")
+  
+  // === 6️⃣ Комментарии ===
+  managerComment   String?          @map("manager_comment") @db.Text
+  
+  // === 7️⃣ Коммуникация ===
+  communicationChannel String?      @map("communication_channel") // Звонок, WhatsApp, Telegram
+  preferredTime        String?      @map("preferred_time")        // Удобное время для связи
+  
+  // === Воронка продавца ===
+  funnelStage      SellerFunnelStage @default(CONTACT) @map("funnel_stage")
+  strategyConfirmed Boolean         @default(false) @map("strategy_confirmed")
+  
+  // === Метаданные ===
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  brokerId   String   @map("broker_id")
+  
+  // === Relations ===
+  broker     User          @relation("BrokerSellers", fields: [brokerId], references: [id])
+  properties CrmProperty[]
+  documents  SellerDocument[]
+  
+  @@index([brokerId])
+  @@index([funnelStage])
+  @@index([phone])
+  @@map("sellers")
+}
+
+model SellerDocument {
+  id         String   @id @default(cuid())
+  name       String
+  type       String
+  fileUrl    String   @map("file_url")
+  fileSize   Int      @map("file_size")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+  sellerId   String   @map("seller_id")
+  
+  seller     Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  
+  @@index([sellerId])
+  @@map("seller_documents")
+}
+
+model Buyer {
+  id        String   @id @default(cuid())
+  firstName String   @map("first_name")
+  lastName  String?  @map("last_name")
+  phone     String
+  minBudget Decimal? @map("min_budget") @db.Decimal(15, 2)
+  maxBudget Decimal? @map("max_budget") @db.Decimal(15, 2)
+  status    BuyerStatus @default(NEW)
+  preferences Json?
+  notes     String?  @db.Text
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  brokerId  String   @map("broker_id")
+  
+  // Relations
+  broker User    @relation("BrokerBuyers", fields: [brokerId], references: [id])
+  shows  Show[]
+  offers Offer[] // New
+  
+  @@index([brokerId])
+  @@index([status])
+  @@map("crm_buyers")
+}
+
+model Show {
+  id         String   @id @default(cuid())
+  date       DateTime
+  status     ShowStatus @default(SCHEDULED)
+  feedback   String?  @db.Text
+  feedbackSentiment FeedbackSentiment? @map("feedback_sentiment")
+  rating     Int?     // 1-5 Оценка клиента объекту
+  
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  
+  propertyId String   @map("property_id")
+  buyerId    String   @map("buyer_id")
+  
+  // Relations
+  property CrmProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  buyer    Buyer       @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  
+  @@index([propertyId])
+  @@index([buyerId])
+  @@map("crm_shows")
+}
+
+model Offer {
+  id         String   @id @default(cuid())
+  price      Decimal  @db.Decimal(15, 2)
+  status     OfferStatus @default(PENDING)
+  comment    String?  @db.Text
+  
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  
+  propertyId String   @map("property_id")
+  buyerId    String   @map("buyer_id")
+  
+  // Relations
+  property CrmProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  buyer    Buyer       @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  
+  @@index([propertyId])
+  @@index([buyerId])
+  @@map("crm_offers")
+}
+
+enum BuyerStatus {
+  NEW         // Новый
+  ACTIVE      // Активный (THINKING replaced)
+  OFFER_MADE  // Сделал предложение
+  ARCHIVED    // Архив
+  REFUSAL     // Отказ (Legacy? Keeping it)
+}
+
+enum ShowStatus {
+   SCHEDULED
+   COMPLETED
+   CANCELLED
+}
+
+enum FeedbackSentiment {
+   POSITIVE
+   NEUTRAL
+   NEGATIVE
+}
+
+enum OfferStatus {
+   PENDING
+   ACCEPTED
+   REJECTED
+}
+
+// =========================================
+// CRM PROPERTY MODEL (Объект недвижимости)
+// =========================================
+
+model CrmProperty {
+  id          String   @id @default(cuid())
+  
+  // === 1️⃣ Идентификация объекта ===
+  propertyType        String   @default("APARTMENT") @map("property_type")
+  rooms               Int
+  residentialComplex  String   @map("residential_complex")
+  district            String
+  address             String?
+  lat                 Float?
+  lng                 Float?
+  
+  // === 2️⃣ Геометрия и базовые параметры ===
+  area               Decimal   @db.Decimal(10, 2)
+  livingArea         Decimal?  @map("living_area") @db.Decimal(10, 2)
+  kitchenArea        Decimal?  @map("kitchen_area") @db.Decimal(10, 2)
+  floor              Int
+  totalFloors        Int       @map("total_floors")
+  yearBuilt          Int       @map("year_built")
+  apartmentsPerFloor Int?      @map("apartments_per_floor")
+  
+  // === 3️⃣ Конструктив и планировка ===
+  buildingType       BuildingType   @default(PANEL) @map("building_type")
+  ceilingHeight      Decimal?       @map("ceiling_height") @db.Decimal(3, 2)
+  layoutType         LayoutType     @default(ISOLATED) @map("layout_type")
+  bathroomType       String?        @map("bathroom_type")
+  balconyType        String?        @map("balcony_type")
+  
+  // === 4️⃣ Локация и окружение ===
+  locationQuality    LocationQuality @default(NORMAL) @map("location_quality")
+  viewType           ViewType?       @map("view_type")
+  
+  // === 5️⃣ Паркинг ===
+  parkingType        ParkingType    @default(NONE) @map("parking_type")
+  parkingSpaces      Int            @default(0) @map("parking_spaces")
+  
+  // === 6️⃣ Состояние квартиры ===
+  repairState        RepairState    @default(COSMETIC) @map("repair_state")
+  actualCondition    ActualCondition @default(GOOD) @map("actual_condition")
+  
+  // === 7️⃣ Дом и МОП ===
+  elevatorCount      Int            @default(0) @map("elevator_count")
+  hasFreightElevator Boolean        @default(false) @map("has_freight_elevator")
+  lobbyType          LobbyType?     @map("lobby_type")
+  accessSystem       AccessSystemType? @map("access_system")
+  mopState           MopState?      @map("mop_state")
+  hasClosedTerritory Boolean        @default(false) @map("has_closed_territory")
+  lastCapitalRepairYear Int?        @map("last_capital_repair_year")
+  
+  // === 8️⃣ Финансовый и юридический статус ===
+  isMortgaged           Boolean     @default(false) @map("is_mortgaged")
+  mortgageBank          String?     @map("mortgage_bank")
+  mortgageRemaining     Decimal?    @map("mortgage_remaining") @db.Decimal(15, 2)
+  mortgageRemovalMethod String?     @map("mortgage_removal_method")
+  encumbranceType       EncumbranceType @default(NONE) @map("encumbrance_type")
+  encumbranceDescription String?    @map("encumbrance_description") @db.Text
+  documentsVerified     Boolean     @default(false) @map("documents_verified")
+  
+  // === 9️⃣ УТП и комплектация ===
+  hasFloorHeating       Boolean     @default(false) @map("has_floor_heating")
+  hasWalkInCloset       Boolean     @default(false) @map("has_walk_in_closet")
+  hasAirConditioning    Boolean     @default(false) @map("has_air_conditioning")
+  hasBuiltInAppliances  Boolean     @default(false) @map("has_built_in_appliances")
+  hasPanoramicWindows   Boolean     @default(false) @map("has_panoramic_windows") // New
+  furnitureLevel        String?     @map("furniture_level")
+  appliancesLevel       String?     @map("appliances_level")
+  
+  // === Бизнес-класс специфичные ===
+  glazingType           GlazingType? @map("glazing_type")
+  facadeMaterial        String?      @map("facade_material")
+  
+  // === Ценообразование ===
+  price                 Decimal      @db.Decimal(15, 2)
+  pricePerSqm           Decimal?     @map("price_per_sqm") @db.Decimal(15, 2)
+  marketPrice           Decimal?     @map("market_price") @db.Decimal(15, 2)
+  
+  // === АВТО-ВЫЧИСЛЯЕМЫЕ ПОЛЯ ===
+  calculatedClass       PropertyClass?  @map("calculated_class")
+  financeType           FinanceType     @default(MORTGAGE_AVAILABLE) @map("finance_type")
+  liquidityScore        Int             @default(50) @map("liquidity_score")
+  liquidityLevel        LiquidityLevel? @map("liquidity_level")
+  isIlliquid            Boolean         @default(false) @map("is_illiquid")
+  illiquidReason        String?         @map("illiquid_reason")
+  activeStrategy        StrategyType?   @map("active_strategy")
+  strategyExplanation   String?         @map("strategy_explanation") @db.Text
+  
+  // === Воронка объекта ===
+  funnelStage           PropertyFunnelStage @default(CREATED) @map("funnel_stage")
+  
+  // === Статистика ===
+  viewsCount            Int         @default(0) @map("views_count")
+  showsCount            Int         @default(0) @map("shows_count")
+  leadsCount            Int         @default(0) @map("leads_count")
+  
+  // === Медиа ===
+  images                String[]    @default([])
+  documents             String[]    @default([]) // New: URLs to PDFs, Docs
+  videoUrl              String?     @map("video_url")
+  virtualTourUrl        String?     @map("virtual_tour_url")
+  layoutImage           String?     @map("layout_image")
+  
+  // === Публикации ===
+  casaUrl               String?     @map("casa_url")
+  krishaUrl             String?     @map("krisha_url")
+  knUrl                 String?     @map("kn_url")
+  olxUrl                String?     @map("olx_url")
+  instagramUrl          String?     @map("instagram_url")
+  tikTokUrl             String?     @map("tiktok_url") // New
+  
+  // === Мета ===
+  notes                 String?     @db.Text
+  status                PropertyStatus @default(ACTIVE)
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+  publishedAt           DateTime?   @map("published_at")
+  
+  // === Связи ===
+  sellerId              String      @map("seller_id")
+  brokerId              String      @map("broker_id")
+  
+  seller                Seller      @relation(fields: [sellerId], references: [id])
+  broker                User        @relation("BrokerCrmProperties", fields: [brokerId], references: [id])
+  calculationLogs       PropertyCalculationLog[]
+  shows                 Show[]
+  offers                Offer[]
+  
+  aiRecommendation      String?         @map("ai_recommendation") @db.Text
+
+  @@index([sellerId])
+  @@index([brokerId])
+  @@index([funnelStage])
+  @@index([calculatedClass])
+  @@index([liquidityLevel])
+  @@index([activeStrategy])
+  @@index([district])
+  @@index([status])
+  @@map("crm_properties")
+}
+
+// Лог расчётов (для аудита изменений класса/ликвидности/стратегии)
+model PropertyCalculationLog {
+  id            String   @id @default(cuid())
+  propertyId    String   @map("property_id")
+  
+  previousClass     PropertyClass?   @map("previous_class")
+  newClass          PropertyClass?   @map("new_class")
+  previousLiquidity Int?             @map("previous_liquidity")
+  newLiquidity      Int?             @map("new_liquidity")
+  previousStrategy  StrategyType?    @map("previous_strategy")
+  newStrategy       StrategyType?    @map("new_strategy")
+  
+  calculationReason String           @map("calculation_reason")
+  inputData         Json             @map("input_data")
+  outputData        Json             @map("output_data")
+  
+  createdAt         DateTime         @default(now()) @map("created_at")
+  
+  property          CrmProperty      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  @@index([propertyId])
+  @@index([createdAt])
+  @@map("property_calculation_logs")
+}

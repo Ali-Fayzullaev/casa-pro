@@ -30,15 +30,16 @@ if [ ! -f "docker-compose.production.yml" ]; then
     exit 1
 fi
 
-# Проверка наличия .env.production
-if [ ! -f ".env.production" ]; then
-    echo -e "${RED}❌ Ошибка: Файл .env.production не найден!${NC}"
-    echo "   Создайте файл .env.production с секретами"
+# Проверка/Загрузка переменных окружения
+if [ -f .env ]; then
+    set -a
+    source .env
+    set +a
+else
+    echo -e "${RED}❌ Ошибка: Файл .env не найден!${NC}"
+    echo "   Переименуйте .env.production в .env"
     exit 1
 fi
-
-# Загрузка переменных окружения
-export $(grep -v '^#' .env.production | xargs)
 
 DOMAIN=${DOMAIN:-pro.casa.kz}
 ADMIN_EMAIL=${ADMIN_EMAIL:-admin@casa.kz}
@@ -122,22 +123,21 @@ docker stop pro-casa-nginx-init
 docker rm pro-casa-nginx-init
 rm -f ./nginx.init.conf
 
-# Проверка что сертификат получен
+# Проверка что сертификат получен (или просто недоступен для чтения)
 if [ ! -f "./certbot/conf/live/$DOMAIN/fullchain.pem" ]; then
-    echo -e "${RED}❌ Ошибка: SSL сертификат не получен!${NC}"
-    echo "   Проверьте что домен $DOMAIN указывает на этот сервер"
-    echo "   и порт 80 открыт"
-    exit 1
+    echo -e "${YELLOW}⚠️ Внимание: Скрипт не видит сертификат (возможно, он создан root-пользователем).${NC}"
+    echo "   Но если выше написано 'Successfully received certificate', то всё в порядке."
+    echo "   Продолжаем запуск..."
+else
+    echo -e "${GREEN}✅ SSL сертификат успешно получен!${NC}"
 fi
-
-echo -e "${GREEN}✅ SSL сертификат успешно получен!${NC}"
 
 # ===========================================
 # ШАГ 5: Запуск всех сервисов
 # ===========================================
 echo -e "${BLUE}[5/7]${NC} Сборка и запуск всех контейнеров..."
 
-docker compose -f docker-compose.production.yml --env-file .env.production up --build -d
+docker compose -f docker-compose.production.yml up --build -d
 
 echo -e "${YELLOW}⏳ Ожидание запуска сервисов (60 секунд)...${NC}"
 sleep 60

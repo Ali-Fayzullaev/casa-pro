@@ -1,0 +1,1190 @@
+// =========================================
+// CRM PROPERTIES ROUTES (CASA CRM)
+// RESTful API with Calculator Service Integration
+// =========================================
+
+import { Router, Request, Response } from 'express';
+import { z } from 'zod';
+import { authenticate, requireRole } from '../middleware/auth.middleware';
+import { validate } from '../middleware/validation.middleware';
+import { prisma } from '../lib/prisma';
+import {
+    CrmPropertyMinimalSchema,
+    CrmPropertyFullSchema,
+    CrmPropertyUpdateSchema,
+} from '../lib/validation.schemas';
+import {
+    calculatePropertyClass,
+    calculateLiquidityScore,
+    calculateStrategy,
+    getStrategyExplanation,
+    calculateHybridStrategy,
+    type PropertyClassInput,
+    type LiquidityInput,
+    type StrategyInput,
+} from '../lib/property-calculator.service';
+
+export const crmPropertiesRouter = Router();
+
+// Apply auth middleware to all routes
+crmPropertiesRouter.use(authenticate);
+
+// =========================================
+// HELPER: Run full property calculation
+// =========================================
+async function runPropertyCalculation(
+    propertyId: string,
+    propertyData: any,
+    sellerData: any,
+    previousData?: {
+        calculatedClass: string | null;
+        liquidityScore: number;
+        activeStrategy: string | null;
+    }
+) {
+    // 1. Calculate Property Class
+    const classInput: PropertyClassInput = {
+        yearBuilt: propertyData.yearBuilt,
+        buildingType: propertyData.buildingType,
+        ceilingHeight: Number(propertyData.ceilingHeight) || 2.7,
+        totalFloors: propertyData.totalFloors,
+        apartmentsPerFloor: propertyData.apartmentsPerFloor || 6,
+        parkingType: propertyData.parkingType,
+        hasClosedTerritory: propertyData.hasClosedTerritory || false,
+        elevatorCount: propertyData.elevatorCount || 0,
+        hasFreightElevator: propertyData.hasFreightElevator || false,
+        locationQuality: propertyData.locationQuality,
+        glazingType: propertyData.glazingType,
+        accessSystem: propertyData.accessSystem,
+        facadeMaterial: propertyData.facadeMaterial,
+        lobbyType: propertyData.lobbyType,
+    };
+
+    const calculatedClass = calculatePropertyClass(classInput);
+
+    // 2. Determine Finance Type
+    let financeType: 'MORTGAGE_AVAILABLE' | 'MORTGAGE_LIMITED' | 'CASH_ONLY' = 'MORTGAGE_AVAILABLE';
+    if (calculatedClass === 'OLD_FUND') {
+        financeType = propertyData.yearBuilt < 1970 ? 'CASH_ONLY' : 'MORTGAGE_LIMITED';
+    } else if (propertyData.elevatorCount === 0 && propertyData.totalFloors > 5) {
+        financeType = 'MORTGAGE_LIMITED';
+    }
+
+    // 3. Calculate Liquidity Score
+    const liquidityInput: LiquidityInput = {
+        calculatedClass,
+        yearBuilt: propertyData.yearBuilt,
+        floor: propertyData.floor,
+        totalFloors: propertyData.totalFloors,
+        rooms: propertyData.rooms,
+        area: Number(propertyData.area),
+        price: Number(propertyData.price),
+        marketPrice: propertyData.marketPrice ? Number(propertyData.marketPrice) : null,
+        repairState: propertyData.repairState || 'COSMETIC',
+        actualCondition: propertyData.actualCondition || 'GOOD',
+        parkingType: propertyData.parkingType,
+        viewType: propertyData.viewType,
+        mopState: propertyData.mopState,
+        layoutType: propertyData.layoutType || 'ISOLATED',
+        isCorner: false, // TODO: add field
+        hasBalcony: propertyData.balconyType !== 'NONE',
+        financeType,
+        locationQuality: propertyData.locationQuality,
+        elevatorCount: propertyData.elevatorCount || 0,
+    };
+
+    const liquidityResult = calculateLiquidityScore(liquidityInput);
+
+    // 4. Calculate Strategy
+    const hasLegalIssues =
+        propertyData.encumbranceType !== 'NONE' ||
+        propertyData.isMortgaged;
+
+    const strategyInput: StrategyInput = {
+        seller: {
+            reason: sellerData?.reason || null,
+            deadline: sellerData?.deadline || null,
+            expectedPrice: sellerData?.expectedPrice ? Number(sellerData.expectedPrice) : null,
+            minPrice: sellerData?.minPrice ? Number(sellerData.minPrice) : null,
+            hasDebts: sellerData?.hasDebts || false,
+            readyForExclusive: sellerData?.readyForExclusive || false,
+            trustLevel: sellerData?.trustLevel || 3,
+            readyToFollowRecommendations: sellerData?.readyToFollowRecommendations || null,
+        },
+        property: {
+            calculatedClass,
+            liquidityLevel: liquidityResult.level,
+            liquidityScore: liquidityResult.score,
+            price: Number(propertyData.price),
+            marketPrice: propertyData.marketPrice ? Number(propertyData.marketPrice) : null,
+            financeType,
+            hasLegalIssues,
+            legalIssueType: propertyData.encumbranceType,
+        },
+    };
+
+    const activeStrategy = calculateStrategy(strategyInput);
+    const strategyExplanation = getStrategyExplanation(activeStrategy);
+
+    // 5. Check if we need to log the calculation (strategy changed)
+    let shouldLog = !previousData;
+    if (previousData) {
+        shouldLog =
+            previousData.calculatedClass !== calculatedClass ||
+            previousData.activeStrategy !== activeStrategy ||
+            Math.abs(previousData.liquidityScore - liquidityResult.score) > 5;
+    }
+
+    if (shouldLog) {
+        await prisma.propertyCalculationLog.create({
+            data: {
+                propertyId,
+                previousClass: previousData?.calculatedClass as any || null,
+                newClass: calculatedClass,
+                previousLiquidity: previousData?.liquidityScore || null,
+                newLiquidity: liquidityResult.score,
+                previousStrategy: previousData?.activeStrategy as any || null,
+                newStrategy: activeStrategy,
+                calculationReason: previousData ? 'PROPERTY_UPDATE' : 'PROPERTY_CREATION',
+                inputData: {
+                    class: classInput,
+                    liquidity: liquidityInput,
+                    strategy: strategyInput,
+                } as any,
+                outputData: {
+                    calculatedClass,
+                    financeType,
+                    liquidityScore: liquidityResult.score,
+                    liquidityLevel: liquidityResult.level,
+                    isIlliquid: liquidityResult.isIlliquid,
+                    illiquidReason: liquidityResult.hardTrigger || null,
+                    activeStrategy,
+                    strategyExplanation,
+                },
+            },
+        });
+    }
+
+    return {
+        calculatedClass,
+        financeType,
+        liquidityScore: liquidityResult.score,
+        liquidityLevel: liquidityResult.level,
+        isIlliquid: liquidityResult.isIlliquid,
+        illiquidReason: liquidityResult.hardTrigger || null,
+        activeStrategy,
+        strategyExplanation,
+        pricePerSqm: Number(propertyData.price) / Number(propertyData.area),
+    };
+}
+
+// =========================================
+// GET /api/crm-properties - Список объектов
+// =========================================
+crmPropertiesRouter.get('/', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const {
+            funnelStage,
+            calculatedClass,
+            liquidityLevel,
+            activeStrategy,
+            district,
+            sellerId,
+            search,
+            page = '1',
+            limit = '20',
+        } = req.query;
+
+        const pageNum = parseInt(page as string);
+        const limitNum = parseInt(limit as string);
+        const skip = (pageNum - 1) * limitNum;
+
+        const where: any = {};
+
+        // Фильтр по брокеру
+        if (req.user?.role === 'BROKER') {
+            where.brokerId = req.user.userId;
+        }
+
+        if (funnelStage) where.funnelStage = funnelStage;
+        if (calculatedClass) where.calculatedClass = calculatedClass;
+        if (liquidityLevel) where.liquidityLevel = liquidityLevel;
+        if (activeStrategy) where.activeStrategy = activeStrategy;
+        if (district) where.district = district;
+        if (sellerId) where.sellerId = sellerId;
+
+        if (search) {
+            where.OR = [
+                { residentialComplex: { contains: search as string, mode: 'insensitive' } },
+                { address: { contains: search as string, mode: 'insensitive' } },
+            ];
+        }
+
+        const [properties, total] = await Promise.all([
+            prisma.crmProperty.findMany({
+                where,
+                skip,
+                take: limitNum,
+                orderBy: { updatedAt: 'desc' },
+                include: {
+                    seller: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            phone: true,
+                            funnelStage: true,
+                        },
+                    },
+                    broker: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                        },
+                    },
+                },
+            }),
+            prisma.crmProperty.count({ where }),
+        ]);
+
+        res.json({
+            properties,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total,
+                pages: Math.ceil(total / limitNum),
+            },
+        });
+    } catch (error) {
+        console.error('Get CRM properties error:', error);
+        res.status(500).json({ error: 'Ошибка получения списка объектов' });
+    }
+});
+
+// =========================================
+// GET /api/crm-properties/funnel-stats - Статистика по воронке объектов
+// =========================================
+crmPropertiesRouter.get('/funnel-stats', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const where: any = {};
+
+        if (req.user?.role === 'BROKER') {
+            where.brokerId = req.user.userId;
+        }
+
+        const stats = await prisma.crmProperty.groupBy({
+            by: ['funnelStage'],
+            where,
+            _count: { id: true },
+        });
+
+        const result = {
+            CREATED: 0,
+            PREPARATION: 0,
+            LEADS: 0,
+            SHOWS: 0,
+            DEAL: 0,
+            POST_SERVICE: 0,
+        };
+
+        stats.forEach((s) => {
+            result[s.funnelStage as keyof typeof result] = s._count.id;
+        });
+
+        res.json(result);
+    } catch (error) {
+        console.error('Get property funnel stats error:', error);
+        res.status(500).json({ error: 'Ошибка получения статистики воронки' });
+    }
+});
+
+// =========================================
+// GET /api/crm-properties/analytics - Аналитика по классам и стратегиям
+// =========================================
+crmPropertiesRouter.get('/analytics', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const where: any = {};
+
+        if (req.user?.role === 'BROKER') {
+            where.brokerId = req.user.userId;
+        }
+
+        const [byClass, byLiquidity, byStrategy] = await Promise.all([
+            prisma.crmProperty.groupBy({
+                by: ['calculatedClass'],
+                where,
+                _count: { id: true },
+            }),
+            prisma.crmProperty.groupBy({
+                by: ['liquidityLevel'],
+                where,
+                _count: { id: true },
+            }),
+            prisma.crmProperty.groupBy({
+                by: ['activeStrategy'],
+                where,
+                _count: { id: true },
+            }),
+        ]);
+
+        res.json({
+            byClass: byClass.reduce((acc, item) => {
+                if (item.calculatedClass) acc[item.calculatedClass] = item._count.id;
+                return acc;
+            }, {} as Record<string, number>),
+            byLiquidity: byLiquidity.reduce((acc, item) => {
+                if (item.liquidityLevel) acc[item.liquidityLevel] = item._count.id;
+                return acc;
+            }, {} as Record<string, number>),
+            byStrategy: byStrategy.reduce((acc, item) => {
+                if (item.activeStrategy) acc[item.activeStrategy] = item._count.id;
+                return acc;
+            }, {} as Record<string, number>),
+        });
+    } catch (error) {
+        console.error('Get property analytics error:', error);
+        res.status(500).json({ error: 'Ошибка получения аналитики' });
+    }
+});
+
+// =========================================
+// GET /api/crm-properties/:id - Детали объекта
+// =========================================
+crmPropertiesRouter.get('/:id', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        const property = await prisma.crmProperty.findUnique({
+            where: { id },
+            include: {
+                seller: true,
+                broker: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                        phone: true,
+                    },
+                },
+                calculationLogs: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 10,
+                },
+            },
+        });
+
+        if (!property) {
+            res.status(404).json({ error: 'Объект не найден' });
+            return;
+        }
+
+        if (req.user?.role === 'BROKER' && property.brokerId !== req.user.userId) {
+            res.status(403).json({ error: 'Доступ запрещен' });
+            return;
+        }
+
+        res.json(property);
+    } catch (error) {
+        console.error('Get CRM property error:', error);
+        res.status(500).json({ error: 'Ошибка получения объекта' });
+    }
+});
+
+// =========================================
+// GET /api/crm-properties/:id/strategy-details - Детали стратегии
+// =========================================
+crmPropertiesRouter.get('/:id/strategy-details', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        const property = await prisma.crmProperty.findUnique({
+            where: { id },
+            include: {
+                seller: true,
+                calculationLogs: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 20,
+                },
+            },
+        });
+
+        if (!property) {
+            res.status(404).json({ error: 'Объект не найден' });
+            return;
+        }
+
+        if (req.user?.role === 'BROKER' && property.brokerId !== req.user.userId) {
+            res.status(403).json({ error: 'Доступ запрещен' });
+            return;
+        }
+
+        // Build detailed strategy explanation
+        const strategyDetails = {
+            // Current calculated values
+            current: {
+                propertyClass: property.calculatedClass,
+                financeType: property.financeType,
+                liquidityScore: property.liquidityScore,
+                liquidityLevel: property.liquidityLevel,
+                isIlliquid: property.isIlliquid,
+                illiquidReason: property.illiquidReason,
+                activeStrategy: property.activeStrategy,
+                strategyExplanation: property.strategyExplanation,
+            },
+
+            // Key factors that determined the strategy
+            factors: {
+                class: {
+                    yearBuilt: property.yearBuilt,
+                    buildingType: property.buildingType,
+                    ceilingHeight: property.ceilingHeight,
+                    totalFloors: property.totalFloors,
+                    apartmentsPerFloor: property.apartmentsPerFloor,
+                    parkingType: property.parkingType,
+                    hasClosedTerritory: property.hasClosedTerritory,
+                    locationQuality: property.locationQuality,
+                },
+                liquidity: {
+                    floor: property.floor,
+                    area: property.area,
+                    actualCondition: property.actualCondition,
+                    repairState: property.repairState,
+                    viewType: property.viewType,
+                    mopState: property.mopState,
+                },
+                strategy: {
+                    sellerTrustLevel: property.seller?.trustLevel,
+                    sellerReadyForExclusive: property.seller?.readyForExclusive,
+                    sellerDeadline: property.seller?.deadline,
+                    encumbranceType: property.encumbranceType,
+                    isMortgaged: property.isMortgaged,
+                    priceVsMarket: property.marketPrice
+                        ? (Number(property.price) / Number(property.marketPrice) - 1) * 100
+                        : null,
+                },
+            },
+
+            // Calculation history
+            history: property.calculationLogs.map((log) => ({
+                date: log.createdAt,
+                reason: log.calculationReason,
+                changes: {
+                    class: log.previousClass !== log.newClass
+                        ? { from: log.previousClass, to: log.newClass }
+                        : null,
+                    liquidity: log.previousLiquidity !== log.newLiquidity
+                        ? { from: log.previousLiquidity, to: log.newLiquidity }
+                        : null,
+                    strategy: log.previousStrategy !== log.newStrategy
+                        ? { from: log.previousStrategy, to: log.newStrategy }
+                        : null,
+                },
+            })),
+        };
+
+        res.json(strategyDetails);
+    } catch (error) {
+        console.error('Get strategy details error:', error);
+        res.status(500).json({ error: 'Ошибка получения деталей стратегии' });
+    }
+});
+
+// =========================================
+// POST /api/crm-properties/:id/generate-description - Генерация описания (AI)
+// =========================================
+crmPropertiesRouter.post(
+    '/:id/generate-description',
+    requireRole('BROKER', 'ADMIN'),
+    async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { id } = req.params;
+            const property = await prisma.crmProperty.findUnique({ where: { id } });
+
+            if (!property) {
+                res.status(404).json({ error: 'Объект не найден' });
+                return;
+            }
+
+            // Import dynamically if needed or assume it's available. 
+            // In this file context, I need to make sure deepSeekService is imported.
+            // Since I cannot easily add top-level import in replace_file_content without disturbing lines, 
+            // I will assume I can import it or I will add the import in a separate call if needed.
+            // But wait, replace_file is chunk based. I can just use the service if imported.
+            // I'll check imports later. For now, I'll use the service variable.
+
+            // Wait, I need to make sure `deepSeekService` is imported. 
+            // I'll assume it is NOT imported yet.
+            // So I will just add the route logic and THEN add the import at the top.
+
+            const context = {
+                residentialComplex: property.residentialComplex,
+                district: property.district,
+                area: property.area,
+                floor: property.floor,
+                totalFloors: property.totalFloors,
+                repairState: property.repairState,
+                strategy: property.activeStrategy || 'SALE',
+            };
+
+            const description = await import('../services/deepseek.service').then(m => m.deepSeekService.generateMarketingDescription(context));
+
+            res.json({ description });
+        } catch (error) {
+            console.error('Generate description error:', error);
+            res.status(500).json({ error: 'Ошибка генерации описания' });
+        }
+    }
+);
+
+// =========================================
+// POST /api/crm-properties - Создание объекта
+// =========================================
+crmPropertiesRouter.post(
+    '/',
+    requireRole('BROKER', 'ADMIN'),
+    validate(CrmPropertyMinimalSchema),
+    async (req: Request, res: Response): Promise<void> => {
+        try {
+            const data = req.body;
+
+            // Verify seller exists and belongs to broker
+            const seller = await prisma.seller.findUnique({
+                where: { id: data.sellerId },
+            });
+
+            if (!seller) {
+                res.status(404).json({ error: 'Продавец не найден' });
+                return;
+            }
+
+            if (req.user?.role === 'BROKER' && seller.brokerId !== req.user.userId) {
+                res.status(403).json({ error: 'Продавец принадлежит другому брокеру' });
+                return;
+            }
+
+            // Create property first
+            const property = await prisma.crmProperty.create({
+                data: {
+                    ...data,
+                    brokerId: req.user!.userId,
+                    funnelStage: 'CREATED',
+                },
+            });
+
+            // Run calculation
+            const calculationResult = await runPropertyCalculation(
+                property.id,
+                property,
+                seller
+            );
+
+            // Update with calculated values
+            const updatedProperty = await prisma.crmProperty.update({
+                where: { id: property.id },
+                data: calculationResult,
+                include: {
+                    seller: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            phone: true,
+                        },
+                    },
+                    broker: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                        },
+                    },
+                    calculationLogs: {
+                        orderBy: { createdAt: 'desc' },
+                        take: 1,
+                    },
+                },
+            });
+
+            res.status(201).json(updatedProperty);
+        } catch (error) {
+            console.error('Create CRM property error:', error);
+            res.status(500).json({ error: 'Ошибка создания объекта' });
+        }
+    }
+);
+
+// =========================================
+// PUT /api/crm-properties/:id - Обновление объекта (с пересчётом)
+// =========================================
+crmPropertiesRouter.put(
+    '/:id',
+    requireRole('BROKER', 'ADMIN'),
+    validate(CrmPropertyUpdateSchema),
+    async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { id } = req.params;
+            const data = req.body;
+
+            const existing = await prisma.crmProperty.findUnique({
+                where: { id },
+                include: { seller: true },
+            });
+
+            if (!existing) {
+                res.status(404).json({ error: 'Объект не найден' });
+                return;
+            }
+
+            if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
+                res.status(403).json({ error: 'Доступ запрещен' });
+                return;
+            }
+
+            // Update basic data
+            const updatedProperty = await prisma.crmProperty.update({
+                where: { id },
+                data,
+            });
+
+            // Recalculate if relevant fields changed
+            const fieldsAffectingCalculation = [
+                'yearBuilt', 'buildingType', 'ceilingHeight', 'totalFloors',
+                'apartmentsPerFloor', 'parkingType', 'hasClosedTerritory',
+                'elevatorCount', 'hasFreightElevator', 'locationQuality',
+                'floor', 'area', 'price', 'marketPrice', 'repairState',
+                'actualCondition', 'encumbranceType', 'isMortgaged',
+                'layoutType', 'viewType', 'mopState',
+            ];
+
+            const needsRecalculation = fieldsAffectingCalculation.some(
+                (field) => data[field] !== undefined
+            );
+
+            if (needsRecalculation) {
+                const previousData = {
+                    calculatedClass: existing.calculatedClass,
+                    liquidityScore: existing.liquidityScore,
+                    activeStrategy: existing.activeStrategy,
+                };
+
+                const calculationResult = await runPropertyCalculation(
+                    id,
+                    { ...existing, ...data },
+                    existing.seller,
+                    previousData
+                );
+
+                const finalProperty = await prisma.crmProperty.update({
+                    where: { id },
+                    data: calculationResult,
+                    include: {
+                        seller: {
+                            select: {
+                                id: true,
+                                firstName: true,
+                                lastName: true,
+                                phone: true,
+                            },
+                        },
+                        broker: {
+                            select: {
+                                id: true,
+                                firstName: true,
+                                lastName: true,
+                            },
+                        },
+                        calculationLogs: {
+                            orderBy: { createdAt: 'desc' },
+                            take: 3,
+                        },
+                    },
+                });
+
+                res.json(finalProperty);
+                return;
+            }
+
+            // Return without recalculation
+            const result = await prisma.crmProperty.findUnique({
+                where: { id },
+                include: {
+                    seller: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            phone: true,
+                        },
+                    },
+                    broker: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                        },
+                    },
+                },
+            });
+
+            res.json(result);
+        } catch (error) {
+            console.error('Update CRM property error:', error);
+            res.status(500).json({ error: 'Ошибка обновления объекта' });
+        }
+    }
+);
+
+// =========================================
+// PUT /api/crm-properties/:id/stage - Изменение этапа воронки
+// =========================================
+const updatePropertyStageSchema = z.object({
+    funnelStage: z.enum(['CREATED', 'PREPARATION', 'LEADS', 'SHOWS', 'DEAL', 'POST_SERVICE']),
+});
+
+crmPropertiesRouter.put(
+    '/:id/stage',
+    requireRole('BROKER', 'ADMIN'),
+    validate(updatePropertyStageSchema),
+    async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { id } = req.params;
+            const { funnelStage } = req.body;
+
+            const existing = await prisma.crmProperty.findUnique({ where: { id } });
+
+            if (!existing) {
+                res.status(404).json({ error: 'Объект не найден' });
+                return;
+            }
+
+            if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
+                res.status(403).json({ error: 'Доступ запрещен' });
+                return;
+            }
+
+            const property = await prisma.crmProperty.update({
+                where: { id },
+                data: {
+                    funnelStage,
+                    publishedAt: funnelStage === 'LEADS' && !existing.publishedAt
+                        ? new Date()
+                        : existing.publishedAt,
+                },
+            });
+
+            res.json(property);
+        } catch (error) {
+            console.error('Update property stage error:', error);
+            res.status(500).json({ error: 'Ошибка изменения этапа' });
+        }
+    }
+);
+
+// =========================================
+// POST /api/crm-properties/:id/recalculate - Принудительный пересчёт
+// =========================================
+crmPropertiesRouter.post(
+    '/:id/recalculate',
+    requireRole('BROKER', 'ADMIN'),
+    async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { id } = req.params;
+
+            const existing = await prisma.crmProperty.findUnique({
+                where: { id },
+                include: { seller: true },
+            });
+
+            if (!existing) {
+                res.status(404).json({ error: 'Объект не найден' });
+                return;
+            }
+
+            if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
+                res.status(403).json({ error: 'Доступ запрещен' });
+                return;
+            }
+
+            const previousData = {
+                calculatedClass: existing.calculatedClass,
+                liquidityScore: existing.liquidityScore,
+                activeStrategy: existing.activeStrategy,
+            };
+
+            const calculationResult = await runPropertyCalculation(
+                id,
+                existing,
+                existing.seller,
+                previousData
+            );
+
+            const property = await prisma.crmProperty.update({
+                where: { id },
+                data: calculationResult,
+                include: {
+                    seller: true,
+                    calculationLogs: {
+                        orderBy: { createdAt: 'desc' },
+                        take: 5,
+                    },
+                },
+            });
+
+            res.json({
+                property,
+                recalculated: true,
+                changes: {
+                    classChanged: previousData.calculatedClass !== property.calculatedClass,
+                    liquidityChanged: previousData.liquidityScore !== property.liquidityScore,
+                    strategyChanged: previousData.activeStrategy !== property.activeStrategy,
+                },
+            });
+        } catch (error) {
+            console.error('Recalculate property error:', error);
+            res.status(500).json({ error: 'Ошибка пересчёта' });
+        }
+    }
+);
+
+import { deepSeekService } from '../services/deepseek.service';
+
+// =========================================
+// POST /api/crm-properties/:id/generate-strategy - AI Генерация обоснования
+// =========================================
+crmPropertiesRouter.post(
+    '/:id/generate-strategy',
+    requireRole('BROKER', 'ADMIN'),
+    async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { id } = req.params;
+
+            const property = await prisma.crmProperty.findUnique({
+                where: { id },
+                include: { seller: true },
+            });
+
+            if (!property) {
+                res.status(404).json({ error: 'Объект не найден' });
+                return;
+            }
+
+            if (req.user?.role === 'BROKER' && property.brokerId !== req.user.userId) {
+                res.status(403).json({ error: 'Доступ запрещен' });
+                return;
+            }
+
+            const context = {
+                address: property.address || '',
+                residentialComplex: property.residentialComplex,
+                price: Number(property.price),
+                area: Number(property.area),
+                floor: property.floor,
+                totalFloors: property.totalFloors,
+                yearBuilt: property.yearBuilt,
+                repairState: property.repairState,
+                calculatedClass: property.calculatedClass || 'Не определен',
+                liquidityScore: property.liquidityScore || 0,
+                activeStrategy: property.activeStrategy || 'Не определена',
+            };
+
+            const justification = await deepSeekService.generateStrategyJustification(context);
+
+            const updated = await prisma.crmProperty.update({
+                where: { id },
+                data: {
+                    strategyExplanation: JSON.stringify(justification),
+                },
+            });
+
+            res.json({ justification });
+        } catch (error) {
+            console.error('AI Generation error:', error);
+            res.status(500).json({ error: 'Ошибка генерации AI' });
+        }
+    }
+);
+
+// =========================================
+// POST /api/crm-properties/:id/generate-description - AI Генерация рекламного описания
+// =========================================
+crmPropertiesRouter.post(
+    '/:id/generate-description',
+    requireRole('BROKER', 'ADMIN'),
+    async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { id } = req.params;
+
+            const property = await prisma.crmProperty.findUnique({
+                where: { id },
+                include: { seller: true },
+            });
+
+            if (!property) {
+                res.status(404).json({ error: 'Объект не найден' });
+                return;
+            }
+
+            const context = {
+                residentialComplex: property.residentialComplex,
+                district: property.district,
+                area: Number(property.area),
+                floor: property.floor,
+                totalFloors: property.totalFloors,
+                repairState: property.repairState,
+                strategy: property.activeStrategy || 'Не определена',
+            };
+
+            const description = await deepSeekService.generateMarketingDescription(context);
+
+            await prisma.crmProperty.update({
+                where: { id },
+                data: { notes: description }, // Пока сохраняем в notes, если нет спец. поля description
+                // TODO: Добавить поле description в схему призмы если notes занято
+            });
+
+            res.json({ description });
+        } catch (error) {
+            console.error('AI Marketing Generation error:', error);
+            res.status(500).json({ error: 'Ошибка генерации описания' });
+        }
+    }
+);
+
+// =========================================
+// DELETE /api/crm-properties/:id - Удаление объекта
+// =========================================
+crmPropertiesRouter.delete(
+    '/:id',
+    requireRole('ADMIN'),
+    async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { id } = req.params;
+
+            const existing = await prisma.crmProperty.findUnique({ where: { id } });
+
+            if (!existing) {
+                res.status(404).json({ error: 'Объект не найден' });
+                return;
+            }
+
+            // Soft delete - just archive
+            if (req.query.hard !== 'true') {
+                await prisma.crmProperty.update({
+                    where: { id },
+                    data: { status: 'ARCHIVED' },
+                });
+                res.json({ success: true, message: 'Объект архивирован' });
+                return;
+            }
+
+            // Hard delete (admin only with ?hard=true)
+            await prisma.crmProperty.delete({ where: { id } });
+            res.json({ success: true, message: 'Объект удалён' });
+        } catch (error) {
+            console.error('Delete CRM property error:', error);
+            res.status(500).json({ error: 'Ошибка удаления объекта' });
+        }
+    }
+);
+
+// =========================================
+// POST /api/crm-properties/:id/recalculate-strategy - Hybrid AI Recalculation
+// =========================================
+crmPropertiesRouter.post(
+    '/:id/recalculate-strategy',
+    requireRole('BROKER', 'ADMIN'),
+    async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { id } = req.params;
+
+            const existing = await prisma.crmProperty.findUnique({
+                where: { id },
+                include: { seller: true },
+            });
+
+            if (!existing) {
+                res.status(404).json({ error: 'Property not found' });
+                return;
+            }
+
+            if (!existing.seller) {
+                res.status(400).json({ error: 'Property has no associated seller' });
+                return;
+            }
+
+            // Prepare Inputs from existing data
+            const propertyInput: PropertyClassInput = {
+                yearBuilt: existing.yearBuilt,
+                ceilingHeight: existing.ceilingHeight ? Number(existing.ceilingHeight) : 2.7,
+                buildingType: existing.buildingType as any,
+                apartmentsPerFloor: existing.apartmentsPerFloor || 4,
+                hasClosedTerritory: existing.hasClosedTerritory,
+                totalFloors: existing.totalFloors,
+                elevatorCount: existing.elevatorCount,
+                hasFreightElevator: existing.hasFreightElevator,
+                locationQuality: existing.locationQuality,
+                glazingType: existing.glazingType,
+                accessSystem: existing.accessSystem,
+                facadeMaterial: existing.facadeMaterial,
+                lobbyType: existing.lobbyType,
+                parkingType: existing.parkingType
+            };
+
+            const liquidityInput: LiquidityInput = {
+                calculatedClass: existing.calculatedClass || 'ECONOMY', // Fallback
+                yearBuilt: existing.yearBuilt,
+                floor: existing.floor,
+                totalFloors: existing.totalFloors,
+                rooms: existing.rooms,
+                area: Number(existing.area?.toString() || 0),
+                price: Number(existing.price.toString()),
+                marketPrice: existing.marketPrice ? Number(existing.marketPrice.toString()) : null,
+                repairState: existing.repairState,
+                actualCondition: existing.actualCondition,
+                parkingType: existing.parkingType,
+                viewType: existing.viewType,
+                mopState: existing.mopState,
+                layoutType: existing.layoutType,
+                isCorner: false,
+                hasBalcony: false, // TODO
+                financeType: existing.financeType,
+                locationQuality: existing.locationQuality,
+                elevatorCount: existing.elevatorCount
+            };
+
+            const strategyInput = {
+                seller: {
+                    reason: existing.seller.reason,
+                    deadline: existing.seller.deadline,
+                    expectedPrice: existing.seller.expectedPrice ? Number(existing.seller.expectedPrice) : null,
+                    minPrice: existing.seller.minPrice ? Number(existing.seller.minPrice) : null,
+                    hasDebts: existing.seller.hasDebts,
+                    readyForExclusive: existing.seller.readyForExclusive,
+                    trustLevel: existing.seller.trustLevel,
+                    readyToFollowRecommendations: existing.seller.readyToFollowRecommendations
+                },
+                property: {
+                    price: Number(existing.price),
+                    marketPrice: existing.marketPrice ? Number(existing.marketPrice) : null,
+                    financeType: existing.financeType,
+                    hasLegalIssues: existing.encumbranceType !== 'NONE' || existing.isMortgaged,
+                    legalIssueType: existing.encumbranceType,
+                    isMortgaged: existing.isMortgaged
+                }
+            };
+
+            // Call Hybrid Calculator
+            const hybridResult = await calculateHybridStrategy(propertyInput, liquidityInput, strategyInput);
+
+            const updatedProperty = await prisma.crmProperty.update({
+                where: { id },
+                data: {
+                    activeStrategy: hybridResult.strategy,
+                    strategyExplanation: hybridResult.strategyExplanation,
+                    liquidityScore: hybridResult.liquidityResult.score,
+                    liquidityLevel: hybridResult.liquidityResult.level
+                }
+            });
+
+            // LOG IT
+            await prisma.propertyCalculationLog.create({
+                data: {
+                    propertyId: id,
+                    previousClass: existing.calculatedClass,
+                    newClass: hybridResult.propertyClass,
+                    previousStrategy: existing.activeStrategy,
+                    newStrategy: hybridResult.strategy,
+                    calculationReason: 'AI_RECALCULATION', // "AI Intervention"
+                    inputData: {},
+                    outputData: {
+                        ...hybridResult,
+                        aiReasoning: hybridResult.aiReasoning || hybridResult.strategyExplanation
+                    } as any
+                }
+            });
+
+            res.json({
+                title: hybridResult.isAiAdjusted ? "🤖 AI изменил стратегию!" : "✅ Стратегия подтверждена",
+                message: hybridResult.aiReasoning || "Стратегия соответствует рыночным условиям.",
+                property: updatedProperty
+            });
+
+        } catch (error) {
+            console.error('Hybrid Strategy Error:', error);
+            res.status(500).json({ error: 'AI Recalculation Failed' });
+        }
+    }
+);
+
+// POST /api/crm-properties/:id/close - Close Deal
+crmPropertiesRouter.post('/:id/close', async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { offerId, finalPrice, commission, notes } = req.body;
+
+        if (!offerId || !finalPrice) {
+            res.status(400).json({ error: "Missing required fields" });
+            return;
+        }
+
+        // Transaction for data integrity
+        await prisma.$transaction(async (tx) => {
+            // 1. Update Offer Status
+            await tx.offer.update({
+                where: { id: offerId },
+                data: { status: 'ACCEPTED' }
+            });
+
+            // 2. Reject other active offers for this property
+            await tx.offer.updateMany({
+                where: {
+                    propertyId: id,
+                    id: { not: offerId },
+                    status: 'PENDING'
+                },
+                data: { status: 'REJECTED' }
+            });
+
+            // 3. Update Property Status & Funnel
+            const property = await tx.crmProperty.update({
+                where: { id },
+                data: {
+                    status: 'SOLD',
+                    funnelStage: 'DEAL',
+                    // potentially store final price if schema supports it, strictly we use offers usually
+                    // checking schema: CrmProperty has price, but maybe we shouldn't overwrite asking price?
+                    // Let's assume we keep asking price history and trust the Offer as the record of deal price.
+                    // But we can store commission.
+                }
+            });
+
+            // 4. Update Buyer Status (via Offer)
+            // Get buyer ID from offer
+            const offer = await tx.offer.findUnique({ where: { id: offerId } });
+            if (offer?.buyerId) {
+                await tx.buyer.update({
+                    where: { id: offer.buyerId },
+                    data: { status: 'ARCHIVED' } // Changed from PURCHASED to ARCHIVED
+                });
+            }
+
+            // 5. Update Seller Status (if all properties sold?)
+            // For now simplify: Move seller to "Deal" stage if they are not there?
+            // Or maybe "ARCHIVED"?
+            // Let's keep seller in Contract Signing or move to a "Completed" stage if it existed.
+            // Requirement says: "Close Deal" -> update property.
+
+            // Create a log or "Deal" record if we had a Deal table.
+            // For now, the successful update is enough.
+        });
+
+        res.json({ success: true, message: "Deal Closed Successfully" });
+
+    } catch (error) {
+        console.error("Close Deal Error:", error);
+        res.status(500).json({ error: "Failed to close deal" });
+    }
+});
