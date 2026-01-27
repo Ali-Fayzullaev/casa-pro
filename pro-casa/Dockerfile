@@ -7,8 +7,8 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 
 COPY package.json package-lock.json* ./
-# Убрал китайское зеркало и retry - Alpine имеет быстрые CDN
-RUN npm ci --omit=dev
+# Install all dependencies (TypeScript needed for next.config.ts)
+RUN npm ci
 
 # Builder stage  
 FROM base AS builder
