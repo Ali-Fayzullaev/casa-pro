@@ -121,9 +121,21 @@ services:
     volumes:
       - ./deployment/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./deployment/ssl:/etc/nginx/ssl:ro
+      - ./deployment/certbot/www:/var/www/certbot:ro
     depends_on:
       - frontend
       - backend
+    networks:
+      - pro-casa-network
+
+  # Certbot for SSL certificates
+  certbot:
+    image: certbot/certbot
+    container_name: pro-casa-certbot
+    volumes:
+      - ./deployment/ssl:/etc/letsencrypt
+      - ./deployment/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
     networks:
       - pro-casa-network
 
