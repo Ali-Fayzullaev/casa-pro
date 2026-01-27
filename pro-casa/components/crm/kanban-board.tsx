@@ -1,3 +1,5 @@
+"use client";
+
 import { CloseDealDialog } from "./forms/CloseDealDialog";
 import { KanbanBoard as DndBoard } from "./KanbanBoard";
 import { CreateSellerForm } from "./forms/CreateSellerForm";
