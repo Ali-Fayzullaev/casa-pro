@@ -100,10 +100,13 @@ services:
     build:
       context: ./pro-casa
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "https://pro.casa.kz/api"
     container_name: pro-casa-frontend
     restart: always
     environment:
       NODE_ENV: "production"
+      NEXT_PUBLIC_API_URL: "https://pro.casa.kz/api"
     ports:
       - "3000:3000"
     depends_on:
