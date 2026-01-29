@@ -1133,6 +1133,40 @@ crmPropertiesRouter.post(
 );
 
 // =========================================
+// DELETE /api/crm-properties/:id/permanent - Полное удаление объекта
+// =========================================
+crmPropertiesRouter.delete(
+    '/:id/permanent',
+    requireRole('BROKER', 'ADMIN'),
+    async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { id } = req.params;
+            const userId = req.user!.userId;
+            const role = req.user!.role;
+
+            const existing = await prisma.crmProperty.findUnique({ where: { id } });
+
+            if (!existing) {
+                res.status(404).json({ error: 'Объект не найден' });
+                return;
+            }
+
+            // BROKER может удалять только свои объекты
+            if (role === 'BROKER' && existing.brokerId !== userId) {
+                res.status(403).json({ error: 'Нет прав на удаление этого объекта' });
+                return;
+            }
+
+            await prisma.crmProperty.delete({ where: { id } });
+            res.json({ success: true, message: 'Объект удалён навсегда' });
+        } catch (error) {
+            console.error('Permanent delete property error:', error);
+            res.status(500).json({ error: 'Ошибка удаления объекта' });
+        }
+    }
+);
+
+// =========================================
 // POST /api/crm-properties/:id/recalculate-strategy - Hybrid AI Recalculation
 // =========================================
 crmPropertiesRouter.post(

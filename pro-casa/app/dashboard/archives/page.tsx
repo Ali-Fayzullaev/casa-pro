@@ -114,7 +114,7 @@ export default function ArchivesPage() {
                 await api.delete(`/sellers/${deleteItem.id}/permanent`);
                 setSellers(prev => prev.filter(s => s.id !== deleteItem.id));
             } else {
-                await api.delete(`/crm-properties/${deleteItem.id}?hard=true`);
+                await api.delete(`/crm-properties/${deleteItem.id}/permanent`);
                 setProperties(prev => prev.filter(p => p.id !== deleteItem.id));
             }
             toast.success('Удалено навсегда');
