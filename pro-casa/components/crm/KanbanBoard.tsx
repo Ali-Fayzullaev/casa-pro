@@ -54,7 +54,7 @@ const STAGE_DESCRIPTIONS: Record<string, string> = {
 
 interface KanbanBoardProps {
     type: "sellers" | "properties";
-    columns: { id: string; title: string }[];
+    columns: readonly { id: string; title: string; variant?: "blue" | "pink" | "green" | "cyan" | "default" }[];
     items: Record<string, (Seller | CrmProperty)[]>;
     onDragEnd: (id: string, newStage: string) => void;
     onAddProperty?: (sellerId: string) => void;
