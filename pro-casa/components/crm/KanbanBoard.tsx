@@ -48,7 +48,8 @@ const STAGE_DESCRIPTIONS: Record<string, string> = {
     [PropertyFunnelStage.LEADS]: "Активное продвижение и сбор заявок.",
     [PropertyFunnelStage.SHOWS]: "Организация и проведение показов.",
     [PropertyFunnelStage.DEAL]: "Обсуждение условий и оформление сделки.",
-    [PropertyFunnelStage.SOLD]: "Сделка закрыта. Объект продан."
+    [PropertyFunnelStage.SOLD]: "Сделка закрыта. Объект продан.",
+    [SellerFunnelStage.CANCELLED]: "Клиент отказался / Объект не продан."
 };
 
 interface KanbanBoardProps {
@@ -278,6 +279,14 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
         if (type === "sellers" && itemData.type === "Seller") {
             const seller = itemData.item as Seller;
 
+            // ALLOW: Always allow moving to CANCELLED
+            if (newStage === SellerFunnelStage.CANCELLED) {
+                onDragEnd(itemId, newStage);
+                toast.success("Статус обновлен");
+                setActiveItem(null);
+                return;
+            }
+
             // STRICT FUNNEL: Define Order
             const STAGE_ORDER = [
                 SellerFunnelStage.CONTACT,
@@ -297,7 +306,8 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
             }
 
             // 2. Block Skipping Stages (Must be sequential)
-            if (newIndex > currentIndex + 1) {
+            // But verify if newIndex is valid (i.e., not -1 which would mean it's not in the main funnel, like CANCELLED, but we handled that above)
+            if (newIndex !== -1 && newIndex > currentIndex + 1) {
                 toast.error("Нельзя перепрыгивать этапы воронки");
                 setActiveItem(null);
                 return;
@@ -393,6 +403,14 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
         // --- VALIDATION: Property Stage Gates ---
         if (type === "properties" && itemData.type === "Property") {
             const property = itemData.item as CrmProperty;
+
+            // ALLOW: Always allow moving to CANCELLED
+            if (newStage === PropertyFunnelStage.CANCELLED) {
+                onDragEnd(itemId, newStage);
+                toast.success("Статус обновлен");
+                setActiveItem(null);
+                return;
+            }
 
             // GATE: To PREPARATION (Requires Photos)
             if (newStage === PropertyFunnelStage.PREPARATION) {

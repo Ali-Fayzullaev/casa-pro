@@ -361,7 +361,7 @@ sellersRouter.put(
 // PUT /api/sellers/:id/stage - Изменение этапа воронки
 // =========================================
 const updateStageSchema = z.object({
-    funnelStage: z.enum(['CONTACT', 'INTERVIEW', 'STRATEGY', 'CONTRACT_SIGNING', 'SOLD', 'ARCHIVED']),
+    funnelStage: z.enum(['CONTACT', 'INTERVIEW', 'STRATEGY', 'CONTRACT_SIGNING', 'SOLD', 'ARCHIVED', 'CANCELLED']),
 });
 
 sellersRouter.put(
@@ -386,13 +386,13 @@ sellersRouter.put(
             }
 
             // Валидация перехода этапов (нельзя перескакивать)
-            const stages = ['CONTACT', 'INTERVIEW', 'STRATEGY', 'CONTRACT_SIGNING', 'SOLD', 'ARCHIVED'];
+            const stages = ['CONTACT', 'INTERVIEW', 'STRATEGY', 'CONTRACT_SIGNING', 'SOLD', 'ARCHIVED', 'CANCELLED'];
             const currentIndex = stages.indexOf(existing.funnelStage);
             const newIndex = stages.indexOf(funnelStage);
 
-            // SOLD и ARCHIVED можно устанавливать из любого этапа
+            // SOLD, ARCHIVED и CANCELLED можно устанавливать из любого этапа
             // Для остальных - можно двигаться только на 1 шаг вперёд или назад
-            const isSpecialStage = funnelStage === 'SOLD' || funnelStage === 'ARCHIVED';
+            const isSpecialStage = funnelStage === 'SOLD' || funnelStage === 'ARCHIVED' || funnelStage === 'CANCELLED';
             if (!isSpecialStage && Math.abs(newIndex - currentIndex) > 1) {
                 res.status(400).json({
                     error: 'Нельзя перескакивать этапы воронки',

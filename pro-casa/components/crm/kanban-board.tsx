@@ -28,6 +28,7 @@ const SELLER_COLUMNS = [
     { id: SellerFunnelStage.INTERVIEW, title: "Интервью" },
     { id: SellerFunnelStage.STRATEGY, title: "Стратегия" },
     { id: SellerFunnelStage.CONTRACT_SIGNING, title: "Договор" },
+    { id: SellerFunnelStage.CANCELLED, title: "Отмена" },
 ];
 
 const PROPERTY_COLUMNS = [
@@ -36,6 +37,8 @@ const PROPERTY_COLUMNS = [
     { id: PropertyFunnelStage.LEADS, title: "Лиды" },
     { id: PropertyFunnelStage.SHOWS, title: "Показы" },
     { id: PropertyFunnelStage.DEAL, title: "Сделка" },
+    { id: PropertyFunnelStage.SOLD, title: "Продано" },
+    { id: PropertyFunnelStage.CANCELLED, title: "Отмена" },
 ];
 
 export function KanbanBoard() {

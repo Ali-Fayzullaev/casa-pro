@@ -545,6 +545,7 @@ enum SellerFunnelStage {
   INTERVIEW         // Интервью
   STRATEGY          // Стратегия
   CONTRACT_SIGNING  // Подписание договора
+  CANCELLED         // Отказ / Отмена
 }
 
 // Этапы воронки объекта
@@ -556,6 +557,7 @@ enum PropertyFunnelStage {
   DEAL          // Сделка
   SOLD          // Продано (сделка закрыта)
   POST_SERVICE  // Постобслуживание
+  CANCELLED     // Снято / Отказ
 }
 
 // Причина продажи

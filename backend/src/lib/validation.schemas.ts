@@ -29,11 +29,11 @@ export const FinanceTypeEnum = z.enum([
 ]);
 
 export const SellerFunnelStageEnum = z.enum([
-    'CONTACT', 'INTERVIEW', 'STRATEGY', 'CONTRACT_SIGNING'
+    'CONTACT', 'INTERVIEW', 'STRATEGY', 'CONTRACT_SIGNING', 'CANCELLED'
 ]);
 
 export const PropertyFunnelStageEnum = z.enum([
-    'CREATED', 'PREPARATION', 'LEADS', 'SHOWS', 'DEAL', 'POST_SERVICE'
+    'CREATED', 'PREPARATION', 'LEADS', 'SHOWS', 'DEAL', 'SOLD', 'POST_SERVICE', 'CANCELLED'
 ]);
 
 export const SaleReasonEnum = z.enum([

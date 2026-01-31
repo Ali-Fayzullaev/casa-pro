@@ -791,7 +791,7 @@ crmPropertiesRouter.put(
 // PUT /api/crm-properties/:id/stage - Изменение этапа воронки
 // =========================================
 const updatePropertyStageSchema = z.object({
-    funnelStage: z.enum(['CREATED', 'PREPARATION', 'LEADS', 'SHOWS', 'DEAL', 'POST_SERVICE']),
+    funnelStage: z.enum(['CREATED', 'PREPARATION', 'LEADS', 'SHOWS', 'DEAL', 'SOLD', 'POST_SERVICE', 'CANCELLED']),
 });
 
 crmPropertiesRouter.put(

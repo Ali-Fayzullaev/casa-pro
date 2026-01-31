@@ -3,6 +3,7 @@ export enum SellerFunnelStage {
     INTERVIEW = 'INTERVIEW',
     STRATEGY = 'STRATEGY',
     CONTRACT_SIGNING = 'CONTRACT_SIGNING',
+    CANCELLED = 'CANCELLED',
 }
 
 export enum PropertyFunnelStage {
@@ -13,6 +14,7 @@ export enum PropertyFunnelStage {
     DEAL = 'DEAL',
     SOLD = 'SOLD',
     POST_SERVICE = 'POST_SERVICE',
+    CANCELLED = 'CANCELLED',
 }
 
 export enum PropertyClass {
