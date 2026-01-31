@@ -24,22 +24,22 @@ import api from "@/lib/api-client";
 
 // Columns Configuration
 const SELLER_COLUMNS = [
-    { id: SellerFunnelStage.CONTACT, title: "Контакт" },
-    { id: SellerFunnelStage.INTERVIEW, title: "Интервью" },
-    { id: SellerFunnelStage.STRATEGY, title: "Стратегия" },
-    { id: SellerFunnelStage.CONTRACT_SIGNING, title: "Договор" },
-    { id: SellerFunnelStage.CANCELLED, title: "Отмена" },
-];
+    { id: SellerFunnelStage.CONTACT, title: "Контакт", variant: "blue" },
+    { id: SellerFunnelStage.INTERVIEW, title: "Интервью", variant: "pink" },
+    { id: SellerFunnelStage.STRATEGY, title: "Стратегия", variant: "green" },
+    { id: SellerFunnelStage.CONTRACT_SIGNING, title: "Договор", variant: "cyan" },
+    { id: SellerFunnelStage.CANCELLED, title: "Отмена", variant: "default" },
+] as const;
 
 const PROPERTY_COLUMNS = [
-    { id: PropertyFunnelStage.CREATED, title: "Создан" },
-    { id: PropertyFunnelStage.PREPARATION, title: "Подготовка" },
-    { id: PropertyFunnelStage.LEADS, title: "Лиды" },
-    { id: PropertyFunnelStage.SHOWS, title: "Показы" },
-    { id: PropertyFunnelStage.DEAL, title: "Сделка" },
-    { id: PropertyFunnelStage.SOLD, title: "Продано" },
-    { id: PropertyFunnelStage.CANCELLED, title: "Отмена" },
-];
+    { id: PropertyFunnelStage.CREATED, title: "Создан", variant: "default" },
+    { id: PropertyFunnelStage.PREPARATION, title: "Подготовка", variant: "pink" },
+    { id: PropertyFunnelStage.LEADS, title: "Лиды", variant: "blue" },
+    { id: PropertyFunnelStage.SHOWS, title: "Показы", variant: "cyan" },
+    { id: PropertyFunnelStage.DEAL, title: "Сделка", variant: "green" },
+    { id: PropertyFunnelStage.SOLD, title: "Продано", variant: "green" },
+    { id: PropertyFunnelStage.CANCELLED, title: "Отмена", variant: "default" },
+] as const;
 
 export function KanbanBoard() {
     const [activeTab, setActiveTab] = useState<"sellers" | "properties">("sellers");

@@ -534,6 +534,7 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
                             title={col.title}
                             count={items[col.id]?.length || 0}
                             description={STAGE_DESCRIPTIONS[col.id]}
+                            variant={(col as any).variant || 'default'}
                         >
                             <SortableContext
                                 items={items[col.id]?.map((i) => i.id) || []}

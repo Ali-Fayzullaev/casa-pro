@@ -20,36 +20,48 @@ interface KanbanColumnProps {
     id: string;
     title: string;
     count?: number;
-    description?: string; // New prop
+    description?: string;
     children: React.ReactNode;
+    variant?: "blue" | "pink" | "green" | "cyan" | "default";
 }
 
-export function KanbanColumn({ id, title, count = 0, description, children }: KanbanColumnProps) {
+const VARIANTS = {
+    blue: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-500/20",
+    pink: "bg-gradient-to-br from-pink-500 to-rose-600 text-white shadow-pink-500/20",
+    green: "bg-gradient-to-br from-lime-500 to-green-600 text-white shadow-green-500/20",
+    cyan: "bg-gradient-to-br from-cyan-400 to-blue-500 text-white shadow-cyan-500/20",
+    default: "bg-secondary/50 text-secondary-foreground"
+};
+
+export function KanbanColumn({ id, title, count = 0, description, children, variant = "default" }: KanbanColumnProps) {
     const { setNodeRef, isOver } = useDroppable({
         id,
     });
 
     return (
-        <div className="flex flex-col h-full min-w-[280px] w-[300px] border-r border-border/20 last:border-r-0">
-            <div className="flex items-center justify-between mb-3 px-1">
+        <div className="flex flex-col h-full min-w-[300px] w-[300px] border-r border-border/20 last:border-r-0 mr-4">
+            <div className={cn(
+                "flex items-center justify-between mb-4 px-4 py-3 rounded-xl shadow-lg transition-all",
+                VARIANTS[variant] || VARIANTS.default
+            )}>
                 <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-sm text-foreground/80 uppercase tracking-wide">
+                    <h3 className="font-bold text-sm uppercase tracking-wide">
                         {title}
                     </h3>
                     {description && (
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger>
-                                    <Info className="w-3 h-3 text-muted-foreground/50 hover:text-primary transition-colors cursor-help" />
+                                    <Info className="w-3.5 h-3.5 opacity-70 hover:opacity-100 transition-opacity cursor-help" />
                                 </TooltipTrigger>
-                                <TooltipContent side="bottom" className="max-w-[200px] text-xs">
+                                <TooltipContent side="bottom" className="max-w-[200px] text-xs bg-black/90 text-white border-0">
                                     {description}
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
                     )}
                 </div>
-                <span className="bg-secondary text-secondary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-white/20 backdrop-blur-md text-inherit text-xs font-bold px-2 py-0.5 rounded-full border border-white/10">
                     {count}
                 </span>
             </div>
@@ -58,7 +70,7 @@ export function KanbanColumn({ id, title, count = 0, description, children }: Ka
                 ref={setNodeRef}
                 className={cn(
                     "flex-1 rounded-xl p-2 transition-all overflow-y-auto space-y-3",
-                    isOver && "bg-primary/5"
+                    isOver ? "bg-primary/5 ring-2 ring-primary/20" : "hover:bg-accent/5"
                 )}
             >
                 {/* Drop placeholder when dragging over */}
