@@ -43,8 +43,11 @@ analyticsRouter.get('/dashboard', async (req: Request, res: Response) => {
         }
 
         // Base filter for privacy
-        const whereUser: any = role === 'BROKER' ? { brokerId: userId } : {};
-        const whereUserBuyer: any = role === 'BROKER' ? { brokerId: userId } : {}; // Assuming Buyer/Seller also have brokerId
+        const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+        const isRestricted = restrictedRoles.includes(role);
+
+        const whereUser: any = isRestricted ? { brokerId: userId } : {};
+        const whereUserBuyer: any = isRestricted ? { brokerId: userId } : {}; // Assuming Buyer/Seller also have brokerId
 
         // 1. KPI Data
         const activePropertiesCount = await prisma.crmProperty.count({
@@ -93,7 +96,39 @@ analyticsRouter.get('/dashboard', async (req: Request, res: Response) => {
             };
         });
 
-        // 3. Activity Feed (Last 5)
+        // 3. Chart Data: Dynamics (Last 30 days)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const dynamicsRaw = await prisma.crmProperty.groupBy({
+            by: ['createdAt'],
+            where: {
+                ...whereUser,
+                createdAt: { gte: thirtyDaysAgo }
+            },
+            _count: { id: true },
+        });
+
+        // Group by day manually since createdAt is datetime
+        const dynamicsMap = new Map<string, number>();
+        dynamicsRaw.forEach(item => {
+            const dateStr = item.createdAt.toISOString().split('T')[0];
+            dynamicsMap.set(dateStr, (dynamicsMap.get(dateStr) || 0) + item._count.id);
+        });
+
+        // Fill last 30 days
+        const dynamicsChart = [];
+        for (let i = 29; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+            dynamicsChart.push({
+                date: dateStr.slice(5), // MM-DD
+                value: dynamicsMap.get(dateStr) || 0
+            });
+        }
+
+        // 4. Activity Feed (Last 5)
         const recentProperties = await prisma.crmProperty.findMany({
             where: whereUser,
             take: 5,
@@ -109,7 +144,7 @@ analyticsRouter.get('/dashboard', async (req: Request, res: Response) => {
             date: p.updatedAt
         }));
 
-        // 4. Action Items (Risky Strategies)
+        // 5. Action Items (Risky Strategies)
         const actionItems = await prisma.crmProperty.findMany({
             where: {
                 ...whereUser,
@@ -123,7 +158,7 @@ analyticsRouter.get('/dashboard', async (req: Request, res: Response) => {
             select: { id: true, residentialComplex: true, activeStrategy: true, liquidityScore: true }
         });
 
-        // 5. SOLD DEALS - Role-based filtering
+        // 6. SOLD DEALS - Role-based filtering
         const soldDeals = await prisma.crmProperty.findMany({
             where: {
                 ...whereUser,
@@ -190,7 +225,7 @@ analyticsRouter.get('/dashboard', async (req: Request, res: Response) => {
             };
         });
 
-        // 6. ADMIN ONLY: Broker Performance Breakdown
+        // 7. ADMIN ONLY: Broker Performance Breakdown
         let brokersPerformance: any[] = [];
         if (role === 'ADMIN') {
             const brokers = await prisma.user.findMany({
@@ -198,14 +233,12 @@ analyticsRouter.get('/dashboard', async (req: Request, res: Response) => {
                 select: { id: true, firstName: true, lastName: true, email: true }
             });
 
-            // Calculate stats for each broker (can be optimized with complex groupBy, but map is robust for now)
             brokersPerformance = await Promise.all(brokers.map(async b => {
                 const pCount = await prisma.crmProperty.count({ where: { brokerId: b.id } });
                 const active = await prisma.crmProperty.count({ where: { brokerId: b.id, status: PropertyStatus.ACTIVE } });
                 const deals = await prisma.crmProperty.count({ where: { brokerId: b.id, OR: [{ funnelStage: PropertyFunnelStage.DEAL }, { funnelStage: PropertyFunnelStage.SOLD }] } });
                 const sold = await prisma.crmProperty.count({ where: { brokerId: b.id, OR: [{ status: PropertyStatus.SOLD }, { funnelStage: PropertyFunnelStage.SOLD }] } });
 
-                // Sum commission
                 const props = await prisma.crmProperty.findMany({
                     where: { brokerId: b.id, status: PropertyStatus.ACTIVE },
                     select: { price: true }
@@ -224,9 +257,10 @@ analyticsRouter.get('/dashboard', async (req: Request, res: Response) => {
                 };
             }));
 
-            // Sort by commission desc
             brokersPerformance.sort((a, b) => b.commissionForecast - a.commissionForecast);
         }
+
+        // ... (rest of the logic remains same)
 
         res.json({
             kpi: {
@@ -237,18 +271,12 @@ analyticsRouter.get('/dashboard', async (req: Request, res: Response) => {
             },
             charts: {
                 funnel: funnelChart,
-                dynamics: [ // Mock for now
-                    { date: '1 Jan', leads: 4 },
-                    { date: '8 Jan', leads: 7 },
-                    { date: '15 Jan', leads: 5 },
-                    { date: '22 Jan', leads: 12 },
-                    { date: '29 Jan', leads: 9 },
-                ]
+                dynamics: dynamicsChart
             },
             activity: activityFeed,
             actionItems,
-            soldDeals: soldDealsFormatted, // NEW: Sold deals for analytics
-            brokersPerformance // Field present only if Admin
+            soldDeals: soldDealsFormatted,
+            brokersPerformance
         });
 
     } catch (error) {

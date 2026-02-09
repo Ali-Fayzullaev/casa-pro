@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,8 @@ export default function NewUserPage() {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
+  const [agencies, setAgencies] = useState<any[]>([]);
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -35,7 +37,27 @@ export default function NewUserPage() {
     lastName: '',
     phone: '',
     role: 'BROKER',
+    agencyId: '', // New field
   });
+
+  // Fetch agencies
+  useEffect(() => {
+    const fetchAgencies = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(getApiUrl('/admin/users?role=AGENCY'), {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAgencies(data.users || []);
+        }
+      } catch (e) {
+        console.error("Failed to fetch agencies", e);
+      }
+    };
+    fetchAgencies();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +66,15 @@ export default function NewUserPage() {
       toast({
         title: '❌ Ошибка',
         description: 'Пароль должен содержать минимум 6 символов',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (formData.role === 'REALTOR' && !formData.agencyId) {
+      toast({
+        title: '❌ Ошибка',
+        description: 'Выберите агентство для риелтора',
         variant: 'destructive',
       });
       return;
@@ -104,7 +135,7 @@ export default function NewUserPage() {
             Новый пользователь
           </h1>
           <p className="text-muted-foreground mt-1">
-            Добавьте нового брокера или девелопера
+            Добавьте нового брокера, девелопера или риелтора
           </p>
         </div>
       </div>
@@ -194,15 +225,44 @@ export default function NewUserPage() {
                   <SelectContent>
                     <SelectItem value="BROKER">Брокер</SelectItem>
                     <SelectItem value="DEVELOPER">Девелопер</SelectItem>
+                    <SelectItem value="AGENCY">Агентство</SelectItem>
+                    <SelectItem value="REALTOR">Риелтор</SelectItem>
                     <SelectItem value="ADMIN">Администратор</SelectItem>
                   </SelectContent>
                 </Select>
                 <div className="text-xs text-muted-foreground space-y-1 mt-2">
                   <p><strong>Брокер:</strong> работает с клиентами, создает брони, оформляет продажи</p>
                   <p><strong>Девелопер:</strong> создает проекты и квартиры, видит брони на свои квартиры</p>
+                  <p><strong>Агентство:</strong> управляет командой риелторов, видит их сделки</p>
+                  <p><strong>Риелтор:</strong> сотрудник агентства, работает с клиентами</p>
                   <p><strong>Администратор:</strong> полный доступ ко всей системе</p>
                 </div>
               </div>
+
+              {formData.role === 'REALTOR' && (
+                <div className="space-y-2 border-l-4 border-blue-500 pl-4 bg-blue-50/50 p-2 rounded-r">
+                  <Label htmlFor="agencyId">Агентство (Куратор) *</Label>
+                  <Select
+                    value={formData.agencyId}
+                    onValueChange={(value) => handleChange('agencyId', value)}
+                    required
+                  >
+                    <SelectTrigger id="agencyId">
+                      <SelectValue placeholder="Выберите агентство" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {agencies.map((agency) => (
+                        <SelectItem key={agency.id} value={agency.id}>
+                          {agency.firstName} {agency.lastName} ({agency.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Риелтор должен быть привязан к агентству
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

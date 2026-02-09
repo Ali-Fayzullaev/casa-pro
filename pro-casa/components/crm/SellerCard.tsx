@@ -2,11 +2,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Phone, Star, FileText, Plus, MoreVertical, Trash2 } from "lucide-react";
-import { Seller } from "@/types/kanban";
+import { Phone, Star, FileText, Plus, MoreVertical, Trash2, ArrowRight } from "lucide-react";
+import { Seller, SellerFunnelStage } from "@/types/kanban";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface SellerCardProps {
@@ -14,6 +14,7 @@ interface SellerCardProps {
     onInterviewClick?: (id: string) => void;
     onAddProperty?: (id: string) => void;
     onDelete?: (id: string) => void;
+    onStageChange?: (id: string, stage: SellerFunnelStage) => void;
 }
 
 import { defaultAnimateLayoutChanges } from "@dnd-kit/sortable";
@@ -23,7 +24,7 @@ import { Eye } from "lucide-react";
 import { SummaryDialog } from "./dialogs/SummaryDialog";
 import { DeadlineLabels, FunnelStageLabels, StrategyTypeLabels } from "@/lib/translations";
 
-export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDelete, style, setNodeRef, attributes, listeners, isDragging, isOverlay }: any) {
+export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDelete, onStageChange, style, setNodeRef, attributes, listeners, isDragging, isOverlay }: any) {
     const [summaryOpen, setSummaryOpen] = useState(false);
     const [initialPropertyId, setInitialPropertyId] = useState<string | null>(null);
     const [user, setUser] = useState<any>(null);
@@ -46,7 +47,7 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                 style={style}
                 {...attributes}
                 {...listeners}
-                className={`mb-3 cursor-grab hover:shadow-md transition-shadow active:cursor-grabbing border group ${isOverlay ? "shadow-xl scale-105 rotate-2 cursor-grabbing" : ""} ${isDragging ? "opacity-50" : ""}`}
+                className={`mb-3 cursor-grab hover:shadow-md transition-shadow active:cursor-grabbing border group touch-action-none ${isOverlay ? "shadow-xl scale-105 rotate-2 cursor-grabbing" : ""} ${isDragging ? "opacity-50" : ""}`}
                 onClick={() => onInterviewClick && onInterviewClick(seller.id)}
             >
                 <CardHeader className="p-4 pb-2 flex flex-row justify-between items-start space-y-0">
@@ -78,7 +79,7 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                             ))}
                         </div>
                         {/* Actions Menu - show for owner or admin */}
-                        {(user?.role === 'ADMIN' || user?.id === seller.brokerId) && onDelete && (
+                        {(user?.role === 'ADMIN' || user?.id === seller.brokerId) && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button
@@ -92,16 +93,49 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" onPointerDown={(e: any) => e.stopPropagation()}>
-                                    <DropdownMenuItem
-                                        className="text-orange-600 focus:text-orange-600"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setDeleteDialogOpen(true);
-                                        }}
-                                    >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Архивировать
-                                    </DropdownMenuItem>
+                                    {onStageChange && (
+                                        <>
+                                            <DropdownMenuSub>
+                                                <DropdownMenuSubTrigger>
+                                                    <ArrowRight className="h-4 w-4 mr-2" />
+                                                    Переместить
+                                                </DropdownMenuSubTrigger>
+                                                <DropdownMenuSubContent>
+                                                    {Object.values(SellerFunnelStage).map((stage) => {
+                                                        // Filter out current stage
+                                                        if (stage === seller.funnelStage) return null;
+                                                        if (stage === SellerFunnelStage.CANCELLED) return null; // Archive has separate button
+
+                                                        return (
+                                                            <DropdownMenuItem
+                                                                key={stage}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    onStageChange(seller.id, stage);
+                                                                }}
+                                                            >
+                                                                {FunnelStageLabels[stage] || stage}
+                                                            </DropdownMenuItem>
+                                                        );
+                                                    })}
+                                                </DropdownMenuSubContent>
+                                            </DropdownMenuSub>
+                                            <DropdownMenuSeparator />
+                                        </>
+                                    )}
+
+                                    {onDelete && (
+                                        <DropdownMenuItem
+                                            className="text-orange-600 focus:text-orange-600"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeleteDialogOpen(true);
+                                            }}
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Архивировать
+                                        </DropdownMenuItem>
+                                    )}
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         )}
@@ -160,8 +194,9 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                                                 <Badge
                                                     variant={isSold ? "default" : "outline"}
                                                     className={`text-[9px] h-4 px-1 ${isSold ? 'bg-green-600 text-white' : 'bg-white'}`}
+                                                    style={p.customStage ? { borderColor: p.customStage.color, color: p.customStage.color } : {}}
                                                 >
-                                                    {FunnelStageLabels[p.funnelStage] || p.funnelStage}
+                                                    {p.customStage?.name || FunnelStageLabels[p.funnelStage] || p.funnelStage}
                                                 </Badge>
                                             </div>
                                         </div>

@@ -40,7 +40,8 @@ dealsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
     const skip = (pageNum - 1) * limitNum;
 
     const where: any = {};
-    if (req.user?.role === 'BROKER') where.brokerId = req.user.userId;
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '')) where.brokerId = req.user!.userId;
     if (status) where.status = status;
     if (stage) where.stage = stage;
 
@@ -84,7 +85,8 @@ dealsRouter.get('/:id', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if (req.user?.role === 'BROKER' && deal.brokerId !== req.user.userId) {
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '') && deal.brokerId !== req.user!.userId) {
       res.status(403).json({ error: 'Доступ запрещен' });
       return;
     }
@@ -135,8 +137,9 @@ dealsRouter.put('/:id', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
-      res.status(403).json({ error: 'Доступ запрещен' });
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '') && existing.brokerId !== req.user!.userId) {
+      res.status(403).json({ error: 'Нет прав на изменение этой сделки' });
       return;
     }
 
@@ -187,9 +190,10 @@ dealsRouter.delete('/:id', async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // Admin can delete anything, Broker can only delete their own
-    if (req.user?.role !== 'ADMIN') {
-      if (existing.brokerId !== req.user?.userId) {
+    // Admin can delete anything, Broker/Realtor/Agency can only delete their own
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '')) {
+      if (existing.brokerId !== req.user!.userId) {
         res.status(403).json({ error: 'Вы не можете удалить эту сделку' });
         return;
       }

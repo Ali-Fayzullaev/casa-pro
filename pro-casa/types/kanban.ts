@@ -6,6 +6,15 @@ export enum SellerFunnelStage {
     CANCELLED = 'CANCELLED',
 }
 
+export type CRMMode = 'STANDARD' | 'CUSTOM';
+
+export interface CustomFunnel {
+    id: string;
+    name: string;
+    isActive: boolean;
+    stages: CustomStage[];
+}
+
 export enum PropertyFunnelStage {
     CREATED = 'CREATED',
     PREPARATION = 'PREPARATION',
@@ -48,6 +57,47 @@ export enum LiquidityLevel {
     LOW = 'LOW',
 }
 
+export interface CustomStage {
+    id: string;
+    name: string;
+    color: string;
+    order: number;
+    funnelId?: string;
+}
+
+export enum CustomFieldType {
+    TEXT = 'TEXT',
+    NUMBER = 'NUMBER',
+    DATE = 'DATE',
+    SELECT = 'SELECT',
+    CHECKBOX = 'CHECKBOX',
+    TEXTAREA = 'TEXTAREA',
+}
+
+export enum CustomFieldEntity {
+    SELLER = 'SELLER',
+    PROPERTY = 'PROPERTY',
+}
+
+export interface CustomField {
+    id: string;
+    name: string;
+    type: CustomFieldType;
+    entityType: CustomFieldEntity;
+    funnelId?: string | null;
+    options: string[];
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CustomFieldValue {
+    id: string;
+    fieldId: string;
+    field?: CustomField;
+    value: string;
+}
+
 export interface Seller {
     id: string;
     firstName: string;
@@ -57,6 +107,9 @@ export interface Seller {
     funnelStage: SellerFunnelStage;
     updatedAt: string;
     createdAt: string; // Added for filtering
+    customFieldValues?: CustomFieldValue[]; // NEW
+    customStageId?: string | null;
+    customStage?: CustomStage;
     // Strategy fields
     managerComment?: string;
     reason?: string;
@@ -91,6 +144,7 @@ export interface CrmProperty {
     price: string; // Decimal comes as string
     area: string;
     imageUrl?: string;
+    documents?: string[]; // NEW for Phase 6
 
     // Physical specs
     floor?: number;
@@ -116,6 +170,9 @@ export interface CrmProperty {
     status?: string; // Property status (ACTIVE, SOLD, ARCHIVED, etc.)
     updatedAt: string;
     createdAt: string; // Added for filtering
+    customFieldValues?: CustomFieldValue[]; // NEW
+    customStageId?: string | null;
+    customStage?: CustomStage;
     strategyExplanation?: string;
     aiRecommendation?: string; // Added Phase 5
     images?: string[]; // Added Phase 2

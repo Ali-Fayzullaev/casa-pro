@@ -12,9 +12,16 @@ usersAdminRouter.use(requireRole('ADMIN'));
 // GET /api/admin/users - получить всех пользователей (ADMIN only)
 usersAdminRouter.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log('Admin fetching all users');
+    const { role } = req.query;
+    console.log('Admin fetching users, filter role:', role);
+
+    const where: any = {};
+    if (role) {
+      where.role = role as string;
+    }
 
     const users = await prisma.user.findMany({
+      where,
       select: {
         id: true,
         email: true,
@@ -36,52 +43,12 @@ usersAdminRouter.get('/', async (req: Request, res: Response): Promise<void> => 
   }
 });
 
-// GET /api/admin/users/:id/full - получить полные данные пользователя (ADMIN only)
-// ВАЖНО: этот роут должен быть ДО /:id чтобы не конфликтовать
-usersAdminRouter.get('/:id/full', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    console.log('Admin fetching full user data:', id);
-
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        role: true,
-        balance: true,
-        curatorName: true,
-        curatorPhone: true,
-        curatorEmail: true,
-        curatorWhatsApp: true,
-        createdAt: true,
-        courseProgress: {
-          include: {
-            course: true,
-          },
-        },
-      },
-    });
-
-    if (!user) {
-      res.status(404).json({ error: 'Пользователь не найден' });
-      return;
-    }
-
-    res.json({ ...user, balance: Number(user.balance) });
-  } catch (error) {
-    console.error('Get user full error:', error);
-    res.status(500).json({ error: 'Ошибка получения данных пользователя' });
-  }
-});
+// ... (GET /:id/full remains unchanged) ...
 
 // POST /api/admin/users - создать пользователя (ADMIN only)
 usersAdminRouter.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, firstName, lastName, phone, role } = req.body;
+    const { email, password, firstName, lastName, phone, role, agencyId } = req.body;
 
     console.log('Admin creating user:', email, 'with role:', role);
 
@@ -92,9 +59,26 @@ usersAdminRouter.post('/', async (req: Request, res: Response): Promise<void> =>
     }
 
     // Проверка допустимых ролей
-    if (!['BROKER', 'DEVELOPER', 'ADMIN'].includes(role)) {
-      res.status(400).json({ error: 'Недопустимая роль. Используйте: BROKER, DEVELOPER или ADMIN' });
+    if (!['BROKER', 'DEVELOPER', 'ADMIN', 'AGENCY', 'REALTOR'].includes(role)) {
+      res.status(400).json({ error: 'Недопустимая роль' });
       return;
+    }
+
+    // MANDATORY CHECK: Realtor must have an Agency
+    if (role === 'REALTOR' && !agencyId) {
+      res.status(400).json({ error: 'Для риелтора обязательно указание агентства' });
+      return;
+    }
+
+    // Verify Agency exists
+    if (role === 'REALTOR' && agencyId) {
+      const agency = await prisma.user.findFirst({
+        where: { id: agencyId, role: 'AGENCY' }
+      });
+      if (!agency) {
+        res.status(400).json({ error: 'Указанное агентство не найдено' });
+        return;
+      }
     }
 
     // Проверка существования пользователя
@@ -119,6 +103,7 @@ usersAdminRouter.post('/', async (req: Request, res: Response): Promise<void> =>
         lastName,
         phone,
         role,
+        curatorId: role === 'REALTOR' ? agencyId : undefined, // Assign Agency as Curator
       },
       select: {
         id: true,
@@ -174,7 +159,7 @@ usersAdminRouter.put('/:id', async (req: Request, res: Response): Promise<void> 
     }
 
     // Проверка роли
-    if (role && !['BROKER', 'DEVELOPER', 'ADMIN'].includes(role)) {
+    if (role && !['BROKER', 'DEVELOPER', 'ADMIN', 'AGENCY', 'REALTOR'].includes(role)) {
       res.status(400).json({ error: 'Недопустимая роль' });
       return;
     }

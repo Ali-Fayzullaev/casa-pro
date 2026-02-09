@@ -24,6 +24,7 @@ import {
   Scale,
   Settings,
   Target,
+  LayoutList, // NEW
   Archive,
 } from "lucide-react"
 import {
@@ -81,27 +82,48 @@ const menuItems: MenuSection[] = [
     title: "Главная",
     icon: Home,
     url: "/dashboard",
-    roles: ["ADMIN", "BROKER", "DEVELOPER"],
+    roles: ["ADMIN", "BROKER", "DEVELOPER", "REALTOR", "AGENCY"],
   },
   // 2. Сделки (CRM) - единая страница с вкладками
   {
     title: "Сделки (CRM)",
     icon: Briefcase,
     url: "/dashboard/crm",
-    roles: ["ADMIN", "BROKER"],
+    roles: ["ADMIN", "BROKER", "DEVELOPER", "REALTOR", "AGENCY"],
   },
   // 2.1 Стратегии - справочник
   {
     title: "Стратегии (CASA)",
-    icon: Target, // Using Target icon imported below or I need to import it
+    icon: Target,
     url: "/dashboard/strategies",
-    roles: ["ADMIN", "BROKER"],
+    roles: ["ADMIN", "BROKER", "DEVELOPER"],
+  },
+  // 2.2 Команда (Agency only)
+  {
+    title: "Команда",
+    icon: Users,
+    url: "/dashboard/agency/team",
+    roles: ["AGENCY"],
+  },
+  // 2.3 Список объектов (List View)
+  {
+    title: "Мои объекты",
+    icon: LayoutList,
+    url: "/dashboard/properties",
+    roles: ["ADMIN", "BROKER", "REALTOR", "AGENCY"],
+  },
+  // 2.4 Клиенты (Sellers List)
+  {
+    title: "Клиенты",
+    icon: Users,
+    url: "/dashboard/sellers",
+    roles: ["AGENCY", "REALTOR", "DEVELOPER"],
   },
   // 3. Новостройки - collapsible
   {
     title: "Новостройки",
     icon: Building2,
-    roles: ["ADMIN", "BROKER", "DEVELOPER"],
+    roles: ["ADMIN", "BROKER", "DEVELOPER", "REALTOR", "AGENCY"],
     subItems: [
       { title: "Каталог ЖК", url: "/dashboard/projects", icon: Building2 },
       { title: "Шахматка", url: "/dashboard/chess", icon: Grid3x3 },
@@ -112,28 +134,39 @@ const menuItems: MenuSection[] = [
     title: "Ипотека",
     icon: Calculator,
     url: "/dashboard/mortgage",
-    roles: ["ADMIN", "BROKER"],
+    roles: ["ADMIN", "BROKER", "DEVELOPER", "REALTOR", "AGENCY"],
   },
   // 5. Профиль - одна кнопка без подразделов (табы внутри страницы)
   {
     title: "Профиль",
     icon: User,
     url: "/dashboard/profile",
-    roles: ["ADMIN", "BROKER", "DEVELOPER"],
+    roles: ["ADMIN", "BROKER", "DEVELOPER", "REALTOR", "AGENCY"],
   },
   // 6. Формы (Admin)
   {
     title: "Формы",
     icon: FileText,
     url: "/dashboard/forms",
-    roles: ["ADMIN", "BROKER"],
+    roles: ["ADMIN", "BROKER", "AGENCY"], // Maybe Realtors too? restricted for now
   },
-  // 7. Архив
+  // 7. Настройки (CRM)
+  {
+    title: "Настройки",
+    icon: Settings,
+    url: "/dashboard/settings",
+    roles: ["ADMIN", "BROKER", "DEVELOPER", "REALTOR", "AGENCY"],
+    subItems: [
+      { title: "Воронки", url: "/dashboard/settings/funnels", icon: Settings },
+      { title: "Поля", url: "/dashboard/settings/fields", icon: LayoutList } // NEW
+    ]
+  },
+  // 8. Архив
   {
     title: "Архив",
     icon: Archive,
     url: "/dashboard/archives",
-    roles: ["ADMIN", "BROKER"],
+    roles: ["ADMIN", "BROKER", "DEVELOPER", "REALTOR", "AGENCY"],
   },
 ]
 
@@ -299,6 +332,8 @@ export function AppSidebar() {
               {user.role === "ADMIN" && "Администратор"}
               {user.role === "BROKER" && "Брокер"}
               {user.role === "DEVELOPER" && "Застройщик"}
+              {user.role === "REALTOR" && "Риелтор"}
+              {user.role === "AGENCY" && "Агентство"}
             </p>
           </div>
         </div>

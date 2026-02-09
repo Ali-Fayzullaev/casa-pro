@@ -26,6 +26,8 @@ import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api-client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { CustomFieldsSection } from "../CustomFieldsSection";
+import { CustomFieldEntity } from "@/types/kanban";
 
 interface SummaryDialogProps {
     open: boolean;
@@ -420,6 +422,12 @@ export function SummaryDialog({ open, onOpenChange, data, type, initialActivePro
                                             )}
                                         </div>
                                     </div>
+                                    <CustomFieldsSection
+                                        entityType={CustomFieldEntity.PROPERTY}
+                                        entityId={property.id}
+                                        customFieldValues={property.customFieldValues}
+                                        customStage={property.customStage}
+                                    />
                                 </>
                             )}
 
@@ -494,6 +502,13 @@ export function SummaryDialog({ open, onOpenChange, data, type, initialActivePro
                                             </div>
                                         </div>
                                     )}
+
+                                    <CustomFieldsSection
+                                        entityType={CustomFieldEntity.SELLER}
+                                        entityId={fullSeller.id}
+                                        customFieldValues={fullSeller.customFieldValues}
+                                        customStage={fullSeller.customStage}
+                                    />
                                 </div>
                             )}
                         </TabsContent>
@@ -508,7 +523,7 @@ export function SummaryDialog({ open, onOpenChange, data, type, initialActivePro
                         )}
                     </div>
                 </Tabs>
-            </DialogContent>
-        </Dialog>
+            </DialogContent >
+        </Dialog >
     );
 }

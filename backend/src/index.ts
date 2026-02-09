@@ -27,6 +27,10 @@ import { buyersRouter } from './routes/buyers.routes';
 import { uploadsRouter } from './routes/uploads.routes';
 import { analyticsRouter } from './routes/analytics.routes';
 import { settingsRouter } from './routes/settings.routes';
+import { customFunnelsRouter } from './routes/custom-funnels.routes';
+import { customFieldsRouter } from './routes/custom-fields.routes';
+import { agencyRouter } from './routes/agency.routes';
+import { eventsRouter } from './routes/events.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { initializeBucket } from './lib/minio';
 
@@ -77,6 +81,9 @@ app.use('/api/buyers', buyersRouter);
 app.use('/api/uploads', uploadsRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/admin/settings', settingsRouter);
+app.use('/api/custom-funnels', customFunnelsRouter);
+app.use('/api/custom-fields', customFieldsRouter);
+app.use('/api/agency', agencyRouter);
 
 // Error handling
 app.use(errorHandler);

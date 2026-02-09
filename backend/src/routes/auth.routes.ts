@@ -58,7 +58,7 @@ authRouter.post('/login', async (req: Request, res: Response): Promise<void> => 
       res.status(400).json({ error: 'Неверные данные', details: error.errors });
       return;
     }
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Ошибка сервера',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -78,11 +78,21 @@ authRouter.get('/me', auth, async (req: Request, res: Response) => {
         phone: true,
         role: true,
         balance: true,
+        // Fetch denormalized fields (legacy/cache)
         curatorName: true,
         curatorPhone: true,
         curatorEmail: true,
         curatorWhatsApp: true,
         createdAt: true,
+        // Fetch actual relation to ensure data is up-to-date
+        curator: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          }
+        }
       },
     });
 
@@ -91,9 +101,23 @@ authRouter.get('/me', auth, async (req: Request, res: Response) => {
       return;
     }
 
+    // Determine curator info (prefer denormalized if set, else fallback to relation)
+    // Actually, relation is truth.
+    const curatorName = user.curatorName || (user.curator ? `${user.curator.firstName} ${user.curator.lastName}` : null);
+    const curatorEmail = user.curatorEmail || user.curator?.email || null;
+    const curatorPhone = user.curatorPhone || user.curator?.phone || null;
+    const curatorWhatsApp = user.curatorWhatsApp || user.curator?.phone || null;
+
     res.json({
       ...user,
       balance: Number(user.balance),
+      curatorName,
+      curatorEmail,
+      curatorPhone,
+      curatorWhatsApp,
+
+      // Remove the curator object from response to keep it clean if needed, 
+      // but keeping it doesn't hurt.
     });
   } catch (error) {
     console.error('Get me error:', error);

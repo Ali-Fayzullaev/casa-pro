@@ -28,8 +28,9 @@ buyersRouter.get('/', async (req: Request, res: Response) => {
         const { search, status } = req.query;
         const where: any = {};
 
-        if (req.user?.role === 'BROKER') {
-            where.brokerId = req.user.userId;
+        const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+        if (restrictedRoles.includes(req.user?.role || '')) {
+            where.brokerId = req.user!.userId;
         }
 
         if (status) {
@@ -79,7 +80,8 @@ buyersRouter.get('/:id', async (req: Request, res: Response) => {
         }
 
         // Access check
-        if (req.user?.role === 'BROKER' && buyer.brokerId !== req.user.userId) {
+        const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+        if (restrictedRoles.includes(req.user?.role || '') && buyer.brokerId !== req.user!.userId) {
             res.status(403).json({ error: 'Доступ запрещен' });
             return;
         }

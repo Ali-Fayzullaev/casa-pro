@@ -46,7 +46,9 @@ dashboardRouter.get('/stats', async (req: Request, res: Response): Promise<void>
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-    const where: any = userRole === 'BROKER' ? { brokerId: userId } : {};
+    // Filter for BROKER and REALTOR
+    const isRestricted = userRole === 'BROKER' || userRole === 'REALTOR';
+    const where: any = isRestricted ? { brokerId: userId } : {};
 
     // Получаем статистику
     const [
@@ -67,7 +69,7 @@ dashboardRouter.get('/stats', async (req: Request, res: Response): Promise<void>
       }),
       prisma.deal.findMany({
         where: {
-          ...(userRole === 'BROKER' ? { brokerId: userId } : {}),
+          ...where,
           status: 'COMPLETED',
         },
         select: {
@@ -78,20 +80,20 @@ dashboardRouter.get('/stats', async (req: Request, res: Response): Promise<void>
         },
       }),
       prisma.deal.count({
-        where: userRole === 'BROKER' ? { brokerId: userId } : {},
+        where,
       }),
       prisma.deal.count({
         where: {
-          ...(userRole === 'BROKER' ? { brokerId: userId } : {}),
+          ...where,
           createdAt: { gte: oneMonthAgo },
         },
       }),
       prisma.booking.count({
-        where: userRole === 'BROKER' ? { brokerId: userId } : {},
+        where,
       }),
       prisma.booking.count({
         where: {
-          ...(userRole === 'BROKER' ? { brokerId: userId } : {}),
+          ...where,
           status: { in: ['PENDING', 'CONFIRMED'] },
         },
       }),
@@ -137,8 +139,8 @@ dashboardRouter.get('/stats', async (req: Request, res: Response): Promise<void>
     }
 
     // Тренды
-    const clientsTrend = totalClients > 0 
-      ? Math.round((newClientsThisMonth / totalClients) * 100) 
+    const clientsTrend = totalClients > 0
+      ? Math.round((newClientsThisMonth / totalClients) * 100)
       : 0;
     const dealsTrend = totalDeals > 0
       ? Math.round((dealsThisMonth / totalDeals) * 100)
@@ -167,7 +169,8 @@ dashboardRouter.get('/stats', async (req: Request, res: Response): Promise<void>
 dashboardRouter.get('/recent-clients', async (req: Request, res: Response): Promise<void> => {
   try {
     const where: any = {};
-    if (req.user?.role === 'BROKER') {
+    // Restricted roles
+    if (req.user?.role === 'BROKER' || req.user?.role === 'REALTOR') {
       where.brokerId = req.user.userId;
     }
 
@@ -197,7 +200,8 @@ dashboardRouter.get('/recent-clients', async (req: Request, res: Response): Prom
 dashboardRouter.get('/recent-properties', async (req: Request, res: Response): Promise<void> => {
   try {
     const where: any = {};
-    if (req.user?.role === 'BROKER') {
+    // Restricted roles
+    if (req.user?.role === 'BROKER' || req.user?.role === 'REALTOR') {
       where.brokerId = req.user.userId;
     }
 

@@ -46,6 +46,9 @@ export const createSellerSchema = z.object({
     trustLevel: z.number().min(1).max(5).default(3),
     readyToFollowRecommendations: z.preprocess(val => (val === "" || val === null || val === undefined) ? undefined : val, z.enum(["YES", "PARTIAL", "NO"]).optional()),
     readyForExclusive: z.boolean().default(false),
+    customStageId: z.string().optional(),
+    projectId: z.string().optional(),
+    apartmentId: z.string().optional(),
 }).superRefine((data, ctx) => {
     if (data.reason === "OTHER" && (!data.reasonOther || data.reasonOther.length < 2)) {
         ctx.addIssue({

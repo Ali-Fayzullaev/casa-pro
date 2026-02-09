@@ -1,20 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Added useEffect
 import {
     DndContext,
     DragOverlay,
     useSensor,
     useSensors,
-    PointerSensor,
+    MouseSensor,
     DragStartEvent,
     DragEndEvent,
     TouchSensor,
     closestCorners,
-    pointerWithin,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { useMutation, useQueryClient } from "@tanstack/react-query"; // NEW
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SellerCard, SellerCardBase } from "./SellerCard";
 import { PropertyCard, PropertyCardBase } from "./PropertyCard";
 import { KanbanColumn } from "./KanbanColumn";
@@ -23,6 +22,7 @@ import { createPortal } from "react-dom";
 import { MissingDataDialog } from "./dialogs/MissingDataDialog";
 import { ChecklistDialog } from "./dialogs/ChecklistDialog";
 import { MediaGatewayDialog } from "./dialogs/MediaGatewayDialog";
+import { RefusalDialog, CancellationReason } from "./dialogs/RefusalDialog";
 import { toast } from "sonner";
 import { StrategyLoader } from "./StrategyLoader";
 import { StrategySelectDialog } from "./dialogs/StrategySelectDialog";
@@ -33,7 +33,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CreateSellerForm } from "./forms/CreateSellerForm";
 import { CreatePropertyForm } from "./forms/CreatePropertyForm";
-import { Plus, Filter, Search, Target } from "lucide-react";
+import { Target, LayoutGrid, List as ListIcon } from "lucide-react"; // Added Icons
+import { PropertiesTableView } from "./PropertiesTableView"; // NEW IMPORT
 
 type KanbanItem =
     | { type: "Seller"; item: Seller }
@@ -54,16 +55,30 @@ const STAGE_DESCRIPTIONS: Record<string, string> = {
 
 interface KanbanBoardProps {
     type: "sellers" | "properties";
-    columns: readonly { id: string; title: string; variant?: "blue" | "pink" | "green" | "cyan" | "default" }[];
+    columns: readonly { id: string; title: string; variant?: "blue" | "pink" | "green" | "cyan" | "default"; color?: string }[];
     items: Record<string, (Seller | CrmProperty)[]>;
     onDragEnd: (id: string, newStage: string) => void;
     onAddProperty?: (sellerId: string) => void;
+    isCustom?: boolean;
 }
 
-export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: KanbanBoardProps) {
+export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, isCustom = false }: KanbanBoardProps) {
     const [activeItem, setActiveItem] = useState<KanbanItem | null>(null);
     const router = useRouter();
     const queryClient = useQueryClient();
+    const [userRole, setUserRole] = useState<string | null>(null);
+
+    useEffect(() => {
+        const userData = localStorage.getItem("user");
+        if (userData) {
+            try {
+                const user = JSON.parse(userData);
+                setUserRole(user.role);
+            } catch (e) {
+                console.error("Error parsing user data", e);
+            }
+        }
+    }, []);
 
     // Strategies Sheet State
     const [strategiesSheetOpen, setStrategiesSheetOpen] = useState(false);
@@ -97,6 +112,12 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
     const [currentImageCount, setCurrentImageCount] = useState(0);
 
     const [checklistOpen, setChecklistOpen] = useState(false);
+
+    // Refusal Dialog State
+    const [refusalDialogOpen, setRefusalDialogOpen] = useState(false);
+    const [pendingRefusalId, setPendingRefusalId] = useState<string | null>(null);
+    const [pendingRefusalType, setPendingRefusalType] = useState<"seller" | "property">("seller");
+    const [pendingRefusalName, setPendingRefusalName] = useState<string>("");
 
     // AI Strategy State
     const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
@@ -137,8 +158,6 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
     };
 
     const handleEditSeller = (seller: Seller) => {
-        // RESTRICTION: Do not open edit form on click for CONTACT stage
-        // Use drags to move to INTERVIEW to fill data
         if (seller.funnelStage === SellerFunnelStage.CONTACT) {
             return;
         }
@@ -148,15 +167,18 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
         setIsSellerFormOpen(true);
     };
 
-
-
     const sensors = useSensors(
-        useSensor(PointerSensor, {
+        useSensor(MouseSensor, {
             activationConstraint: {
-                distance: 5,
+                distance: 10,
             },
         }),
-        useSensor(TouchSensor)
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 250,
+                tolerance: 5,
+            },
+        })
     );
 
     const handleDragStart = (event: DragStartEvent) => {
@@ -166,7 +188,6 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
     };
 
     const analyzeStrategy = async (seller: Seller, stageToSet?: string | null) => {
-        // VISUAL LOADING STATE
         setIsAiAnalyzing(true);
         const loadingToast = toast.loading("AI анализирует объект...");
 
@@ -180,22 +201,18 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
                 return;
             }
 
-            // Call recalculate-strategy
             const res = await api.post(`/crm-properties/${propertyId}/recalculate-strategy`);
-
-            // RESPONSE PARSING FIX: Backend returns { property: { activeStrategy: ... } }
             const { property } = res.data;
             const activeStrategy = property?.activeStrategy;
             const strategyExplanation = property?.strategyExplanation;
 
             toast.dismiss(loadingToast);
-            setIsAiAnalyzing(false); // Stop loading
+            setIsAiAnalyzing(false);
 
             if (!activeStrategy) {
                 throw new Error("AI вернул пустую стратегию");
             }
 
-            // Set pending stage if we are moving
             if (stageToSet) {
                 setValidationSellerId(seller.id);
                 setPendingStage(stageToSet);
@@ -203,7 +220,6 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
                 setValidationSellerId(seller.id);
             }
 
-            // Open AI Dialog
             setAiParams({
                 open: true,
                 strategyCode: activeStrategy,
@@ -221,29 +237,16 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
 
     const handleSellerFormSuccess = () => {
         setIsSellerFormOpen(false);
-        queryClient.invalidateQueries({ queryKey: ["sellers"] }); // Ensure we fetch fresh data
+        queryClient.invalidateQueries({ queryKey: ["sellers"] });
 
-        // 1. If we were waiting for a stage move
         if (validationSellerId && pendingStage) {
-
-            // SPECIAL CASE: Auto-trigger Strategy Analysis if moving to Strategy
             if (pendingStage === SellerFunnelStage.STRATEGY) {
-                // We must find the seller to pass to analyzeStrategy. 
-                // Since we just saved, 'selectedSellerData' might be stale regarding the update, OR 
-                // we can rely on analyzeStrategy fetching fresh data via backend.
-                // We'll try to find it in items or use selectedSellerData (which has the ID).
-
                 let seller = selectedSellerData;
                 if (!seller) {
                     seller = Object.values(items).flat().find(s => s.id === validationSellerId) as Seller | null;
                 }
 
                 if (seller) {
-                    // Trigger the analysis flow. 
-                    // IMPORTANT: analyzeStrategy needs to know validStage is pending to pass it to the dialog?
-                    // No, passing pendingStage to analyzeStrategy might be needed if it wasn't there.
-                    // But wait, analyzeStrategy(seller) usually doesn't take stage?
-                    // Let's check analyzeStrategy signature.
                     analyzeStrategy(seller, pendingStage);
                     return;
                 }
@@ -253,41 +256,34 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
             return;
         }
 
-        // 2. AUTO-STRATEGY: If coming from Edit Mode AND Seller is in STRATEGY Stage (already)
         if (selectedSellerData && selectedSellerData.funnelStage === SellerFunnelStage.STRATEGY) {
             analyzeStrategy(selectedSellerData);
         }
 
-        // Reset
         setSelectedSellerData(null);
         setSelectedSellerId("");
     };
 
-    const handleDragEnd = async (event: DragEndEvent) => {
-        const { active, over } = event;
-
-        if (!over) {
+    const processStageChange = (itemId: string, newStage: string, itemData: KanbanItem) => {
+        if (isCustom) {
+            onDragEnd(itemId, newStage);
+            toast.success("Статус обновлен");
             setActiveItem(null);
             return;
         }
 
-        const itemId = active.id as string;
-        const newStage = over.id as string;
-        const itemData = active.data.current as KanbanItem;
-
-        // --- VALIDATION: Seller Stage Gates ---
         if (type === "sellers" && itemData.type === "Seller") {
             const seller = itemData.item as Seller;
 
-            // ALLOW: Always allow moving to CANCELLED
             if (newStage === SellerFunnelStage.CANCELLED) {
-                onDragEnd(itemId, newStage);
-                toast.success("Статус обновлен");
+                setPendingRefusalId(itemId);
+                setPendingRefusalType("seller");
+                setPendingRefusalName(`${seller.firstName} ${seller.lastName}`);
+                setRefusalDialogOpen(true);
                 setActiveItem(null);
                 return;
             }
 
-            // STRICT FUNNEL: Define Order
             const STAGE_ORDER = [
                 SellerFunnelStage.CONTACT,
                 SellerFunnelStage.INTERVIEW,
@@ -298,25 +294,19 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
             const currentIndex = STAGE_ORDER.indexOf(seller.funnelStage);
             const newIndex = STAGE_ORDER.indexOf(newStage as SellerFunnelStage);
 
-            // 1. Block Backward Moves
-            if (newIndex < currentIndex) {
+            if (newIndex !== -1 && currentIndex !== -1 && newIndex < currentIndex) {
                 toast.error("Возврат на предыдущий этап запрещен");
                 setActiveItem(null);
                 return;
             }
 
-            // 2. Block Skipping Stages (Must be sequential)
-            // But verify if newIndex is valid (i.e., not -1 which would mean it's not in the main funnel, like CANCELLED, but we handled that above)
-            if (newIndex !== -1 && newIndex > currentIndex + 1) {
+            if (newIndex !== -1 && currentIndex !== -1 && newIndex > currentIndex + 1) {
                 toast.error("Нельзя перепрыгивать этапы воронки");
                 setActiveItem(null);
                 return;
             }
 
-            // GATE 1: To INTERVIEW (Progressive Data Entry)
             if (newStage === SellerFunnelStage.INTERVIEW) {
-                // Check for required "Interview" fields (Reason, Deadline, Source, etc.)
-                // If missing, open Edit Form
                 const isComplete = seller.reason && seller.deadline && seller.source;
 
                 if (!isComplete) {
@@ -325,29 +315,24 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
                         duration: 4000
                     });
 
-                    // Set these states BEFORE opening form to ensure we know "why" we opened it
                     setValidationSellerId(seller.id);
                     setPendingStage(newStage);
 
-                    // Open Edit Form
                     setSelectedSellerId(seller.id);
                     setSelectedSellerData(seller);
                     setIsSellerFormOpen(true);
 
-                    // RESET drag immediately - do not allow staying in Interview without data
                     setActiveItem(null);
                     return;
                 }
             }
 
-            // GATE 2: To STRATEGY
             if (newStage === SellerFunnelStage.STRATEGY) {
                 if (seller.funnelStage === SellerFunnelStage.STRATEGY) {
                     setActiveItem(null);
                     return;
                 }
 
-                // 1. Ensure Interview Data is present (Double Check)
                 const missingFields = [];
                 if (!seller.reason) missingFields.push("Причина продажи");
                 if (!seller.deadline) missingFields.push("Срочность");
@@ -359,7 +344,6 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
                         duration: 5000
                     });
 
-                    // Interactive: Open Form to let user fix it immediately
                     setValidationSellerId(seller.id);
                     setPendingStage(newStage);
 
@@ -371,7 +355,6 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
                     return;
                 }
 
-                // 2. Check if property exists
                 if (!seller.properties || seller.properties.length === 0) {
                     toast.error("Нельзя перейти к Стратегии без объекта", {
                         description: "Добавьте объект недвижимости в карточке продавца."
@@ -380,15 +363,11 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
                     return;
                 }
 
-                // Trigger AI Strategy Calculation
                 setActiveItem(null);
                 analyzeStrategy(seller, newStage);
                 return;
             }
 
-
-
-            // GATE 3: To CONTRACT
             if (newStage === SellerFunnelStage.CONTRACT_SIGNING) {
                 setValidationSellerId(seller.id);
                 setPendingStage(newStage);
@@ -396,15 +375,11 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
                 setActiveItem(null);
                 return;
             }
-
-            // Removed manual block logic since generic strict funnel covers it
         }
 
-        // --- VALIDATION: Property Stage Gates ---
         if (type === "properties" && itemData.type === "Property") {
             const property = itemData.item as CrmProperty;
 
-            // ALLOW: Always allow moving to CANCELLED
             if (newStage === PropertyFunnelStage.CANCELLED) {
                 onDragEnd(itemId, newStage);
                 toast.success("Статус обновлен");
@@ -412,11 +387,10 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
                 return;
             }
 
-            // GATE: To PREPARATION (Requires Photos)
             if (newStage === PropertyFunnelStage.PREPARATION) {
                 const imgCount = property.images?.length || 0;
                 if (imgCount < 3) {
-                    setValidationSellerId(property.id); // Reusing ID state logic
+                    setValidationSellerId(property.id);
                     setPendingStage(newStage);
 
                     setValidationPropertyId(property.id);
@@ -434,6 +408,40 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
         setActiveItem(null);
     };
 
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (!over) {
+            setActiveItem(null);
+            return;
+        }
+
+        const itemId = active.id as string;
+        const newStage = over.id as string;
+        const itemData = active.data.current as KanbanItem;
+
+        processStageChange(itemId, newStage, itemData);
+    };
+
+    const handleManualStageChange = (id: string, stage: string) => {
+        let itemData: KanbanItem | null = null;
+        Object.values(items).forEach(list => {
+            if (itemData) return;
+            const found = list.find(i => i.id === id);
+            if (found) {
+                if (type === "sellers") {
+                    itemData = { type: "Seller", item: found as Seller };
+                } else {
+                    itemData = { type: "Property", item: found as CrmProperty };
+                }
+            }
+        });
+
+        if (itemData) {
+            processStageChange(id, stage, itemData);
+        }
+    };
+
     const handleValidationSuccess = () => {
         if (validationSellerId && pendingStage) {
             onDragEnd(validationSellerId, pendingStage);
@@ -443,19 +451,9 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
     };
 
     const handleStrategySuccess = async (strategyConfig: string) => {
-        // Here we receive the chosen strategy code (e.g. 'MARKET_SALE')
-        // We need to update the backend OR just proceed if the backend handles it via side-effect?
-        // But we likely need to explicitly save the chosen strategy to the properties.
-
-        // Since we don't have a direct "update seller strategy" endpoint that cascades, 
-        // we will manually update each property of the seller.
-
         try {
-            // We need to know which seller. 'validationSellerId' holds it.
             if (!validationSellerId) return;
 
-            // Find the seller object to get properties
-            // We can search in the 'items' prop
             let foundSeller: Seller | undefined;
             Object.values(items).forEach(list => {
                 const s = (list as Seller[]).find(s => s.id === validationSellerId);
@@ -469,7 +467,7 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
             }
 
             toast.success("Стратегия применена!");
-            handleValidationSuccess(); // Proceed to move the card
+            handleValidationSuccess();
             router.refresh();
 
         } catch (error) {
@@ -479,23 +477,13 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
         }
     };
 
-    // -------------------------------------
+    // Flatten items for List View
+    const allProperties = type === "properties"
+        ? Object.values(items).flat() as CrmProperty[]
+        : [];
 
-    // Refetch simulation seller when needed (e.g. after edit)
-    // In a real app we'd use useQuery for the single seller, but here we can just rely on the list update or optimistic updates.
-    // Ideally, we should fetch the specific seller if we want real-time updates in the sheet.
-    // For now, let's just update the local state if we edit it via form? 
-    // Actually, simply closing/opening form triggers refetch of list. We might need to listen to that.
-    // Let's rely on React Query's cache if we passed an ID. 
-
-    // BETTER: Use a query for the active simulation seller if ID exists
-    // But to keep it simple within this file without too much refactor:
-    // We will just update 'simulationSeller' when the list likely updates.
-    // Or we can just let the user see the sheet, click edit, save, and closes.
-    // The sheet might not update immediately if we don't refetch.
-
-    // Let's leave it as is for now and focus on opening the forms.
-    // -------------------------------------
+    // Sort logic ? 
+    // Usually lists are sorted by date or name. We can add sorting logic inside PropertiesTableView.
 
     return (
         <div className="h-full flex flex-col space-y-4">
@@ -507,15 +495,17 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setStrategiesSheetOpen(true)}
-                        className="hidden md:flex gap-2"
-                    >
-                        <Target className="w-4 h-4 text-primary" />
-                        Стратегии
-                    </Button>
+                    {userRole !== "REALTOR" && userRole !== "AGENCY" && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setStrategiesSheetOpen(true)}
+                            className="hidden md:flex gap-2"
+                        >
+                            <Target className="w-4 h-4 text-primary" />
+                            Стратегии
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -524,6 +514,7 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
                 collisionDetection={closestCorners}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
+                autoScroll={true}
             >
 
                 <div className="flex gap-4 h-[calc(100vh-200px)] overflow-x-auto pb-4">
@@ -549,11 +540,13 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
                                                     onAddProperty={onAddProperty}
                                                     onInterviewClick={() => handleEditSeller(item as Seller)}
                                                     onDelete={(id) => deleteSellerMutation.mutate(id)}
+                                                    onStageChange={handleManualStageChange}
                                                 />
                                             ) : (
                                                 <PropertyCard
                                                     property={item as CrmProperty}
                                                     onDelete={(id: string) => deletePropertyMutation.mutate(id)}
+                                                    onStageChange={handleManualStageChange}
                                                 />
                                             )}
                                         </div>
@@ -664,6 +657,49 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty }: 
                 open={isPropertyFormOpen}
                 onOpenChange={setIsPropertyFormOpen}
                 sellerId={selectedSellerId}
+            />
+
+            {/* Refusal Dialog */}
+            <RefusalDialog
+                open={refusalDialogOpen}
+                onOpenChange={(v) => {
+                    setRefusalDialogOpen(v);
+                    if (!v) {
+                        setPendingRefusalId(null);
+                        setPendingRefusalName("");
+                    }
+                }}
+                itemType={pendingRefusalType}
+                itemName={pendingRefusalName}
+                onConfirm={async (reason, comment) => {
+                    if (!pendingRefusalId) return;
+
+                    try {
+                        const endpoint = pendingRefusalType === "seller"
+                            ? `/sellers/${pendingRefusalId}/stage`
+                            : `/crm-properties/${pendingRefusalId}/stage`;
+
+                        await api.put(endpoint, {
+                            funnelStage: pendingRefusalType === "seller"
+                                ? SellerFunnelStage.CANCELLED
+                                : PropertyFunnelStage.CANCELLED,
+                            cancellationReason: reason,
+                            cancellationComment: comment
+                        });
+
+                        toast.success("Статус изменен на 'Отказ'");
+                        queryClient.invalidateQueries({ queryKey: ["sellers"] });
+                        queryClient.invalidateQueries({ queryKey: ["properties"] });
+
+                    } catch (error: any) {
+                        const msg = error.response?.data?.error || error.message || "Ошибка";
+                        toast.error(`Ошибка: ${msg}`);
+                    }
+
+                    setRefusalDialogOpen(false);
+                    setPendingRefusalId(null);
+                    setPendingRefusalName("");
+                }}
             />
         </div >
     );

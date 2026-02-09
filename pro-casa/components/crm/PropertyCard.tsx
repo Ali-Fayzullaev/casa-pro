@@ -1,16 +1,17 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Building2, TrendingUp, HandCoins, MoreVertical, Trash2 } from "lucide-react";
-import { CrmProperty, PropertyClass, StrategyType } from "@/types/kanban";
+import { AlertCircle, Building2, TrendingUp, HandCoins, MoreVertical, Trash2, ArrowRight } from "lucide-react";
+import { CrmProperty, PropertyClass, StrategyType, PropertyFunnelStage } from "@/types/kanban";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface PropertyCardProps {
     property: CrmProperty;
     onDelete?: (id: string) => void;
+    onStageChange?: (id: string, stage: PropertyFunnelStage) => void;
 }
 
 // Neutral gray-based class colors for minimalist design
@@ -22,7 +23,7 @@ const CLASS_COLORS: Record<PropertyClass, string> = {
     OLD_FUND: "bg-muted text-muted-foreground border-border",
 };
 
-import { PropertyClassLabels, StrategyTypeLabels } from "@/lib/translations";
+import { PropertyClassLabels, StrategyTypeLabels, FunnelStageLabels } from "@/lib/translations";
 
 import { defaultAnimateLayoutChanges } from "@dnd-kit/sortable";
 
@@ -36,7 +37,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SummaryDialog } from "./dialogs/SummaryDialog";
 import { StrategyLoader } from "@/components/ui/StrategyLoader";
 
-export function PropertyCardBase({ property, style, setNodeRef, attributes, listeners, isDragging, isOverlay, isSold, onDelete }: { property: CrmProperty; style?: any; setNodeRef?: any; attributes?: any; listeners?: any; isDragging?: boolean; isOverlay?: boolean; isSold?: boolean; onDelete?: (id: string) => void }) {
+export function PropertyCardBase({ property, style, setNodeRef, attributes, listeners, isDragging, isOverlay, isSold, onDelete, onStageChange }: { property: CrmProperty; style?: any; setNodeRef?: any; attributes?: any; listeners?: any; isDragging?: boolean; isOverlay?: boolean; isSold?: boolean; onDelete?: (id: string) => void; onStageChange?: (id: string, stage: PropertyFunnelStage) => void }) {
     const queryClient = useQueryClient();
     const [isGenerating, setIsGenerating] = useState(false);
     const [summaryOpen, setSummaryOpen] = useState(false);
@@ -98,7 +99,7 @@ export function PropertyCardBase({ property, style, setNodeRef, attributes, list
                 {...attributes}
                 {...listeners}
                 className={cn(
-                    "mb-3 hover:shadow-md transition-shadow border group relative overflow-hidden",
+                    "mb-3 hover:shadow-md transition-shadow border group relative overflow-hidden touch-action-none",
                     isSold ? "cursor-not-allowed opacity-75" : "cursor-grab active:cursor-grabbing",
                     isOverlay ? "shadow-xl scale-105 rotate-2 cursor-grabbing" : "",
                     isDragging ? "opacity-50" : ""
@@ -147,6 +148,38 @@ export function PropertyCardBase({ property, style, setNodeRef, attributes, list
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" onPointerDown={(e: any) => e.stopPropagation()}>
+                                    {onStageChange && (
+                                        <>
+                                            <DropdownMenuSub>
+                                                <DropdownMenuSubTrigger>
+                                                    <ArrowRight className="h-4 w-4 mr-2" />
+                                                    Переместить
+                                                </DropdownMenuSubTrigger>
+                                                <DropdownMenuSubContent>
+                                                    {Object.values(PropertyFunnelStage).map((stage) => {
+                                                        if (stage === property.funnelStage) return null;
+                                                        if (stage === PropertyFunnelStage.CANCELLED) return null; // Archive/Cancel has separate button usually, or allow it? Let's hide it from "Move" if it means "Archive" logic. 
+                                                        // Actually "CANCELLED" is a valid stage, but "ARCHIVED" is usually a status or deletion.
+                                                        // The old code list didn't include 'CANCELLED'. I'll exclude it to match previous intent or if it's treated as separate action.
+
+                                                        return (
+                                                            <DropdownMenuItem
+                                                                key={stage}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    onStageChange(property.id, stage);
+                                                                }}
+                                                            >
+                                                                {FunnelStageLabels[stage] || stage}
+                                                            </DropdownMenuItem>
+                                                        );
+                                                    })}
+                                                </DropdownMenuSubContent>
+                                            </DropdownMenuSub>
+                                            <DropdownMenuSeparator />
+                                        </>
+                                    )}
+
                                     <DropdownMenuItem
                                         className="text-destructive focus:text-destructive"
                                         onClick={(e) => {
@@ -310,7 +343,7 @@ export function PropertyCardBase({ property, style, setNodeRef, attributes, list
     );
 }
 
-export function PropertyCard({ property, onDelete }: PropertyCardProps) {
+export function PropertyCard({ property, onDelete, onStageChange }: PropertyCardProps) {
     // Disable dragging for SOLD properties (check both funnelStage and status)
     const isSold = property.funnelStage === 'SOLD' || property.status === 'SOLD';
 
@@ -343,6 +376,7 @@ export function PropertyCard({ property, onDelete }: PropertyCardProps) {
             isDragging={isDragging}
             isSold={isSold}
             onDelete={onDelete}
+            onStageChange={onStageChange}
         />
     );
 }

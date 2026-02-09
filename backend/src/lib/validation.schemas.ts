@@ -4,6 +4,7 @@
 // =========================================
 
 import { z } from 'zod';
+import { normalizePhone } from './phone.utils';
 
 // =========================================
 // ENUMS (зеркалируем Prisma enums)
@@ -196,40 +197,44 @@ export const SellerContactStageSchema = z.object({
     // === 1. Основная информация ===
     firstName: z.string().min(2, 'Имя: минимум 2 символа'),
     lastName: z.string().min(2, 'Фамилия: минимум 2 символа'),
-    phone: z.string().min(10, 'Некорректный формат телефона'),
+    phone: z.string().min(10, 'Некорректный формат телефона').transform(val => normalizePhone(val)),
     email: z.string().email('Некорректный email').optional().or(z.literal('')),
     city: z.string().optional(),
     source: z.string().optional(),
     managerComment: z.string().optional(),
 
     // === 2. Причина и сроки (опционально на этапе контакта) ===
-    reason: SaleReasonEnum.optional(),
+    reason: SaleReasonEnum.optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
     reasonOther: z.string().optional(),
-    deadline: SaleDeadlineEnum.optional(),
+    deadline: SaleDeadlineEnum.optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
 
     // === 3. Ценовые ожидания (опционально) ===
-    expectedPrice: z.coerce.number().positive("Цена должна быть больше 0").optional(),
-    minPrice: z.coerce.number().positive("Цена должна быть больше 0").optional(),
+    expectedPrice: z.union([z.literal(''), z.coerce.number().positive("Цена должна быть больше 0")]).optional().transform(val => val === '' ? undefined : val),
+    minPrice: z.union([z.literal(''), z.coerce.number().positive("Цена должна быть больше 0")]).optional().transform(val => val === '' ? undefined : val),
     readyToNegotiate: z.coerce.boolean().default(true),
-    marketAssessment: MarketAssessmentEnum.optional(),
+    marketAssessment: MarketAssessmentEnum.optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
 
     // === 4. Планы и финансы (опционально) ===
     plansToPurchase: z.coerce.boolean().default(false),
     nextPurchaseFormat: z.string().optional(),
-    purchaseBudget: z.coerce.number().positive("Бюджет должен быть больше 0").optional(),
+    purchaseBudget: z.union([z.literal(''), z.coerce.number().positive("Бюджет должен быть больше 0")]).optional().transform(val => val === '' ? undefined : val),
     incomeSource: z.string().optional(),
     hasDebts: z.coerce.boolean().default(false),
-    loanPaymentAmount: z.coerce.number().nonnegative("Сумма не может быть отрицательной").optional(),
+    loanPaymentAmount: z.union([z.literal(''), z.coerce.number().nonnegative("Сумма не может быть отрицательной")]).optional().transform(val => val === '' ? undefined : val),
 
     // === 5. Коммуникация ===
     communicationChannel: z.string().optional(),
     preferredTime: z.string().optional(),
 
     // === Legacy/System ===
-    trustLevel: z.coerce.number().min(1).max(5).default(3),
-    readyToFollowRecommendations: ReadyToFollowEnum.optional(),
+    trustLevel: z.union([z.literal(''), z.coerce.number().min(1).max(5)]).default(3).transform(val => val === '' ? 3 : val),
+    readyToFollowRecommendations: ReadyToFollowEnum.optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
     readyForExclusive: z.coerce.boolean().default(false),
     funnelStage: z.literal('CONTACT').default('CONTACT'),
+    customStageId: z.string().cuid().optional().or(z.literal('')).transform(val => val === '' ? null : val),
+    projectId: z.string().cuid().optional().or(z.literal('')).transform(val => val === '' ? null : val),
+    apartmentId: z.string().cuid().optional().or(z.literal('')).transform(val => val === '' ? null : val),
+    funnelId: z.string().optional(),
 });
 
 // Этап 2: ИНТЕРВЬЮ (полные данные — ВСЁ обязательно!)
@@ -238,7 +243,7 @@ export const SellerInterviewStageSchema = z.object({
     firstName: z.string().min(2, 'Минимум 2 символа'),
     lastName: z.string().min(2, 'Минимум 2 символа'),
     middleName: z.string().optional(),
-    phone: z.string().regex(/^(\+?7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/, 'Некорректный формат телефона'),
+    phone: z.string().min(10, 'Некорректный формат телефона').transform(val => normalizePhone(val)),
     email: z.string().email().optional().or(z.literal('')),
     iin: z.string().length(12, 'ИИН должен содержать 12 цифр').optional(),
 
@@ -299,36 +304,40 @@ export const SellerUpdateSchema = z.object({
     firstName: z.string().min(2).optional(),
     lastName: z.string().min(2).optional(),
     middleName: z.string().optional(),
-    phone: z.string().regex(/^(\+?7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/).optional(),
+    phone: z.string().regex(/^(\+?7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/).optional().transform(val => val ? normalizePhone(val) : val),
     email: z.string().email().optional().or(z.literal('')),
     iin: z.string().length(12).optional(),
-    reason: SaleReasonEnum.optional(),
+    reason: SaleReasonEnum.optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
     reasonOther: z.string().optional(),
-    deadline: SaleDeadlineEnum.optional(),
-    expectedPrice: z.coerce.number().positive().optional(),
-    minPrice: z.coerce.number().positive().optional(),
-    marketAssessment: MarketAssessmentEnum.optional(),
+    deadline: SaleDeadlineEnum.optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+    expectedPrice: z.union([z.literal(''), z.coerce.number().positive()]).optional().transform(val => val === '' ? undefined : val),
+    minPrice: z.union([z.literal(''), z.coerce.number().positive()]).optional().transform(val => val === '' ? undefined : val),
+    marketAssessment: MarketAssessmentEnum.optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
     readyToNegotiate: z.coerce.boolean().optional(),
     plansToPurchase: z.coerce.boolean().optional(),
     plansMortgage: z.coerce.boolean().optional(),
-    nextPurchaseFormat: NextPurchaseFormatEnum.optional(),
-    purchaseBudget: z.coerce.number().positive().optional(),
-    incomeSource: IncomeSourceEnum.optional(),
-    incomeAmount: z.coerce.number().nonnegative().optional(),
+    nextPurchaseFormat: NextPurchaseFormatEnum.optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+    purchaseBudget: z.union([z.literal(''), z.coerce.number().positive()]).optional().transform(val => val === '' ? undefined : val),
+    incomeSource: IncomeSourceEnum.optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+    incomeAmount: z.union([z.literal(''), z.coerce.number().nonnegative()]).optional().transform(val => val === '' ? undefined : val),
     hasDebts: z.coerce.boolean().optional(),
-    readyToFollowRecommendations: ReadyToFollowEnum.optional(),
+    readyToFollowRecommendations: ReadyToFollowEnum.optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
     readyForExclusive: z.coerce.boolean().optional(),
-    trustLevel: z.coerce.number().min(1).max(5).optional(),
+    trustLevel: z.union([z.literal(''), z.coerce.number().min(1).max(5)]).optional().transform(val => val === '' ? undefined : val),
     managerComment: z.string().optional(),
 
     // Missing Fields Fix
     source: z.string().optional(),
     communicationChannel: z.string().optional(),
     preferredTime: z.string().optional(),
-    loanPaymentAmount: z.coerce.number().nonnegative().optional(),
+    loanPaymentAmount: z.coerce.number().nonnegative().optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
 
     funnelStage: SellerFunnelStageEnum.optional(),
+    customStageId: z.string().cuid().optional().or(z.literal('')).transform(val => val === '' ? null : val),
+    projectId: z.string().cuid().optional().or(z.literal('')).transform(val => val === '' ? null : val),
+    apartmentId: z.string().cuid().optional().or(z.literal('')).transform(val => val === '' ? null : val),
     isActive: z.coerce.boolean().optional(),
+    customFields: z.record(z.any()).optional(), // New
 });
 
 // =========================================
@@ -435,6 +444,8 @@ export const CrmPropertyFullSchema = CrmPropertyMinimalSchema.extend({
 // Обновление объекта
 export const CrmPropertyUpdateSchema = CrmPropertyFullSchema.partial().omit({
     sellerId: true
+}).extend({
+    customFields: z.record(z.any()).optional(), // New
 });
 
 // =========================================

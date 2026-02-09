@@ -3,7 +3,7 @@
 import { useForm, useWatch } from "react-hook-form";
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { CreateSellerValues, createSellerSchema } from "@/lib/schemas";
 import api from "@/lib/api-client";
 import { toast } from "sonner";
@@ -42,6 +42,7 @@ interface CreateSellerFormProps {
     onOpenChange: (open: boolean) => void;
     initialData?: Partial<CreateSellerValues> & { id?: string };
     onSuccess?: () => void;
+    activeFunnelId?: string | null;
 }
 
 const REASONS = [
@@ -96,12 +97,25 @@ const SOURCES = [
     { value: "OTHER", label: "Другое" },
 ];
 
-export function CreateSellerForm({ open, onOpenChange, initialData, onSuccess }: CreateSellerFormProps) {
-    const props = { open, onOpenChange, initialData, onSuccess }; // Capture for usage in mutation
+export function CreateSellerForm({ open, onOpenChange, initialData, onSuccess, activeFunnelId }: CreateSellerFormProps) {
+    const props = { open, onOpenChange, initialData, onSuccess, activeFunnelId }; // Capture for usage in mutation
     const queryClient = useQueryClient();
     const isEditMode = !!initialData?.id;
 
     const [expandedSections, setExpandedSections] = useState<string[]>(["basic", "reason", "price", "plans", "communication"]);
+
+    // Phone duplicate check state
+    const [phoneCheckResult, setPhoneCheckResult] = useState<{
+        exists: boolean;
+        seller?: {
+            id: string;
+            name: string;
+            firstName?: string;
+            lastName?: string;
+            middleName?: string;
+        }
+    } | null>(null);
+    const [isCheckingPhone, setIsCheckingPhone] = useState(false);
 
     const form = useForm<CreateSellerValues>({
         resolver: zodResolver(createSellerSchema) as any,
@@ -128,8 +142,20 @@ export function CreateSellerForm({ open, onOpenChange, initialData, onSuccess }:
             communicationChannel: initialData?.communicationChannel || "",
             preferredTime: initialData?.preferredTime || "",
             reasonOther: initialData?.reasonOther || "",
+            customStageId: initialData?.customStageId || "",
+            projectId: initialData?.projectId || "",
+            apartmentId: initialData?.apartmentId || "",
         },
     });
+
+    const { data: projectsData, isLoading: isLoadingProjects } = useQuery({
+        queryKey: ["projects"],
+        queryFn: async () => {
+            const res = await api.get("/projects");
+            return res.data;
+        },
+    });
+    const projects = projectsData?.projects || [];
 
     // Reset form when initialData changes (or sheet opens)
     // This is crucial for the "Pre-fill" requirement when reusing the form component.
@@ -157,12 +183,39 @@ export function CreateSellerForm({ open, onOpenChange, initialData, onSuccess }:
                 communicationChannel: initialData.communicationChannel || "",
                 preferredTime: initialData.preferredTime || "",
                 reasonOther: initialData.reasonOther || "",
+                customStageId: initialData.customStageId || "",
+                projectId: initialData.projectId || "",
+                apartmentId: initialData.apartmentId || "",
             });
         }
     }, [initialData, form, open]);
 
     // Watch for conditional fields
     const plansToPurchase = useWatch({ control: form.control, name: "plansToPurchase" });
+    const phoneValue = useWatch({ control: form.control, name: "phone" });
+
+    // Debounced phone check
+    useEffect(() => {
+        if (!phoneValue || phoneValue.length < 12 || isEditMode) {
+            setPhoneCheckResult(null);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            setIsCheckingPhone(true);
+            try {
+                const res = await api.get('/sellers/check-phone', { params: { phone: phoneValue } });
+                setPhoneCheckResult(res.data);
+            } catch (error) {
+                console.error('Phone check error:', error);
+                setPhoneCheckResult(null);
+            } finally {
+                setIsCheckingPhone(false);
+            }
+        }, 500); // 500ms debounce
+
+        return () => clearTimeout(timer);
+    }, [phoneValue, isEditMode]);
     const hasDebts = useWatch({ control: form.control, name: "hasDebts" });
     const reason = useWatch({ control: form.control, name: "reason" });
 
@@ -171,7 +224,7 @@ export function CreateSellerForm({ open, onOpenChange, initialData, onSuccess }:
             if (isEditMode && initialData?.id) {
                 return api.put(`/sellers/${initialData.id}`, data);
             }
-            return api.post("/sellers", data);
+            return api.post("/sellers", { ...data, funnelId: activeFunnelId });
         },
         onSuccess: () => {
             toast.success(isEditMode ? "Продавец обновлен" : "Продавец успешно создан");
@@ -258,7 +311,7 @@ export function CreateSellerForm({ open, onOpenChange, initialData, onSuccess }:
                         <SheetDescription>
                             {isEditMode
                                 ? "Обновите данные для актуализации стратегии."
-                                : "Заполните только контактные данные для входа в воронку."}
+                                : "Заполните основные данные о клиенте и его запросе."}
                         </SheetDescription>
                     </SheetHeader>
 
@@ -283,7 +336,7 @@ export function CreateSellerForm({ open, onOpenChange, initialData, onSuccess }:
                     <Form {...form}>
                         <form id="create-seller-form" onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-4 pb-6">
 
-                            {/* NEW SELLER: Simple Flat Form */}
+                            {/* NEW SELLER: Simple Flat Form (Old Style) */}
                             {!isEditMode && (
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-2 gap-4">
@@ -314,6 +367,7 @@ export function CreateSellerForm({ open, onOpenChange, initialData, onSuccess }:
                                             )}
                                         />
                                     </div>
+
                                     <div className="grid grid-cols-1 gap-4">
                                         <FormField
                                             control={form.control}
@@ -326,6 +380,7 @@ export function CreateSellerForm({ open, onOpenChange, initialData, onSuccess }:
                                                             placeholder="+7 (700) 000-00-00"
                                                             {...field}
                                                             maxLength={18}
+                                                            className={phoneCheckResult?.exists ? "border-amber-500 focus-visible:ring-amber-500" : ""}
                                                             onChange={(e) => {
                                                                 let val = e.target.value.replace(/\D/g, '');
                                                                 if (val.startsWith('7')) val = val.substring(1);
@@ -340,17 +395,177 @@ export function CreateSellerForm({ open, onOpenChange, initialData, onSuccess }:
                                                             }}
                                                         />
                                                     </FormControl>
+                                                    {isCheckingPhone && (
+                                                        <p className="text-sm text-muted-foreground">Проверяем номер...</p>
+                                                    )}
+                                                    {!isCheckingPhone && phoneCheckResult?.exists && (
+                                                        <div className="flex flex-col gap-2 mt-2">
+                                                            <p className="text-sm text-amber-600 font-medium">
+                                                                ⚠️ Клиент с таким номером уже есть: {phoneCheckResult.seller?.name}
+                                                            </p>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="w-full text-amber-600 border-amber-200 hover:bg-amber-50"
+                                                                onClick={() => {
+                                                                    if (phoneCheckResult.seller) {
+                                                                        form.setValue("firstName", phoneCheckResult.seller.firstName || "");
+                                                                        form.setValue("lastName", phoneCheckResult.seller.lastName || "");
+                                                                        // If we had middleName field in form, we'd set it too
+                                                                        toast.info("Данные клиента заполнены");
+                                                                    }
+                                                                }}
+                                                            >
+                                                                Заполнить данные клиента
+                                                            </Button>
+                                                        </div>
+                                                    )}
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
                                     </div>
-                                    <div className="p-4 bg-blue-50 text-blue-800 text-sm rounded-md flex items-start gap-2">
-                                        <CheckCircle2 className="h-5 w-5 shrink-0" />
-                                        <p>
-                                            Это первый этап воронки. Остальную информацию (причины, сроки, объект) вы заполните позже, когда переведете карточку на этап <strong>"Интервью"</strong>.
-                                        </p>
+
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="reason"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Вопрос / Тема (Причина)</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Выберите причину" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {REASONS.map((r) => (
+                                                                <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
                                     </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="nextPurchaseFormat"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Интерес (Вторичка/Новостройка)</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Тип недвижимости" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {PURCHASE_FORMATS.map((p) => (
+                                                                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="purchaseBudget"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Бюджет покупки (₸)</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="60 000 000"
+                                                            {...field}
+                                                            value={field.value ?? ""}
+                                                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="source"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Источник</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Источник контакта" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {SOURCES.map((s) => (
+                                                                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="managerComment"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Комментарий</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="Заметки..." {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+
+                                    {form.watch("nextPurchaseFormat") === "NEW_BUILDING" && (
+                                        <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg space-y-4 animate-in fade-in slide-in-from-top-2">
+                                            <FormField
+                                                control={form.control}
+                                                name="projectId"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="flex items-center gap-2">
+                                                            <Home className="h-4 w-4 text-orange-600" />
+                                                            Выберите ЖК (Шахматка)
+                                                        </FormLabel>
+                                                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                                                            <FormControl>
+                                                                <SelectTrigger className="bg-white">
+                                                                    <SelectValue placeholder={isLoadingProjects ? "Загрузка проектов..." : "Выберите проект для привязки"} />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {projects.map((p: any) => (
+                                                                    <SelectItem key={p.id} value={p.id}>{p.name} ({p.city})</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormDescription>
+                                                            Сделка будет связана с выбранным жилым комплексом.
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

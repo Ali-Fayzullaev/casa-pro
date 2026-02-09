@@ -103,9 +103,10 @@ propertiesRouter.get('/', async (req: Request, res: Response): Promise<void> => 
       ];
     }
 
-    // Брокеры видят только свои объекты
-    if (req.user?.role === 'BROKER') {
-      where.brokerId = req.user.userId;
+    // Брокеры, Риелторы и Агентства видят только свои объекты
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '')) {
+      where.brokerId = req.user!.userId;
     }
 
     const [properties, total] = await Promise.all([
@@ -199,8 +200,9 @@ propertiesRouter.get('/:id', async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Проверка прав доступа для брокеров
-    if (req.user?.role === 'BROKER' && property.brokerId !== req.user.userId) {
+    // Проверка прав доступа для ограниченных ролей
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '') && property.brokerId !== req.user!.userId) {
       res.status(403).json({ error: 'Доступ запрещен' });
       return;
     }
@@ -267,9 +269,10 @@ propertiesRouter.put('/:id', async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
     if (
-      req.user?.role === 'BROKER' &&
-      existingProperty.brokerId !== req.user.userId
+      restrictedRoles.includes(req.user?.role || '') &&
+      existingProperty.brokerId !== req.user!.userId
     ) {
       res.status(403).json({ error: 'Доступ запрещен' });
       return;
@@ -322,9 +325,10 @@ propertiesRouter.delete('/:id', async (req: Request, res: Response): Promise<voi
       return;
     }
 
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
     if (
-      req.user?.role === 'BROKER' &&
-      existingProperty.brokerId !== req.user.userId
+      restrictedRoles.includes(req.user?.role || '') &&
+      existingProperty.brokerId !== req.user!.userId
     ) {
       res.status(403).json({ error: 'Доступ запрещен' });
       return;
@@ -358,7 +362,8 @@ propertiesRouter.post('/:id/assign-buyer', async (req: Request, res: Response): 
     }
 
     // Проверка прав доступа
-    if (req.user?.role === 'BROKER' && property.brokerId !== req.user.userId) {
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '') && property.brokerId !== req.user!.userId) {
       res.status(403).json({ error: 'Доступ запрещен' });
       return;
     }
@@ -414,7 +419,8 @@ propertiesRouter.post('/:id/unassign-buyer', async (req: Request, res: Response)
       return;
     }
 
-    if (req.user?.role === 'BROKER' && property.brokerId !== req.user.userId) {
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '') && property.brokerId !== req.user!.userId) {
       res.status(403).json({ error: 'Доступ запрещен' });
       return;
     }
@@ -423,7 +429,7 @@ propertiesRouter.post('/:id/unassign-buyer', async (req: Request, res: Response)
       where: { id },
       data: {
         buyerId: null,
-        status: 'AVAILABLE',
+        status: 'ACTIVE',
       },
       include: {
         broker: {
@@ -447,8 +453,9 @@ propertiesRouter.get('/stats/overview', async (req: Request, res: Response): Pro
   try {
     const where: any = {};
 
-    if (req.user?.role === 'BROKER') {
-      where.brokerId = req.user.userId;
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '')) {
+      where.brokerId = req.user!.userId;
     }
 
     const [total, active, sold, reserved] = await Promise.all([

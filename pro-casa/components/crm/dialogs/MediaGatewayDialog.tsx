@@ -9,7 +9,7 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ImageUploader } from "@/components/ui/ImageUploader";
+import { FileUploader } from "@/components/ui/FileUploader"; // Updated import
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { AlertCircle, Loader2 } from "lucide-react";
@@ -28,7 +28,7 @@ export function MediaGatewayDialog({
     onOpenChange,
     propertyId,
     imageCount,
-    requiredCount = 3,
+    requiredCount = 0, // Photos are now optional
     onSuccess,
 }: MediaGatewayDialogProps) {
     const [currentCount, setCurrentCount] = useState(imageCount);
@@ -41,14 +41,15 @@ export function MediaGatewayDialog({
         }
     }, [open, imageCount]);
 
-    const handleImagesChange = (urls: string[]) => {
+    const handleFilesChange = (urls: string[]) => {
+        // We only track images for the "count" visual, documents are bonus
         setCurrentCount(urls.length);
     };
 
     const handleContinue = async () => {
-        if (currentCount < requiredCount) {
-            toast.error(`Необходимо минимум ${requiredCount} фото. Сейчас: ${currentCount}`);
-            return;
+        // No longer blocking - just warn if no photos
+        if (currentCount === 0) {
+            // Allow but show info
         }
 
         setIsSubmitting(true);
@@ -66,41 +67,38 @@ export function MediaGatewayDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-amber-600">
                         <AlertCircle className="h-5 w-5" />
                         Подготовка Объекта
                     </DialogTitle>
                     <DialogDescription>
-                        Для перехода на этап "Подготовка" необходимо загрузить качественные фото (минимум {requiredCount}).
+                        Рекомендуем загрузить качественные фото и необходимые документы.
                         <br />
-                        Сейчас загружено: <b className={currentCount >= requiredCount ? "text-green-600" : "text-amber-600"}>{currentCount}</b>.
+                        Загружено: <b className={currentCount > 0 ? "text-green-600" : "text-amber-600"}>{currentCount}</b> фото.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="py-2">
-                    <div className="text-xs text-muted-foreground mb-2 text-center">
-                        Загрузите фото ниже.
-                    </div>
-
-                    <ImageUploader
+                    <FileUploader
                         propertyId={propertyId}
-                        onImagesChange={handleImagesChange}
+                        onImagesChange={handleFilesChange}
+                    // We can also track documents if needed
                     />
                 </div>
 
-                <DialogFooter className="flex row justify-between sm:justify-between items-center">
+                <DialogFooter className="flex row justify-between sm:justify-between items-center gap-2">
                     <Button variant="ghost" onClick={() => onOpenChange(false)} type="button">
                         Отмена
                     </Button>
                     <Button
                         onClick={handleContinue}
                         className="bg-amber-600 hover:bg-amber-700 text-white"
-                        disabled={isSubmitting || currentCount < requiredCount}
+                        disabled={isSubmitting}
                     >
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Готово, продолжить
+                        {currentCount > 0 ? "Готово, продолжить" : "Продолжить без фото"}
                     </Button>
                 </DialogFooter>
             </DialogContent>

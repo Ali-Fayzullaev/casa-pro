@@ -67,8 +67,9 @@ bookingsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
     }
 
     // Брокеры видят только свои брони
-    if (req.user?.role === 'BROKER') {
-      where.brokerId = req.user.userId;
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '')) {
+      where.brokerId = req.user!.userId;
     } else if (brokerId) {
       where.brokerId = brokerId;
     }
@@ -195,7 +196,8 @@ bookingsRouter.get('/:id', async (req: Request, res: Response): Promise<void> =>
     }
 
     // Проверка прав доступа
-    if (req.user?.role === 'BROKER' && booking.brokerId !== req.user.userId) {
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '') && booking.brokerId !== req.user!.userId) {
       res.status(403).json({ error: 'Доступ запрещен' });
       return;
     }
@@ -253,8 +255,9 @@ bookingsRouter.post('/', requireRole('BROKER', 'ADMIN'), async (req: Request, re
       return;
     }
 
-    // Для брокеров - проверяем что это их клиент
-    if (req.user?.role === 'BROKER' && client.brokerId !== req.user.userId) {
+    // Для ограниченных ролей - проверяем что это их клиент
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '') && client.brokerId !== req.user!.userId) {
       res.status(403).json({ error: 'Это не ваш клиент' });
       return;
     }
@@ -330,7 +333,7 @@ bookingsRouter.post('/', requireRole('BROKER', 'ADMIN'), async (req: Request, re
       await prisma.notification.create({
         data: {
           userId: booking.apartment.project.developerId,
-          type: 'BOOKING',
+          type: 'SYSTEM',
           title: 'Новая бронь',
           message: `Брокер ${booking.broker.firstName} ${booking.broker.lastName} забронировал квартиру №${apartment.number} в ЖК "${booking.apartment.project.name}". Тел: ${booking.broker.phone || 'не указан'}`,
         },
@@ -365,7 +368,8 @@ bookingsRouter.put('/:id', requireRole('BROKER', 'ADMIN'), async (req: Request, 
     }
 
     // Проверка прав доступа
-    if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '') && existing.brokerId !== req.user!.userId) {
       res.status(403).json({ error: 'Доступ запрещен' });
       return;
     }
@@ -449,7 +453,8 @@ bookingsRouter.delete('/:id', requireRole('BROKER', 'ADMIN'), async (req: Reques
     }
 
     // Проверка прав доступа
-    if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '') && existing.brokerId !== req.user!.userId) {
       res.status(403).json({ error: 'Доступ запрещен' });
       return;
     }
@@ -496,8 +501,9 @@ bookingsRouter.post('/:id/complete-deal', requireRole('BROKER', 'ADMIN', 'DEVELO
     console.log('Booking found:', booking.id, 'Status:', booking.status);
 
     // Проверка прав доступа
-    if (req.user?.role === 'BROKER' && booking.brokerId !== req.user.userId) {
-      console.log('Access denied: broker mismatch');
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '') && booking.brokerId !== req.user!.userId) {
+      console.log('Access denied: user mismatch');
       res.status(403).json({ error: 'Доступ запрещен' });
       return;
     }

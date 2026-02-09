@@ -2,16 +2,20 @@
 
 import { CloseDealDialog } from "./forms/CloseDealDialog";
 import { KanbanBoard as DndBoard } from "./KanbanBoard";
+import { SellersListView } from "./SellersListView";
+import { PropertiesListView } from "./PropertiesListView";
 import { CreateSellerForm } from "./forms/CreateSellerForm";
 import { CreatePropertyForm } from "./forms/CreatePropertyForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Filter } from "lucide-react";
+import { Plus, Filter, Settings, LayoutGrid, List } from "lucide-react";
 import {
     SellerFunnelStage,
     PropertyFunnelStage,
     Seller,
     CrmProperty,
+    CRMMode,
+    CustomFunnel,
 } from "@/types/kanban";
 import { toast } from "sonner";
 import { MonthFilter } from "./MonthFilter";
@@ -21,8 +25,11 @@ import { isSameMonth, parseISO } from "date-fns";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api-client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Columns Configuration
+// Columns Configuration (Standard)
 const SELLER_COLUMNS = [
     { id: SellerFunnelStage.CONTACT, title: "Контакт", variant: "blue" },
     { id: SellerFunnelStage.INTERVIEW, title: "Интервью", variant: "pink" },
@@ -43,11 +50,16 @@ const PROPERTY_COLUMNS = [
 
 export function KanbanBoard() {
     const [activeTab, setActiveTab] = useState<"sellers" | "properties">("sellers");
+    const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
     const [isSellerFormOpen, setIsSellerFormOpen] = useState(false);
     const [monthFilter, setMonthFilter] = useState<Date | undefined>(undefined);
     const [brokerFilter, setBrokerFilter] = useState<string | undefined>(undefined);
     const [userRole, setUserRole] = useState<string | null>(null);
     const [userId, setUserId] = useState<string>("");
+
+    // Hybrid CRM State
+    const [crmMode, setCrmMode] = useState<CRMMode>("STANDARD");
+    const [activeFunnelId, setActiveFunnelId] = useState<string | null>(null);
 
     useEffect(() => {
         const userStr = localStorage.getItem("user");
@@ -56,6 +68,13 @@ export function KanbanBoard() {
                 const user = JSON.parse(userStr);
                 setUserRole(user.role);
                 setUserId(user.id);
+
+                // Determine Mode
+                if (['DEVELOPER', 'AGENCY', 'REALTOR'].includes(user.role)) {
+                    setCrmMode("CUSTOM");
+                } else {
+                    setCrmMode("STANDARD");
+                }
             } catch (e) {
                 console.error("Failed to parse user", e);
             }
@@ -72,11 +91,29 @@ export function KanbanBoard() {
 
     const queryClient = useQueryClient();
 
-    // ... queries remain ...
+    // --- CUSTOM FUNNELS DATA ---
+    const { data: customFunnels, isLoading: isLoadingFunnels } = useQuery({
+        queryKey: ["custom-funnels"],
+        queryFn: async () => {
+            const res = await api.get("/custom-funnels");
+            return res.data as CustomFunnel[];
+        },
+        enabled: crmMode === "CUSTOM",
+    });
+
+    // Set active funnel default
+    useEffect(() => {
+        if (customFunnels && customFunnels.length > 0 && !activeFunnelId) {
+            const active = customFunnels.find(f => f.isActive) || customFunnels[0];
+            setActiveFunnelId(active.id);
+        }
+    }, [customFunnels, activeFunnelId]);
+
+    const activeFunnel = customFunnels?.find(f => f.id === activeFunnelId);
 
     // --- SELLERS DATA ---
     const { data: sellersData, isLoading: isLoadingSellers } = useQuery({
-        queryKey: ["sellers", brokerFilter],
+        queryKey: ["sellers", brokerFilter, activeFunnelId], // Refetch on funnel change
         queryFn: async () => {
             const res = await api.get("/sellers", {
                 params: { brokerId: brokerFilter }
@@ -87,8 +124,9 @@ export function KanbanBoard() {
     });
 
     const updateSellerStageMutation = useMutation({
-        mutationFn: async ({ id, stage }: { id: string; stage: string }) => {
-            const res = await api.put(`/sellers/${id}/stage`, { funnelStage: stage });
+        mutationFn: async ({ id, stage, isCustom }: { id: string; stage: string, isCustom: boolean }) => {
+            const payload = isCustom ? { customStageId: stage } : { funnelStage: stage };
+            const res = await api.put(`/sellers/${id}/stage`, payload);
             return res.data;
         },
         onSuccess: (data) => {
@@ -108,7 +146,7 @@ export function KanbanBoard() {
 
     // --- PROPERTIES DATA ---
     const { data: propertiesData, isLoading: isLoadingProperties } = useQuery({
-        queryKey: ["properties", brokerFilter],
+        queryKey: ["properties", brokerFilter, activeFunnelId],
         queryFn: async () => {
             const res = await api.get("/crm-properties", {
                 params: { brokerId: brokerFilter }
@@ -119,8 +157,9 @@ export function KanbanBoard() {
     });
 
     const updatePropertyStageMutation = useMutation({
-        mutationFn: async ({ id, stage }: { id: string; stage: string }) => {
-            return api.put(`/crm-properties/${id}/stage`, { funnelStage: stage });
+        mutationFn: async ({ id, stage, isCustom }: { id: string; stage: string, isCustom: boolean }) => {
+            const payload = isCustom ? { customStageId: stage } : { funnelStage: stage };
+            return api.put(`/crm-properties/${id}/stage`, payload);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["properties"] });
@@ -141,14 +180,37 @@ export function KanbanBoard() {
     };
 
     const sellersFiltered = filterByMonth(sellersData?.sellers || []);
-    const propertiesFiltered = filterByMonth(
-        (propertiesData?.properties || [])
-    );
+    const propertiesFiltered = filterByMonth(propertiesData?.properties || []);
+
+    // Helper to get stage ID (Standard vs Custom)
+    const getStageId = (item: Seller | CrmProperty) => {
+        if (crmMode === "CUSTOM") {
+            return item.customStageId || "uncategorized"; // Handling unassigned items?
+        }
+        return item.funnelStage;
+    };
+
+    // Dynamic Columns Generation
+    const getColumns = () => {
+        if (crmMode === "CUSTOM") {
+            if (!activeFunnel) return [];
+            return activeFunnel.stages.map(stage => ({
+                id: stage.id,
+                title: stage.name,
+                color: stage.color,
+                variant: 'default' // We use color prop instead
+            }));
+        }
+        return activeTab === "sellers" ? SELLER_COLUMNS : PROPERTY_COLUMNS;
+    };
+
+    const columns = getColumns();
 
     const sellersGrouped = sellersFiltered.reduce(
         (acc: Record<string, Seller[]>, seller: Seller) => {
-            if (!acc[seller.funnelStage]) acc[seller.funnelStage] = [];
-            acc[seller.funnelStage].push(seller);
+            const stageId = getStageId(seller);
+            if (!acc[stageId]) acc[stageId] = [];
+            acc[stageId].push(seller);
             return acc;
         },
         {}
@@ -156,8 +218,9 @@ export function KanbanBoard() {
 
     const propertiesGrouped = propertiesFiltered.reduce(
         (acc: Record<string, CrmProperty[]>, prop: CrmProperty) => {
-            if (!acc[prop.funnelStage]) acc[prop.funnelStage] = [];
-            acc[prop.funnelStage].push(prop);
+            const stageId = getStageId(prop);
+            if (!acc[stageId]) acc[stageId] = [];
+            acc[stageId].push(prop);
             return acc;
         },
         {}
@@ -169,31 +232,36 @@ export function KanbanBoard() {
     };
 
     const handlePropertyDragEnd = (id: string, stage: string) => {
-        const item = propertiesData?.properties.find((p: CrmProperty) => p.id === id);
+        // Special Deal Closing Logic (Only for Standard Mode?)
+        // If Custom Mode has a stage named "DEAL", maybe we should trigger it too?
+        // For now, let's keep Deal Closing Logic for Standard Mode OR if stage name strictly matches?
+        // Actually, custom stages have IDs, not Enum names. So we can't easily match 'DEAL'.
+        // We'll skip special logic for Custom Mode for now unless we add a "Stage Type" to custom stages.
 
-        // If moving to DEAL stage, intercept and open dialog
-        if (stage === PropertyFunnelStage.DEAL) {
+        if (crmMode === "STANDARD" && stage === PropertyFunnelStage.DEAL) {
             setPropertyConfigToClose({ id, stage });
             setIsCloseDealOpen(true);
             return;
         }
 
-        if (item && item.funnelStage !== stage) {
-            updatePropertyStageMutation.mutate({ id, stage });
-        }
+        updatePropertyStageMutation.mutate({ id, stage, isCustom: crmMode === "CUSTOM" });
     };
 
-    const handleCloseDealSuccess = () => {
-        // If deal closed successfully, maybe we update stage locally or refetch handling it
-        // The mutation on dialog handles backend
-        // We just clear state
-        setPropertyConfigToClose(null);
-    }
+    const isCustom = crmMode === "CUSTOM";
 
     return (
         <div className="h-full flex flex-col space-y-4">
             {/* Forms */}
-            <CreateSellerForm open={isSellerFormOpen} onOpenChange={setIsSellerFormOpen} />
+            {/* Seller Creation Form */}
+            <CreateSellerForm
+                open={isSellerFormOpen}
+                onOpenChange={setIsSellerFormOpen}
+                onSuccess={() => {
+                    queryClient.invalidateQueries({ queryKey: ["sellers"] });
+                    setIsSellerFormOpen(false);
+                }}
+                activeFunnelId={activeFunnelId}
+            />
             <CreatePropertyForm
                 open={isPropertyFormOpen}
                 onOpenChange={setIsPropertyFormOpen}
@@ -209,73 +277,147 @@ export function KanbanBoard() {
             )}
 
             {/* Control Panel inside the tab */}
-            <div className="flex items-center justify-between">
-                <Tabs
-                    value={activeTab}
-                    onValueChange={(val) => setActiveTab(val as "sellers" | "properties")}
-                    className="w-auto"
-                >
-                    <TabsList>
-                        <TabsTrigger value="sellers">Продавцы</TabsTrigger>
-                        <TabsTrigger value="properties">Объекты</TabsTrigger>
-                    </TabsList>
-                </Tabs>
-
-                <div className="flex gap-2 items-center">
-                    {userRole === "ADMIN" && (
-                        <BrokerFilter
-                            value={brokerFilter}
-                            onChange={setBrokerFilter}
-                            className="w-[180px]"
-                        />
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-4">
+                    {!isCustom && (
+                        <div className="flex items-center gap-2">
+                            <Tabs
+                                value={activeTab}
+                                onValueChange={(val) => setActiveTab(val as "sellers" | "properties")}
+                                className="w-auto"
+                            >
+                                <TabsList>
+                                    <TabsTrigger value="sellers">Продавцы</TabsTrigger>
+                                    <TabsTrigger value="properties">Объекты</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        </div>
                     )}
-                    {userRole === "BROKER" && userId && (
-                        <FormLinksButton userId={userId} />
-                    )}
-                    <MonthFilter date={monthFilter} setDate={setMonthFilter} />
 
-                    {/* Filter Button Removed as per request (not functional yet) */}
-
-                    {activeTab === "sellers" && (
-                        <Button size="sm" onClick={() => setIsSellerFormOpen(true)}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Новый продавец
-                        </Button>
+                    {/* Custom Funnel Selector */}
+                    {isCustom && (
+                        <div className="flex items-center gap-2">
+                            {isLoadingFunnels ? (
+                                <Skeleton className="h-9 w-[200px]" />
+                            ) : (
+                                <Select value={activeFunnelId || ""} onValueChange={setActiveFunnelId}>
+                                    <SelectTrigger className="w-[200px]">
+                                        <SelectValue placeholder="Выберите воронку" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {customFunnels?.map(f => (
+                                            <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                            <Link href="/dashboard/settings/funnels">
+                                <Button variant="ghost" size="icon">
+                                    <Settings className="h-4 w-4" />
+                                </Button>
+                            </Link>
+                        </div>
                     )}
                 </div>
+
+                {!isCustom && (
+                    <div className="flex gap-2 items-center flex-wrap relative z-10">
+                        <div className="flex bg-muted rounded-lg p-1">
+                            <Button
+                                variant={viewMode === "kanban" ? "secondary" : "ghost"}
+                                size="sm"
+                                className="h-7 px-3"
+                                onClick={() => {
+                                    console.log("Switching to Kanban");
+                                    setViewMode("kanban");
+                                }}
+                            >
+                                <LayoutGrid className="h-4 w-4 mr-2" />
+                                Канбан
+                            </Button>
+                            <Button
+                                variant={viewMode === "list" ? "secondary" : "ghost"}
+                                size="sm"
+                                className="h-7 px-3"
+                                onClick={() => {
+                                    console.log("Switching to List");
+                                    setViewMode("list");
+                                }}
+                            >
+                                <List className="h-4 w-4 mr-2" />
+                                Список
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {userRole === "ADMIN" && (
+                    <BrokerFilter
+                        value={brokerFilter}
+                        onChange={setBrokerFilter}
+                        className="w-[180px]"
+                    />
+                )}
+                {userRole === "BROKER" && userId && (
+                    <FormLinksButton userId={userId} />
+                )}
+                <MonthFilter date={monthFilter} setDate={setMonthFilter} />
+
+                {(activeTab === "sellers" || isCustom) && (
+                    <Button size="sm" onClick={() => setIsSellerFormOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        {isCustom ? "Новая сделка" : "Новый продавец"}
+                    </Button>
+                )}
             </div>
 
             <div className="flex-1 overflow-auto bg-muted/10 p-4 rounded-lg border">
-                {activeTab === "sellers" ? (
-                    isLoadingSellers ? (
-                        <div className="flex items-center justify-center h-full text-muted-foreground">Загрузка продавцов...</div>
-                    ) : (
-                        <DndBoard
-                            type="sellers"
-                            columns={SELLER_COLUMNS}
-                            items={sellersGrouped}
-                            onAddProperty={handleAddProperty}
-                            onDragEnd={(id, stage) => {
-                                const item = sellersData?.sellers.find((s: Seller) => s.id === id);
-                                if (item && item.funnelStage !== stage) {
-                                    updateSellerStageMutation.mutate({ id, stage });
-                                }
-                            }}
-                        />
-                    )
+                {isCustom && !activeFunnel ? (
+                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
+                        <p>У вас еще нет воронок. Создайте свою первую воронку!</p>
+                        <Link href="/dashboard/settings/funnels">
+                            <Button>Создать воронку</Button>
+                        </Link>
+                    </div>
                 ) : (
-                    isLoadingProperties ? (
-                        <div className="flex items-center justify-center h-full text-muted-foreground">Загрузка объектов...</div>
-                    ) : (
-                        <DndBoard
-                            type="properties"
-                            columns={PROPERTY_COLUMNS}
-                            items={propertiesGrouped}
-                            onDragEnd={handlePropertyDragEnd}
-                        />
-                    )
+                    <>
+                        {(activeTab === "sellers" || isCustom) ? (
+                            isLoadingSellers ? (
+                                <div className="flex items-center justify-center h-full text-muted-foreground">Загрузка продавцов...</div>
+                            ) : (
+                                <DndBoard
+                                    type="sellers"
+                                    // @ts-ignore
+                                    columns={columns}
+                                    items={sellersGrouped}
+                                    onAddProperty={handleAddProperty}
+                                    isCustom={isCustom}
+                                    onDragEnd={(id, stage) => {
+                                        updateSellerStageMutation.mutate({ id, stage, isCustom });
+                                    }}
+                                />
+                            )
+                        ) : (
+                            isLoadingProperties ? (
+                                <div className="flex items-center justify-center h-full text-muted-foreground">Загрузка объектов...</div>
+                            ) : (
+                                <DndBoard
+                                    type="properties"
+                                    // @ts-ignore
+                                    columns={columns}
+                                    items={propertiesGrouped}
+                                    onDragEnd={handlePropertyDragEnd}
+                                    isCustom={isCustom}
+                                />
+                            )
+                        )}
+                    </>
                 )}
             </div>
-        </div>
+        </div >
     );
+
+    function handleCloseDealSuccess() {
+        setPropertyConfigToClose(null);
+    }
 }

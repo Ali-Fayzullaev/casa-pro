@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 
 export default function DashboardLayout({
@@ -35,7 +35,11 @@ export default function DashboardLayout({
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <main className="flex-1 overflow-auto bg-muted/5">
-          <div className="container mx-auto p-6 lg:p-8">{children}</div>
+          <div className="flex items-center p-4 md:hidden border-b bg-background sticky top-0 z-20">
+            <SidebarTrigger />
+            <span className="ml-2 font-semibold">Pro Casa</span>
+          </div>
+          <div className="container mx-auto p-4 md:p-6 lg:p-8">{children}</div>
         </main>
       </div>
     </SidebarProvider>

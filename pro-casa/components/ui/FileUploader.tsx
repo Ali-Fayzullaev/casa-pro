@@ -1,103 +1,159 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { X, Upload, FileText, Loader2, File, Paperclip } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { X, Upload, FileText, Loader2, Image as ImageIcon } from "lucide-react";
+import { Button } from "@/components/ui/button"; // Added Button
 import { cn } from "@/lib/utils";
 import api from "@/lib/api-client";
 import { toast } from "sonner";
 
 interface FileUploaderProps {
     propertyId: string;
-    files?: string[];
-    onFilesChange?: (urls: string[]) => void;
+    images?: string[]; // Existing images
+    documents?: string[]; // Existing documents
+    onImagesChange?: (urls: string[]) => void;
+    onDocumentsChange?: (urls: string[]) => void;
 }
 
-export function FileUploader({ propertyId, files = [], onFilesChange }: FileUploaderProps) {
+export function FileUploader({
+    propertyId,
+    images = [],
+    documents = [],
+    onImagesChange,
+    onDocumentsChange
+}: FileUploaderProps) {
     const [uploading, setUploading] = useState(false);
-    const [localFiles, setLocalFiles] = useState<string[]>(files);
+    const [localImages, setLocalImages] = useState<string[]>(images);
+    const [localDocuments, setLocalDocuments] = useState<string[]>(documents);
+
+    // Sync props
+    useEffect(() => {
+        setLocalImages(images);
+    }, [images]);
+
+    useEffect(() => {
+        setLocalDocuments(documents);
+    }, [documents]);
+
+    // Fetch data on mount
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!propertyId) return;
+            try {
+                const res = await api.get(`/crm-properties/${propertyId}`);
+                if (res.data) {
+                    setLocalImages(res.data.images || []);
+                    setLocalDocuments(res.data.documents || []);
+                    // Update parent if callbacks provided (optional, usually parent controls or we just control local)
+                    onImagesChange?.(res.data.images || []);
+                    onDocumentsChange?.(res.data.documents || []);
+                }
+            } catch (e) {
+                console.error("Failed to fetch property files", e);
+            }
+        };
+        fetchData();
+    }, [propertyId]);
 
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
         if (acceptedFiles.length === 0) return;
 
         setUploading(true);
-        const newUrls: string[] = [];
+        const newImages: string[] = [];
+        const newDocs: string[] = [];
 
         try {
             for (const file of acceptedFiles) {
+                const isImage = file.type.startsWith("image/");
+                const endpoint = isImage
+                    ? `/uploads/property/${propertyId}/images`
+                    : `/uploads/property/${propertyId}/documents`;
+
                 const formData = new FormData();
                 formData.append("file", file);
 
-                const res = await api.post(`/uploads/property/${propertyId}/documents`, formData, {
+                const res = await api.post(endpoint, formData, {
                     headers: { "Content-Type": "multipart/form-data" },
                 });
+
                 if (res.data.url) {
-                    newUrls.push(res.data.url);
+                    if (isImage) {
+                        newImages.push(res.data.url);
+                    } else {
+                        newDocs.push(res.data.url);
+                    }
                 }
             }
 
-            const updatedList = [...localFiles, ...newUrls];
-            setLocalFiles(updatedList);
-            onFilesChange?.(updatedList);
-            toast.success(`Загружено ${newUrls.length} файлов`);
+            if (newImages.length > 0) {
+                const updated = [...localImages, ...newImages];
+                setLocalImages(updated);
+                onImagesChange?.(updated);
+                toast.success(`Загружено ${newImages.length} фото`);
+            }
+
+            if (newDocs.length > 0) {
+                const updated = [...localDocuments, ...newDocs];
+                setLocalDocuments(updated);
+                onDocumentsChange?.(updated);
+                toast.success(`Загружено ${newDocs.length} документов`);
+            }
+
         } catch (error) {
             console.error("Upload error:", error);
             toast.error("Ошибка загрузки");
         } finally {
             setUploading(false);
         }
-    }, [propertyId, localFiles, onFilesChange]);
+    }, [propertyId, localImages, localDocuments, onImagesChange, onDocumentsChange]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: {
+            'image/jpeg': [],
+            'image/png': [],
+            'image/webp': [],
             'application/pdf': [],
             'application/msword': [],
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': []
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [], // docx
+            'application/vnd.ms-excel': [],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [] // xlsx
         },
         maxSize: 10 * 1024 * 1024, // 10MB
     });
 
-    const handleDelete = async (urlToDelete: string) => {
+    const handleDelete = async (url: string, type: "image" | "document") => {
         try {
-            const filtered = localFiles.filter(url => url !== urlToDelete);
-            setLocalFiles(filtered);
-            onFilesChange?.(filtered);
+            const endpoint = type === "image"
+                ? `/uploads/property/${propertyId}/images`
+                : `/uploads/property/${propertyId}/documents`;
 
-            await api.delete(`/uploads/property/${propertyId}/documents`, {
-                data: { url: urlToDelete }
-            });
+            // Optimistic
+            if (type === "image") {
+                const filtered = localImages.filter(u => u !== url);
+                setLocalImages(filtered);
+                onImagesChange?.(filtered);
+            } else {
+                const filtered = localDocuments.filter(u => u !== url);
+                setLocalDocuments(filtered);
+                onDocumentsChange?.(filtered);
+            }
+
+            await api.delete(endpoint, { data: { url } });
             toast.success("Файл удален");
         } catch (error) {
             toast.error("Ошибка удаления");
-        }
-    };
-
-    const getFileName = (url: string) => {
-        try {
-            // Decoding filename from URL usually stored as timestamp-name
-            const parts = url.split('/');
-            const fullName = parts[parts.length - 1];
-            // Remove timestamp prefix if possible (optional)
-            // stored as: properties/{id}/docs/{timestamp}-{name}
-            const nameParts = fullName.split('-');
-            if (nameParts.length > 1 && /^\d+$/.test(nameParts[0])) {
-                return nameParts.slice(1).join('-');
-            }
-            return fullName;
-        } catch (e) {
-            return "Document";
+            // Revert needed? For now optimistic.
         }
     };
 
     return (
         <div className="space-y-4">
-            {/* DROPZONE */}
             <div
                 {...getRootProps()}
                 className={cn(
-                    "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors bg-white",
+                    "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
                     isDragActive ? "border-indigo-500 bg-indigo-50" : "border-gray-300 hover:border-indigo-400 hover:bg-gray-50",
                     uploading && "opacity-50 pointer-events-none"
                 )}
@@ -107,42 +163,60 @@ export function FileUploader({ propertyId, files = [], onFilesChange }: FileUplo
                     {uploading ? (
                         <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
                     ) : (
-                        <FileText className="h-8 w-8 text-gray-400" />
+                        <Upload className="h-8 w-8 text-gray-400" />
                     )}
-                    {uploading ? (
-                        <p className="text-sm">Загрузка...</p>
-                    ) : (
-                        <div className="text-sm">
-                            <span className="font-semibold text-indigo-600">Загрузить документы</span>
-                            <p className="text-xs text-gray-500 mt-1">PDF, DOC, DOCX (до 10MB)</p>
-                        </div>
-                    )}
+                    <span className="text-sm">
+                        {isDragActive ? "Отпустите файлы" : "Фото, PDF, DOCX, XLSX (до 10MB)"}
+                    </span>
                 </div>
             </div>
 
-            {/* FILES LIST */}
-            {localFiles.length > 0 && (
+            {/* Images Grid */}
+            {localImages.length > 0 && (
                 <div className="space-y-2">
-                    {localFiles.map((url, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 border rounded-md group hover:bg-white hover:border-indigo-200 transition-colors">
-                            <div className="flex items-center gap-3 overflow-hidden">
-                                <div className="p-2 bg-white rounded-md border text-indigo-600">
-                                    <Paperclip className="w-4 h-4" />
-                                </div>
-                                <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-900 truncate hover:underline hover:text-indigo-600">
-                                    {getFileName(url)}
-                                </a>
+                    <p className="text-sm font-medium text-muted-foreground">Фотографии ({localImages.length})</p>
+                    <div className="grid grid-cols-3 gap-2">
+                        {localImages.map((url, idx) => (
+                            <div key={idx} className="group relative aspect-square rounded-md overflow-hidden bg-gray-100 border">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={url} alt="prop" className="object-cover w-full h-full" />
+                                <button
+                                    onClick={() => handleDelete(url, "image")}
+                                    className="absolute top-1 right-1 bg-white/90 p-1 rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <X className="h-3 w-3" />
+                                </button>
                             </div>
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
-                                onClick={() => handleDelete(url)}
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Documents List */}
+            {localDocuments.length > 0 && (
+                <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Документы ({localDocuments.length})</p>
+                    <div className="flex flex-col gap-2">
+                        {localDocuments.map((url, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-2 rounded-md border bg-gray-50 text-sm">
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <FileText className="h-4 w-4 flex-shrink-0 text-blue-500" />
+                                    <span className="truncate max-w-[200px]" title={url}>
+                                        {/* Try to get filename from URL or just show generic */}
+                                        {url.split('/').pop()?.split('-').slice(1).join('-') || "Документ"}
+                                    </span>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 text-red-500"
+                                    onClick={() => handleDelete(url, "document")}
+                                >
+                                    <X className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
         </div>

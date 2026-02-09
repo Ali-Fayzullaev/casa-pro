@@ -405,7 +405,16 @@ export default function ProfilePage() {
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Роль</Label>
                   <Badge variant={profile?.role === "admin" ? "default" : "secondary"}>
-                    {profile?.role === "admin" ? "Администратор" : "Брокер"}
+                    {(() => {
+                      switch (profile?.role) {
+                        case 'ADMIN': return 'Администратор';
+                        case 'BROKER': return 'Брокер';
+                        case 'REALTOR': return 'Риелтор';
+                        case 'AGENCY': return 'Агентство';
+                        case 'DEVELOPER': return 'Девелопер';
+                        default: return profile?.role || 'Пользователь';
+                      }
+                    })()}
                   </Badge>
                 </div>
                 <div className="space-y-2">

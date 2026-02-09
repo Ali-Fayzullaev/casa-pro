@@ -224,6 +224,9 @@ export const FunnelStageLabels: Record<string, string> = {
     SHOWS: "Показы",
     DEAL: "Сделка",
     POST_SERVICE: "Пост-сервис",
+    SOLD: "Продано",
+    CANCELLED: "Отменено",
+    ARCHIVED: "Архив",
 };
 
 export const DeadlineLabels: Record<string, string> = {

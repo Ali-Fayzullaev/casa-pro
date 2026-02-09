@@ -205,8 +205,9 @@ crmPropertiesRouter.get('/', async (req: Request, res: Response): Promise<void> 
         const where: any = {};
 
         // Role-based filtering
-        if (req.user?.role === 'BROKER') {
-            where.brokerId = req.user.userId;
+        const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+        if (restrictedRoles.includes(req.user?.role || '')) {
+            where.brokerId = req.user!.userId;
         } else if (brokerId) {
             // Admin can filter by broker
             where.brokerId = brokerId as string;
@@ -256,6 +257,8 @@ crmPropertiesRouter.get('/', async (req: Request, res: Response): Promise<void> 
                             lastName: true,
                         },
                     },
+                    customStage: { select: { id: true, name: true, color: true } },
+                    customFieldValues: { include: { field: true } }, // NEW
                 },
             }),
             prisma.crmProperty.count({ where }),
@@ -283,8 +286,9 @@ crmPropertiesRouter.get('/funnel-stats', async (req: Request, res: Response): Pr
     try {
         const where: any = {};
 
-        if (req.user?.role === 'BROKER') {
-            where.brokerId = req.user.userId;
+        const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+        if (restrictedRoles.includes(req.user?.role || '')) {
+            where.brokerId = req.user!.userId;
         }
 
         const stats = await prisma.crmProperty.groupBy({
@@ -320,8 +324,9 @@ crmPropertiesRouter.get('/analytics', async (req: Request, res: Response): Promi
     try {
         const where: any = {};
 
-        if (req.user?.role === 'BROKER') {
-            where.brokerId = req.user.userId;
+        const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+        if (restrictedRoles.includes(req.user?.role || '')) {
+            where.brokerId = req.user!.userId;
         }
 
         const [byClass, byLiquidity, byStrategy] = await Promise.all([
@@ -367,15 +372,16 @@ crmPropertiesRouter.get('/analytics', async (req: Request, res: Response): Promi
 // =========================================
 crmPropertiesRouter.get(
     '/archived',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const userId = req.user!.userId;
             const role = req.user!.role;
 
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
             const where: any = {
                 status: 'ARCHIVED',
-                ...(role === 'BROKER' ? { brokerId: userId } : {})
+                ...(restrictedRoles.includes(role || '') ? { brokerId: userId } : {})
             };
 
             const properties = await prisma.crmProperty.findMany({
@@ -419,6 +425,7 @@ crmPropertiesRouter.get('/:id', async (req: Request, res: Response): Promise<voi
                     orderBy: { createdAt: 'desc' },
                     take: 10,
                 },
+                customFieldValues: { include: { field: true } }, // NEW
             },
         });
 
@@ -427,7 +434,8 @@ crmPropertiesRouter.get('/:id', async (req: Request, res: Response): Promise<voi
             return;
         }
 
-        if (req.user?.role === 'BROKER' && property.brokerId !== req.user.userId) {
+        const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+        if (restrictedRoles.includes(req.user?.role || '') && property.brokerId !== req.user!.userId) {
             res.status(403).json({ error: 'Доступ запрещен' });
             return;
         }
@@ -462,8 +470,15 @@ crmPropertiesRouter.get('/:id/strategy-details', async (req: Request, res: Respo
             return;
         }
 
-        if (req.user?.role === 'BROKER' && property.brokerId !== req.user.userId) {
+        const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+        if (restrictedRoles.includes(req.user?.role || '') && property.brokerId !== req.user!.userId) {
             res.status(403).json({ error: 'Доступ запрещен' });
+            return;
+        }
+
+        // RESTRICT: REALTOR and AGENCY cannot see strategy details
+        if (req.user?.role === 'REALTOR' || req.user?.role === 'AGENCY') {
+            res.status(403).json({ error: 'Доступ к стратегиям запрещен' });
             return;
         }
 
@@ -543,7 +558,7 @@ crmPropertiesRouter.get('/:id/strategy-details', async (req: Request, res: Respo
 // =========================================
 crmPropertiesRouter.post(
     '/:id/generate-description',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
@@ -590,7 +605,7 @@ crmPropertiesRouter.post(
 // =========================================
 crmPropertiesRouter.post(
     '/',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     validate(CrmPropertyMinimalSchema),
     async (req: Request, res: Response): Promise<void> => {
         try {
@@ -671,12 +686,12 @@ crmPropertiesRouter.post(
 // =========================================
 crmPropertiesRouter.put(
     '/:id',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     validate(CrmPropertyUpdateSchema),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
-            const data = req.body;
+            const { customFields, ...data } = req.body;
 
             const existing = await prisma.crmProperty.findUnique({
                 where: { id },
@@ -688,9 +703,33 @@ crmPropertiesRouter.put(
                 return;
             }
 
-            if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(req.user?.role || '') && existing.brokerId !== req.user!.userId) {
                 res.status(403).json({ error: 'Доступ запрещен' });
                 return;
+            }
+
+            // Update custom fields
+            if (customFields && Object.keys(customFields).length > 0) {
+                const promises = Object.entries(customFields).map(([fieldId, value]) => {
+                    return prisma.customFieldValue.upsert({
+                        where: {
+                            fieldId_propertyId: {
+                                fieldId,
+                                propertyId: id,
+                            },
+                        },
+                        create: {
+                            fieldId,
+                            propertyId: id,
+                            value: String(value),
+                        },
+                        update: {
+                            value: String(value),
+                        },
+                    });
+                });
+                await Promise.all(promises);
             }
 
             // Update basic data
@@ -791,17 +830,22 @@ crmPropertiesRouter.put(
 // PUT /api/crm-properties/:id/stage - Изменение этапа воронки
 // =========================================
 const updatePropertyStageSchema = z.object({
-    funnelStage: z.enum(['CREATED', 'PREPARATION', 'LEADS', 'SHOWS', 'DEAL', 'SOLD', 'POST_SERVICE', 'CANCELLED']),
+    funnelStage: z.enum(['CREATED', 'PREPARATION', 'LEADS', 'SHOWS', 'DEAL', 'SOLD', 'POST_SERVICE', 'ARCHIVED', 'CANCELLED']).optional(),
+    customStageId: z.string().optional(),
+    cancellationReason: z.enum(['CLIENT_REFUSED', 'WE_REFUSED']).optional(),
+    cancellationComment: z.string().optional(),
+}).refine(data => data.funnelStage || data.customStageId, {
+    message: "Either funnelStage or customStageId must be provided"
 });
 
 crmPropertiesRouter.put(
     '/:id/stage',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     validate(updatePropertyStageSchema),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
-            const { funnelStage } = req.body;
+            const { funnelStage, customStageId, cancellationReason, cancellationComment } = req.body;
 
             const existing = await prisma.crmProperty.findUnique({ where: { id } });
 
@@ -810,24 +854,59 @@ crmPropertiesRouter.put(
                 return;
             }
 
-            if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(req.user?.role || '') && existing.brokerId !== req.user!.userId) {
                 res.status(403).json({ error: 'Доступ запрещен' });
                 return;
             }
 
+            // Prepare update data
+            const updateData: any = {};
+
+            if (funnelStage) {
+                updateData.funnelStage = funnelStage;
+                updateData.customStageId = null;
+
+                // Classic validation logic (only for standard stages)
+                if (!customStageId) { // Only validate if not setting a custom stage
+                    const stages = ['CREATED', 'PREPARATION', 'LEADS', 'SHOWS', 'DEAL', 'SOLD', 'POST_SERVICE', 'ARCHIVED', 'CANCELLED'];
+                    const currentIndex = stages.indexOf(existing.funnelStage);
+                    const newIndex = stages.indexOf(funnelStage);
+
+                    const isSpecialStage = funnelStage === 'SOLD' || funnelStage === 'ARCHIVED' || funnelStage === 'CANCELLED';
+                    if (existing.customStageId === null && !isSpecialStage && Math.abs(newIndex - currentIndex) > 1) {
+                        res.status(400).json({
+                            error: 'Нельзя перескакивать этапы воронки',
+                            currentStage: existing.funnelStage,
+                            requestedStage: funnelStage,
+                        });
+                        return;
+                    }
+                }
+            } else if (customStageId) {
+                updateData.customStageId = customStageId;
+                // If only customStageId is provided, we might want to set funnelStage to a generic 'CUSTOM' or leave it as is.
+                // For now, we'll leave funnelStage unchanged if not explicitly provided.
+            }
+
+            // Cancellation logic
+            if (funnelStage === 'CANCELLED') {
+                if (cancellationReason) updateData.cancellationReason = cancellationReason;
+                if (cancellationComment) updateData.cancellationComment = cancellationComment;
+            } else {
+                // Clear cancellation fields if not cancelling
+                updateData.cancellationReason = null;
+                updateData.cancellationComment = null;
+            }
+
             const property = await prisma.crmProperty.update({
                 where: { id },
-                data: {
-                    funnelStage,
-                    publishedAt: funnelStage === 'LEADS' && !existing.publishedAt
-                        ? new Date()
-                        : existing.publishedAt,
-                },
+                data: updateData,
             });
 
             res.json(property);
         } catch (error) {
-            console.error('Update property stage error:', error);
+            console.error('Update CRM property stage error:', error);
             res.status(500).json({ error: 'Ошибка изменения этапа' });
         }
     }
@@ -838,7 +917,7 @@ crmPropertiesRouter.put(
 // =========================================
 crmPropertiesRouter.patch(
     '/:id',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
@@ -854,7 +933,8 @@ crmPropertiesRouter.patch(
                 return;
             }
 
-            if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(req.user?.role || '') && existing.brokerId !== req.user!.userId) {
                 res.status(403).json({ error: 'Доступ запрещен' });
                 return;
             }
@@ -882,7 +962,7 @@ crmPropertiesRouter.patch(
 // =========================================
 crmPropertiesRouter.post(
     '/:id/recalculate',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
@@ -897,7 +977,8 @@ crmPropertiesRouter.post(
                 return;
             }
 
-            if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(req.user?.role || '') && existing.brokerId !== req.user!.userId) {
                 res.status(403).json({ error: 'Доступ запрещен' });
                 return;
             }
@@ -950,7 +1031,7 @@ import { deepSeekService } from '../services/deepseek.service';
 // =========================================
 crmPropertiesRouter.post(
     '/:id/generate-strategy',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
@@ -965,7 +1046,8 @@ crmPropertiesRouter.post(
                 return;
             }
 
-            if (req.user?.role === 'BROKER' && property.brokerId !== req.user.userId) {
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(req.user?.role || '') && property.brokerId !== req.user!.userId) {
                 res.status(403).json({ error: 'Доступ запрещен' });
                 return;
             }
@@ -1006,7 +1088,7 @@ crmPropertiesRouter.post(
 // =========================================
 crmPropertiesRouter.post(
     '/:id/generate-description',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
@@ -1052,7 +1134,7 @@ crmPropertiesRouter.post(
 // =========================================
 crmPropertiesRouter.delete(
     '/:id',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
@@ -1066,8 +1148,9 @@ crmPropertiesRouter.delete(
                 return;
             }
 
-            // BROKER может удалять только свои объекты
-            if (role === 'BROKER' && existing.brokerId !== userId) {
+            // BROKER/REALTOR/AGENCY может удалять только свои объекты
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(role || '') && existing.brokerId !== userId) {
                 res.status(403).json({ error: 'Нет прав на удаление этого объекта' });
                 return;
             }
@@ -1100,7 +1183,7 @@ crmPropertiesRouter.delete(
 // =========================================
 crmPropertiesRouter.post(
     '/:id/restore',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
@@ -1114,7 +1197,8 @@ crmPropertiesRouter.post(
                 return;
             }
 
-            if (role === 'BROKER' && existing.brokerId !== userId) {
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(role || '') && existing.brokerId !== userId) {
                 res.status(403).json({ error: 'Нет прав на восстановление этого объекта' });
                 return;
             }
@@ -1137,7 +1221,7 @@ crmPropertiesRouter.post(
 // =========================================
 crmPropertiesRouter.delete(
     '/:id/permanent',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
@@ -1151,8 +1235,9 @@ crmPropertiesRouter.delete(
                 return;
             }
 
-            // BROKER может удалять только свои объекты
-            if (role === 'BROKER' && existing.brokerId !== userId) {
+            // BROKER/REALTOR/AGENCY может удалять только свои объекты
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(role || '') && existing.brokerId !== userId) {
                 res.status(403).json({ error: 'Нет прав на удаление этого объекта' });
                 return;
             }
@@ -1171,7 +1256,8 @@ crmPropertiesRouter.delete(
 // =========================================
 crmPropertiesRouter.post(
     '/:id/recalculate-strategy',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
+
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;

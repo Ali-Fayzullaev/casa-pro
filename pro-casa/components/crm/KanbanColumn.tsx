@@ -23,6 +23,7 @@ interface KanbanColumnProps {
     description?: string;
     children: React.ReactNode;
     variant?: "blue" | "pink" | "green" | "cyan" | "default";
+    color?: string;
 }
 
 const VARIANTS = {
@@ -33,17 +34,26 @@ const VARIANTS = {
     default: "bg-secondary/50 text-secondary-foreground"
 };
 
-export function KanbanColumn({ id, title, count = 0, description, children, variant = "default" }: KanbanColumnProps) {
+export function KanbanColumn({ id, title, count = 0, description, children, variant = "default", color }: KanbanColumnProps) {
     const { setNodeRef, isOver } = useDroppable({
         id,
     });
 
+    const customStyle = color ? {
+        background: `linear-gradient(135deg, ${color} 0%, ${color}DD 100%)`,
+        color: 'white',
+        boxShadow: `0 4px 6px -1px ${color}33`,
+    } : undefined;
+
     return (
         <div className="flex flex-col h-full min-w-[300px] w-[300px] border-r border-border/20 last:border-r-0 mr-4">
-            <div className={cn(
-                "flex items-center justify-between mb-4 px-4 py-3 rounded-xl shadow-lg transition-all",
-                VARIANTS[variant] || VARIANTS.default
-            )}>
+            <div
+                className={cn(
+                    "flex items-center justify-between mb-4 px-4 py-3 rounded-xl shadow-lg transition-all",
+                    !color && (VARIANTS[variant] || VARIANTS.default)
+                )}
+                style={customStyle}
+            >
                 <div className="flex items-center gap-2">
                     <h3 className="font-bold text-sm uppercase tracking-wide">
                         {title}

@@ -46,9 +46,13 @@ model User {
   sellers        Seller[]         @relation("BrokerSellers")
   crmProperties  CrmProperty[]    @relation("BrokerCrmProperties")
   buyers         Buyer[]          @relation("BrokerBuyers")
+  customFunnels  CustomFunnel[]
+  customFields   CustomField[]
+  events         Event[]
 
   @@map("users")
 }
+
 
 model Client {
   id             String       @id @default(cuid())
@@ -77,11 +81,51 @@ model Client {
   sellingProperties    Property[]            @relation("SellerProperties")
   boughtProperties     Property[]            @relation("BuyerProperties")
   deals                Deal[]
+  events               Event[]
 
   @@index([brokerId])
   @@index([status])
   @@index([clientType])
   @@map("clients")
+}
+
+// ... (at the end of file)
+
+// =========================================
+// CALENDAR & EVENTS (Phase 8)
+// =========================================
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  type        EventType
+  location    String?
+  
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  clientId    String?  @map("client_id")
+  client      Client?  @relation(fields: [clientId], references: [id]) 
+  
+  propertyId  String?  @map("property_id")
+  property    CrmProperty? @relation(fields: [propertyId], references: [id])
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([startDate])
+  @@map("events")
+}
+
+enum EventType {
+  SHOWING
+  MEETING
+  CALL
+  OTHER
 }
 
 model Project {
@@ -110,6 +154,7 @@ model Project {
 
   // Relations
   apartments Apartment[]
+  sellers   Seller[]
   developer  User        @relation("DeveloperProjects", fields: [developerId], references: [id])
 
   @@index([developerId])
@@ -134,6 +179,7 @@ model Apartment {
   projectId   String          @map("project_id")
 
   // Relations
+  sellers              Seller[]
   project              Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
   bookings             Booking[]
   mortgageCalculations MortgageCalculation[]
@@ -208,6 +254,8 @@ enum UserRole {
   ADMIN
   BROKER
   DEVELOPER
+  REALTOR
+  AGENCY
 }
 
 enum ClientStatus {
@@ -560,6 +608,12 @@ enum PropertyFunnelStage {
   CANCELLED     // Снято / Отказ
 }
 
+// Причина отказа/отмены
+enum CancellationReason {
+  CLIENT_REFUSED  // Клиент отказался
+  WE_REFUSED      // Мы отказались
+}
+
 // Причина продажи
 enum SaleReason {
   RELOCATION        // Переезд
@@ -756,6 +810,8 @@ model Seller {
   // === Воронка продавца ===
   funnelStage      SellerFunnelStage @default(CONTACT) @map("funnel_stage")
   strategyConfirmed Boolean         @default(false) @map("strategy_confirmed")
+  cancellationReason CancellationReason? @map("cancellation_reason")
+  cancellationComment String?       @map("cancellation_comment") @db.Text
   
   // === Метаданные ===
   isActive   Boolean  @default(true) @map("is_active")
@@ -767,6 +823,13 @@ model Seller {
   broker     User          @relation("BrokerSellers", fields: [brokerId], references: [id])
   properties CrmProperty[]
   documents  SellerDocument[]
+  customStageId String? @map("custom_stage_id")
+  customStage   CustomStage? @relation(fields: [customStageId], references: [id])
+  projectId      String?       @map("project_id")
+  project        Project?      @relation(fields: [projectId], references: [id])
+  apartmentId    String?       @map("apartment_id")
+  apartment      Apartment?    @relation(fields: [apartmentId], references: [id])
+  customFieldValues CustomFieldValue[]
   
   @@index([brokerId])
   @@index([funnelStage])
@@ -900,6 +963,8 @@ model CrmProperty {
   address             String?
   lat                 Float?
   lng                 Float?
+  customStageId String? @map("custom_stage_id")
+  customStage   CustomStage? @relation(fields: [customStageId], references: [id])
   
   // === 2️⃣ Геометрия и базовые параметры ===
   area               Decimal   @db.Decimal(10, 2)
@@ -977,6 +1042,8 @@ model CrmProperty {
   
   // === Воронка объекта ===
   funnelStage           PropertyFunnelStage @default(CREATED) @map("funnel_stage")
+  cancellationReason    CancellationReason? @map("cancellation_reason")
+  cancellationComment   String?             @map("cancellation_comment") @db.Text
   
   // === Статистика ===
   viewsCount            Int         @default(0) @map("views_count")
@@ -1014,6 +1081,8 @@ model CrmProperty {
   calculationLogs       PropertyCalculationLog[]
   shows                 Show[]
   offers                Offer[]
+  customFieldValues     CustomFieldValue[]
+  events                Event[]
   
   aiRecommendation      String?         @map("ai_recommendation") @db.Text
 
@@ -1060,4 +1129,95 @@ model SystemSettings {
   updatedAt   DateTime @updatedAt
 
   @@map("system_settings")
+}
+
+// =========================================
+// CUSTOM CRM (Phase 2)
+// =========================================
+
+model CustomFunnel {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String   @map("user_id")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stages    CustomStage[]
+  customFields CustomField[]
+
+  @@map("custom_funnels")
+}
+
+model CustomStage {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   @default("#3B82F6") // Blue default
+  order     Int
+  funnelId  String   @map("funnel_id")
+
+  funnel    CustomFunnel @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  sellers        Seller[]
+  crmProperties  CrmProperty[]
+
+  @@index([funnelId])
+  @@map("custom_stages")
+}
+
+model CustomField {
+  id        String   @id @default(cuid())
+  name      String
+  type      CustomFieldType
+  entityType CustomFieldEntity
+  
+  userId    String?  @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  funnelId  String?  @map("funnel_id") // Optional: limit field to specific funnel
+  funnel    CustomFunnel? @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+
+  options   String[] @default([]) // For SELECT/CHECKBOX
+  isActive  Boolean  @default(true) @map("is_active")
+
+  values    CustomFieldValue[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("custom_fields")
+}
+
+model CustomFieldValue {
+  id        String   @id @default(cuid())
+  fieldId   String   @map("field_id")
+  field     CustomField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  sellerId    String? @map("seller_id")
+  seller      Seller? @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  propertyId  String? @map("property_id")
+  property    CrmProperty? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  value       String  @db.Text // Store as string (JSON if needed)
+
+  @@unique([fieldId, sellerId])
+  @@unique([fieldId, propertyId])
+  @@index([sellerId])
+  @@index([propertyId])
+  @@map("custom_field_values")
+}
+
+enum CustomFieldType {
+  TEXT
+  NUMBER
+  DATE
+  SELECT
+  CHECKBOX
+  TEXTAREA
+}
+
+enum CustomFieldEntity {
+  SELLER
+  PROPERTY
 }

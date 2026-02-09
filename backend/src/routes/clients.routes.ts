@@ -70,9 +70,10 @@ clientsRouter.get('/', async (req: Request, res: Response): Promise<void> => {
       ];
     }
 
-    // Фильтр по брокеру (брокеры видят только своих клиентов)
-    if (req.user?.role === 'BROKER') {
-      where.brokerId = req.user.userId;
+    // Фильтр по брокеру (брокеры, риелторы и агентства видят только своих клиентов)
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '')) {
+      where.brokerId = req.user!.userId;
     }
 
     const [clients, total] = await Promise.all([
@@ -144,7 +145,7 @@ clientsRouter.get('/:id', async (req: Request, res: Response): Promise<void> => 
         },
         documents: true,
         mortgageCalculations: true,
-        sellerProperties: {
+        sellingProperties: {
           select: {
             id: true,
             title: true,
@@ -155,7 +156,7 @@ clientsRouter.get('/:id', async (req: Request, res: Response): Promise<void> => 
             images: true,
           },
         },
-        buyerProperties: {
+        boughtProperties: {
           select: {
             id: true,
             title: true,
@@ -175,7 +176,8 @@ clientsRouter.get('/:id', async (req: Request, res: Response): Promise<void> => 
     }
 
     // Проверка прав доступа
-    if (req.user?.role === 'BROKER' && client.brokerId !== req.user.userId) {
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '') && client.brokerId !== req.user!.userId) {
       res.status(403).json({ error: 'Доступ запрещен' });
       return;
     }
@@ -248,7 +250,8 @@ clientsRouter.put('/:id', requireRole('BROKER', 'ADMIN'), async (req: Request, r
     }
 
     // Проверка прав доступа
-    if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '') && existing.brokerId !== req.user!.userId) {
       res.status(403).json({ error: 'Доступ запрещен' });
       return;
     }
@@ -305,7 +308,8 @@ clientsRouter.delete('/:id', requireRole('BROKER', 'ADMIN'), async (req: Request
     }
 
     // Проверка прав доступа
-    if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '') && existing.brokerId !== req.user!.userId) {
       res.status(403).json({ error: 'Доступ запрещен' });
       return;
     }
@@ -345,7 +349,8 @@ clientsRouter.post('/:id/link-property', requireRole('BROKER', 'ADMIN'), async (
     }
 
     // Проверка прав доступа
-    if (req.user?.role === 'BROKER' && client.brokerId !== req.user.userId) {
+    const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY'];
+    if (restrictedRoles.includes(req.user?.role || '') && client.brokerId !== req.user!.userId) {
       res.status(403).json({ error: 'Доступ запрещен' });
       return;
     }

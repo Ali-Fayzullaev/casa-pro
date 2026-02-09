@@ -14,6 +14,7 @@ import {
     SellerInterviewTransitionSchema,
     SellerUpdateSchema,
 } from '../lib/validation.schemas';
+import { normalizePhone } from '../lib/phone.utils';
 
 export const sellersRouter = Router();
 
@@ -41,8 +42,9 @@ sellersRouter.get('/', async (req: Request, res: Response): Promise<void> => {
         const where: any = {};
 
         // Role-based filtering
-        if (req.user?.role === 'BROKER') {
-            where.brokerId = req.user.userId;
+        const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+        if (restrictedRoles.includes(req.user?.role || '')) {
+            where.brokerId = req.user!.userId;
         } else if (brokerId) {
             // Admin can filter by specific broker
             where.brokerId = brokerId as string;
@@ -90,6 +92,7 @@ sellersRouter.get('/', async (req: Request, res: Response): Promise<void> => {
                             residentialComplex: true,
                             price: true,
                             funnelStage: true,
+                            customStage: { select: { id: true, name: true, color: true } }, // NEW
                             repairState: true,
                             ceilingHeight: true,
                             parkingType: true,
@@ -110,6 +113,7 @@ sellersRouter.get('/', async (req: Request, res: Response): Promise<void> => {
                             }
                         },
                     },
+                    customStage: { select: { id: true, name: true, color: true } }, // NEW
                     _count: {
                         select: {
                             properties: {
@@ -138,14 +142,53 @@ sellersRouter.get('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // =========================================
+// GET /api/sellers/check-phone - Проверка существования номера телефона
+// =========================================
+sellersRouter.get('/check-phone', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { phone } = req.query;
+
+        if (!phone || typeof phone !== 'string') {
+            res.status(400).json({ error: 'Номер телефона не указан' });
+            return;
+        }
+
+        const normalizedPhone = normalizePhone(phone);
+
+        const existing = await prisma.seller.findFirst({
+            where: {
+                phone: normalizedPhone,
+                brokerId: req.user!.userId,
+                isActive: true
+            },
+            select: { id: true, firstName: true, lastName: true, middleName: true }
+        });
+
+        res.json({
+            exists: !!existing,
+            seller: existing ? {
+                id: existing.id,
+                firstName: existing.firstName,
+                lastName: existing.lastName || '',
+                middleName: existing.middleName || '',
+                name: `${existing.firstName} ${existing.lastName || ''}`.trim()
+            } : null
+        });
+    } catch (error) {
+        console.error('Check phone error:', error);
+        res.status(500).json({ error: 'Ошибка проверки телефона' });
+    }
+});
+
+// =========================================
 // GET /api/sellers/funnel-stats - Статистика по воронке
 // =========================================
 sellersRouter.get('/funnel-stats', async (req: Request, res: Response): Promise<void> => {
     try {
         const where: any = {};
-
-        if (req.user?.role === 'BROKER') {
-            where.brokerId = req.user.userId;
+        const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+        if (restrictedRoles.includes(req.user?.role || '')) {
+            where.brokerId = req.user!.userId;
         }
 
         const stats = await prisma.seller.groupBy({
@@ -177,15 +220,15 @@ sellersRouter.get('/funnel-stats', async (req: Request, res: Response): Promise<
 // =========================================
 sellersRouter.get(
     '/archived',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR'),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const userId = req.user!.userId;
             const role = req.user!.role;
-
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
             const where = {
                 isActive: false,
-                ...(role === 'BROKER' ? { brokerId: userId } : {})
+                ...(restrictedRoles.includes(role) ? { brokerId: userId } : {})
             };
 
             const sellers = await prisma.seller.findMany({
@@ -243,7 +286,8 @@ sellersRouter.get('/:id', async (req: Request, res: Response): Promise<void> => 
         }
 
         // Проверка прав доступа
-        if (req.user?.role === 'BROKER' && seller.brokerId !== req.user.userId) {
+        const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+        if (restrictedRoles.includes(req.user?.role || '') && seller.brokerId !== req.user!.userId) {
             res.status(403).json({ error: 'Доступ запрещен' });
             return;
         }
@@ -260,31 +304,69 @@ sellersRouter.get('/:id', async (req: Request, res: Response): Promise<void> => 
 // =========================================
 sellersRouter.post(
     '/',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     validate(SellerContactStageSchema),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const data = req.body;
 
-            // Проверка на дубликат по телефону
+            // Проверка на дубликат по телефону (в рамках одного брокера и только для активных)
             const existing = await prisma.seller.findFirst({
-                where: { phone: data.phone },
+                where: {
+                    phone: data.phone,
+                    brokerId: req.user!.userId,
+                    isActive: true
+                },
             });
 
             if (existing) {
-                console.log(`Duplicate seller creation attempt: Phone ${data.phone} exists (ID: ${existing.id})`); // DEBUG
+                console.log(`Duplicate seller creation attempt: Phone ${data.phone} exists for broker ${req.user!.userId} (ID: ${existing.id})`);
                 res.status(400).json({
-                    error: 'Продавец с таким телефоном уже существует',
+                    error: 'Продавец с таким телефоном уже есть в вашем списке',
                     existingSellerId: existing.id,
                 });
                 return;
             }
 
+            // Role-based custom funnel assignment
+            let customStageId = data.customStageId;
+            if (!customStageId && ['REALTOR', 'AGENCY', 'DEVELOPER'].includes(req.user?.role || '')) {
+                // Priority: 1. funnelId from request, 2. Active funnel
+                const funnelWhere = data.funnelId
+                    ? { id: data.funnelId, userId: req.user!.userId }
+                    : { userId: req.user!.userId, isActive: true };
+
+                const targetFunnel = await prisma.customFunnel.findFirst({
+                    where: funnelWhere,
+                    include: {
+                        stages: {
+                            orderBy: { order: 'asc' },
+                            take: 1
+                        }
+                    }
+                });
+
+                if (targetFunnel && targetFunnel.stages.length > 0) {
+                    customStageId = targetFunnel.stages[0].id;
+                }
+            }
+
+            // Remove funnelId from data before creating seller as it's not in the schema
+            const { funnelId, ...sellerData } = data;
+
+            console.log('Creating seller with data:', {
+                ...sellerData,
+                brokerId: req.user!.userId,
+                funnelStage: 'CONTACT',
+                customStageId: customStageId,
+            });
+
             const seller = await prisma.seller.create({
                 data: {
-                    ...data,
+                    ...sellerData,
                     brokerId: req.user!.userId,
                     funnelStage: 'CONTACT',
+                    customStageId: customStageId,
                 },
                 include: {
                     broker: {
@@ -310,7 +392,7 @@ sellersRouter.post(
 // =========================================
 sellersRouter.put(
     '/:id/interview',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     validate(SellerInterviewTransitionSchema),
     async (req: Request, res: Response): Promise<void> => {
         try {
@@ -326,7 +408,8 @@ sellersRouter.put(
             }
 
             // Проверка прав
-            if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(req.user?.role || '') && existing.brokerId !== req.user!.userId) {
                 res.status(403).json({ error: 'Доступ запрещен' });
                 return;
             }
@@ -360,18 +443,27 @@ sellersRouter.put(
 // =========================================
 // PUT /api/sellers/:id/stage - Изменение этапа воронки
 // =========================================
+// =========================================
+// PUT /api/sellers/:id/stage - Изменение этапа воронки
+// =========================================
 const updateStageSchema = z.object({
-    funnelStage: z.enum(['CONTACT', 'INTERVIEW', 'STRATEGY', 'CONTRACT_SIGNING', 'SOLD', 'ARCHIVED', 'CANCELLED']),
+    funnelStage: z.enum(['CONTACT', 'INTERVIEW', 'STRATEGY', 'CONTRACT_SIGNING', 'SOLD', 'ARCHIVED', 'CANCELLED']).optional(),
+    customStageId: z.string().optional(),
+    cancellationReason: z.enum(['CLIENT_REFUSED', 'WE_REFUSED']).optional(),
+    cancellationComment: z.string().optional(),
+}).refine(data => data.funnelStage || data.customStageId, {
+    message: "Either funnelStage or customStageId must be provided"
 });
 
 sellersRouter.put(
     '/:id/stage',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     validate(updateStageSchema),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
-            const { funnelStage } = req.body;
+            const { funnelStage, customStageId, cancellationReason, cancellationComment, ...restData } = req.body;
+            const { customFields } = req.body; // Extract customFields separately
 
             const existing = await prisma.seller.findUnique({ where: { id } });
 
@@ -380,26 +472,64 @@ sellersRouter.put(
                 return;
             }
 
-            if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(req.user?.role || '') && existing.brokerId !== req.user!.userId) {
                 res.status(403).json({ error: 'Доступ запрещен' });
                 return;
             }
 
-            // Валидация перехода этапов (нельзя перескакивать)
-            const stages = ['CONTACT', 'INTERVIEW', 'STRATEGY', 'CONTRACT_SIGNING', 'SOLD', 'ARCHIVED', 'CANCELLED'];
-            const currentIndex = stages.indexOf(existing.funnelStage);
-            const newIndex = stages.indexOf(funnelStage);
-
-            // SOLD, ARCHIVED и CANCELLED можно устанавливать из любого этапа
-            // Для остальных - можно двигаться только на 1 шаг вперёд или назад
-            const isSpecialStage = funnelStage === 'SOLD' || funnelStage === 'ARCHIVED' || funnelStage === 'CANCELLED';
-            if (!isSpecialStage && Math.abs(newIndex - currentIndex) > 1) {
-                res.status(400).json({
-                    error: 'Нельзя перескакивать этапы воронки',
-                    currentStage: existing.funnelStage,
-                    requestedStage: funnelStage,
+            // Update custom fields
+            if (customFields && Object.keys(customFields).length > 0) {
+                const promises = Object.entries(customFields).map(([fieldId, value]) => {
+                    return prisma.customFieldValue.upsert({
+                        where: {
+                            fieldId_sellerId: {
+                                fieldId,
+                                sellerId: id,
+                            },
+                        },
+                        create: {
+                            fieldId,
+                            sellerId: id,
+                            value: String(value),
+                        },
+                        update: {
+                            value: String(value),
+                        },
+                    });
                 });
-                return;
+                await Promise.all(promises);
+            }
+
+            // Prepare update data for seller
+            const updateData: any = {};
+
+            if (funnelStage) {
+                updateData.funnelStage = funnelStage;
+                updateData.customStageId = null; // Reset custom stage if moving to standard
+
+                // Classic validation logic (only when moving between standard stages)
+                if (!customStageId) {
+                    const stages = ['CONTACT', 'INTERVIEW', 'STRATEGY', 'CONTRACT_SIGNING', 'SOLD', 'ARCHIVED', 'CANCELLED'];
+                    const currentIndex = stages.indexOf(existing.funnelStage);
+                    const newIndex = stages.indexOf(funnelStage);
+                    const isSpecialStage = funnelStage === 'SOLD' || funnelStage === 'ARCHIVED' || funnelStage === 'CANCELLED';
+
+                    if (existing.customStageId === null && !isSpecialStage && Math.abs(newIndex - currentIndex) > 1) {
+                        res.status(400).json({
+                            error: 'Нельзя перескакивать этапы воронки',
+                            currentStage: existing.funnelStage,
+                            requestedStage: funnelStage,
+                        });
+                        return;
+                    }
+                }
+            }
+
+            if (customStageId) {
+                updateData.customStageId = customStageId;
+                // We keep the existing funnelStage or set it to a neutral one?
+                // If we don't update funnelStage, it stays as is.
             }
 
             // Если этап меняется на "CONTRACT_SIGNING / Договор", активируем связанные объекты
@@ -439,9 +569,15 @@ sellersRouter.put(
                 }
             }
 
+            // Add cancellation data if applicable
+            if (funnelStage === 'CANCELLED') {
+                if (cancellationReason) updateData.cancellationReason = cancellationReason;
+                if (cancellationComment) updateData.cancellationComment = cancellationComment;
+            }
+
             const seller = await prisma.seller.update({
                 where: { id },
-                data: { funnelStage },
+                data: updateData,
             });
 
             res.json({ ...seller, activatedPropertiesCount });
@@ -457,12 +593,12 @@ sellersRouter.put(
 // =========================================
 sellersRouter.put(
     '/:id',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     validate(SellerUpdateSchema),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
-            const data = req.body;
+            const { customFields, ...restData } = req.body;
 
             const existing = await prisma.seller.findUnique({ where: { id } });
 
@@ -471,23 +607,62 @@ sellersRouter.put(
                 return;
             }
 
-            if (req.user?.role === 'BROKER' && existing.brokerId !== req.user.userId) {
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(req.user?.role || '') && existing.brokerId !== req.user!.userId) {
                 res.status(403).json({ error: 'Доступ запрещен' });
                 return;
             }
 
+            // Проверка на дубликат по телефону при обновлении
+            if (restData.phone && restData.phone !== existing.phone) {
+                const duplicate = await prisma.seller.findFirst({
+                    where: {
+                        phone: restData.phone,
+                        brokerId: req.user!.userId,
+                        isActive: true,
+                        NOT: { id }
+                    }
+                });
+
+                if (duplicate) {
+                    res.status(400).json({
+                        error: 'Продавец с таким телефоном уже есть в вашем списке',
+                        existingSellerId: duplicate.id,
+                    });
+                    return;
+                }
+            }
+
+            // Update custom fields
+            if (customFields && Object.keys(customFields).length > 0) {
+                const promises = Object.entries(customFields).map(([fieldId, value]) => {
+                    return prisma.customFieldValue.upsert({
+                        where: {
+                            fieldId_sellerId: {
+                                fieldId,
+                                sellerId: id,
+                            },
+                        },
+                        create: {
+                            fieldId,
+                            sellerId: id,
+                            value: String(value),
+                        },
+                        update: {
+                            value: String(value),
+                        },
+                    });
+                });
+                await Promise.all(promises);
+            }
+
             const seller = await prisma.seller.update({
                 where: { id },
-                data,
+                data: restData,
                 include: {
-                    broker: {
-                        select: {
-                            id: true,
-                            firstName: true,
-                            lastName: true,
-                        },
-                    },
                     properties: true,
+                    customFieldValues: { include: { field: true } },
+                    customStage: { select: { id: true, name: true, color: true } },
                 },
             });
 
@@ -504,7 +679,7 @@ sellersRouter.put(
 // =========================================
 sellersRouter.delete(
     '/:id',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
@@ -521,8 +696,9 @@ sellersRouter.delete(
                 return;
             }
 
-            // BROKER может архивировать только своих продавцов
-            if (role === 'BROKER' && existing.brokerId !== userId) {
+            // BROKER/REALTOR/AGENCY может архивировать только своих продавцов
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(role || '') && existing.brokerId !== userId) {
                 res.status(403).json({ error: 'Нет прав на архивацию этого продавца' });
                 return;
             }
@@ -556,7 +732,7 @@ sellersRouter.delete(
 // =========================================
 sellersRouter.post(
     '/:id/restore',
-    requireRole('BROKER', 'ADMIN'),
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
@@ -570,7 +746,8 @@ sellersRouter.post(
                 return;
             }
 
-            if (role === 'BROKER' && existing.brokerId !== userId) {
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(role || '') && existing.brokerId !== userId) {
                 res.status(403).json({ error: 'Нет прав на восстановление этого продавца' });
                 return;
             }
@@ -604,7 +781,7 @@ sellersRouter.post(
 // =========================================
 sellersRouter.delete(
     '/:id/permanent',
-    requireRole('BROKER', 'ADMIN'), // Allow Broker
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'), // Allow all management roles
     async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
@@ -621,8 +798,9 @@ sellersRouter.delete(
                 return;
             }
 
-            // Broker can only delete own sellers
-            if (role === 'BROKER' && existing.brokerId !== userId) {
+            // Broker/Realtor/Agency can only delete own sellers
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(role || '') && existing.brokerId !== userId) {
                 res.status(403).json({ error: 'Нет прав на удаление этого продавца' });
                 return;
             }
