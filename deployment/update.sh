@@ -13,9 +13,11 @@ echo "Pulling latest changes..."
 cd "$PROJECT_ROOT"
 git pull origin main
 
+echo "Stopping old containers to prevent conflicts..."
+cd "$SCRIPT_DIR" && docker compose -f docker-compose.production.yml down
+
 echo "Building and restarting containers..."
-cd "$SCRIPT_DIR"
-docker compose -f docker-compose.production.yml up --build -d
+cd "$SCRIPT_DIR" && docker compose -f docker-compose.production.yml up --build -d
 
 echo "Running prisma migrations..."
 docker compose -f docker-compose.production.yml exec -T backend npx prisma migrate deploy
