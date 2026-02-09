@@ -22,7 +22,7 @@ export default function SellersPage() {
 
     const activeFunnelId = customFunnels?.find((f: any) => f.isActive)?.id || customFunnels?.[0]?.id;
 
-    const handleEdit = (seller: any) => {
+    const handleEdit = (seller: Seller) => {
         setSelectedSellerData(seller);
         setIsSellerFormOpen(true);
     };
@@ -42,7 +42,7 @@ export default function SellersPage() {
                     if (!v) setSelectedSellerData(null);
                 }}
                 activeFunnelId={activeFunnelId}
-                initialData={selectedSellerData}
+                initialData={selectedSellerData || undefined}
             />
         </div>
     );
