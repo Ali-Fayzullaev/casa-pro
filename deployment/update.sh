@@ -13,8 +13,8 @@ echo "Pulling latest changes..."
 cd "$PROJECT_ROOT"
 git pull origin main
 
-echo "Stopping old containers to prevent conflicts..."
-cd "$SCRIPT_DIR" && docker compose -f docker-compose.production.yml down
+echo "Stopping old containers and removing orphans..."
+cd "$SCRIPT_DIR" && docker compose -f docker-compose.production.yml down --remove-orphans
 
 echo "Building and restarting containers..."
 cd "$SCRIPT_DIR" && docker compose -f docker-compose.production.yml up --build -d
