@@ -224,7 +224,7 @@ export function CreateSellerForm({ open, onOpenChange, initialData, onSuccess, a
             if (isEditMode && initialData?.id) {
                 return api.put(`/sellers/${initialData.id}`, data);
             }
-            return api.post("/sellers", { ...data, funnelId: activeFunnelId });
+            return api.post("/sellers", { ...data, funnelId: activeFunnelId || undefined });
         },
         onSuccess: () => {
             toast.success(isEditMode ? "Продавец обновлен" : "Продавец успешно создан");

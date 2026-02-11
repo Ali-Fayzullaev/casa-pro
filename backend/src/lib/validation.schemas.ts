@@ -234,7 +234,7 @@ export const SellerContactStageSchema = z.object({
     customStageId: z.string().cuid().optional().or(z.literal('')).transform(val => val === '' ? null : val),
     projectId: z.string().cuid().optional().or(z.literal('')).transform(val => val === '' ? null : val),
     apartmentId: z.string().cuid().optional().or(z.literal('')).transform(val => val === '' ? null : val),
-    funnelId: z.string().optional(),
+    funnelId: z.string().nullable().optional(),
 });
 
 // Этап 2: ИНТЕРВЬЮ (полные данные — ВСЁ обязательно!)
