@@ -210,3 +210,42 @@ dealsRouter.delete('/:id', async (req: Request, res: Response): Promise<void> =>
   }
 });
 
+
+
+// POST /api/deals/tradein - создать TradeIn сделку
+dealsRouter.post('/tradein', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { sellerId, projectId, oldPropertyId, newApartmentPrice, commissionPercent, clientId, notes } = req.body;
+
+    if (!sellerId || !newApartmentPrice) {
+      res.status(400).json({ error: 'sellerId и newApartmentPrice обязательны' });
+      return;
+    }
+
+    const commission = (newApartmentPrice * (commissionPercent || 1.5)) / 100;
+    const casaFee = commission * 0.2; // 20% от комиссии — Casa Fee
+
+    const deal = await prisma.deal.create({
+      data: {
+        amount: newApartmentPrice,
+        commission,
+        casaFee,
+        objectType: 'PROPERTY',
+        objectId: oldPropertyId || null,
+        clientId: clientId || null,
+        isTradeIn: true,
+        tradeInPropertyId: oldPropertyId || null,
+        tradeInProjectId: projectId || null,
+        tradeInCommission: commissionPercent || 1.5,
+        notes: notes || `TradeIn сделка`,
+        brokerId: req.user!.userId,
+        source: 'MANUAL',
+      },
+    });
+
+    res.status(201).json(deal);
+  } catch (error) {
+    console.error('Create TradeIn deal error:', error);
+    res.status(500).json({ error: 'Ошибка создания TradeIn сделки' });
+  }
+});

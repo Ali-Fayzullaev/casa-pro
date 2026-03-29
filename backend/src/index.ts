@@ -35,6 +35,8 @@ import { customFieldsRouter } from './routes/custom-fields.routes';
 import { agencyRouter } from './routes/agency.routes';
 import { eventsRouter } from './routes/events.routes';
 import { exportRouter } from './routes/export.routes';
+import { subscriptionsRouter } from './routes/subscriptions.routes';
+import { mortgageApplicationsRouter } from './routes/mortgage-applications.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { auditMiddleware } from './middleware/audit.middleware';
 import { prisma } from './lib/prisma';
@@ -123,6 +125,8 @@ app.use('/api/custom-fields', customFieldsRouter);
 app.use('/api/agency', agencyRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/export', exportRouter);
+app.use('/api/subscriptions', subscriptionsRouter);
+app.use('/api/mortgage-applications', mortgageApplicationsRouter);
 
 // Error handling
 app.use(errorHandler);

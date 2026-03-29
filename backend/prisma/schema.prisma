@@ -49,6 +49,8 @@ model User {
   customFunnels  CustomFunnel[]
   customFields   CustomField[]
   events         Event[]
+  subscriptions  Subscription[]
+  mortgageApplications MortgageApplication[] @relation("BrokerApplications")
 
   @@map("users")
 }
@@ -82,6 +84,7 @@ model Client {
   boughtProperties     Property[]            @relation("BuyerProperties")
   deals                Deal[]
   events               Event[]
+  mortgageApplications MortgageApplication[]
 
   @@index([brokerId])
   @@index([status])
@@ -126,6 +129,78 @@ enum EventType {
   MEETING
   CALL
   OTHER
+}
+
+// =========================================
+// SUBSCRIPTIONS (Подписки)
+// =========================================
+
+model Subscription {
+  id          String             @id @default(cuid())
+  userId      String             @map("user_id")
+  plan        SubscriptionPlan   @default(FREE)
+  status      SubscriptionStatus @default(ACTIVE)
+  startsAt    DateTime           @default(now()) @map("starts_at")
+  expiresAt   DateTime?          @map("expires_at")
+  amount      Decimal?           @db.Decimal(15, 2)
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+enum SubscriptionPlan {
+  FREE       // Бесплатный (ограниченный)
+  BASIC      // Базовый (CRM + заявки)
+  PRO        // Про (CRM + заявки + обучение)
+  ENTERPRISE // Корпоративный (агентства)
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+// =========================================
+// MORTGAGE APPLICATIONS (Заявки в банки)
+// =========================================
+
+model MortgageApplication {
+  id              String                    @id @default(cuid())
+  clientId        String                    @map("client_id")
+  bankName        String                    @map("bank_name")
+  programName     String?                   @map("program_name")
+  loanAmount      Decimal                   @map("loan_amount") @db.Decimal(15, 2)
+  termMonths      Int                       @map("term_months")
+  interestRate    Decimal?                  @map("interest_rate") @db.Decimal(5, 2)
+  status          MortgageApplicationStatus @default(DRAFT)
+  responseDate    DateTime?                 @map("response_date")
+  responseNotes   String?                   @map("response_notes") @db.Text
+  brokerId        String                    @map("broker_id")
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+
+  client          Client                    @relation(fields: [clientId], references: [id])
+  broker          User                      @relation("BrokerApplications", fields: [brokerId], references: [id])
+
+  @@index([clientId])
+  @@index([brokerId])
+  @@index([status])
+  @@map("mortgage_applications")
+}
+
+enum MortgageApplicationStatus {
+  DRAFT      // Черновик
+  SUBMITTED  // Подана
+  REVIEWING  // На рассмотрении
+  APPROVED   // Одобрена
+  REJECTED   // Отклонена
+  CANCELLED  // Отменена
 }
 
 model Project {
@@ -405,6 +480,10 @@ model Deal {
   objectId    String?    @map("object_id") // ID объекта (property/apartment)
   clientId    String?    @map("client_id") // покупатель
   notes       String?    @db.Text
+  isTradeIn   Boolean    @default(false) @map("is_trade_in") // TradeIn сделка
+  tradeInPropertyId String? @map("trade_in_property_id") // Старая квартира клиента
+  tradeInProjectId  String? @map("trade_in_project_id")  // ЖК застройщика для обмена
+  tradeInCommission Decimal? @map("trade_in_commission") @db.Decimal(5, 2) // % комиссии TradeIn
   completedAt DateTime?  @map("completed_at")
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
