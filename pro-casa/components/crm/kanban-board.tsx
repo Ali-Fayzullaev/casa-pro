@@ -8,7 +8,7 @@ import { CreateSellerForm } from "./forms/CreateSellerForm";
 import { CreatePropertyForm } from "./forms/CreatePropertyForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Filter, Settings, LayoutGrid, List } from "lucide-react";
+import { Plus, Filter, Settings, LayoutGrid, List, Target } from "lucide-react";
 import {
     SellerFunnelStage,
     PropertyFunnelStage,
@@ -18,7 +18,7 @@ import {
     CustomFunnel,
 } from "@/types/kanban";
 import { toast } from "sonner";
-import { MonthFilter } from "./MonthFilter";
+import { DateFilter } from "./DateFilter";
 import { BrokerFilter } from "./BrokerFilter";
 import { FormLinksButton } from "./FormLinksButton";
 import { isSameMonth, parseISO } from "date-fns";
@@ -53,6 +53,7 @@ export function KanbanBoard() {
     const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
     const [isSellerFormOpen, setIsSellerFormOpen] = useState(false);
     const [monthFilter, setMonthFilter] = useState<Date | undefined>(undefined);
+    const [strategiesOpen, setStrategiesOpen] = useState(false);
     const [brokerFilter, setBrokerFilter] = useState<string | undefined>(undefined);
     const [userRole, setUserRole] = useState<string | null>(null);
     const [userId, setUserId] = useState<string>("");
@@ -294,31 +295,40 @@ export function KanbanBoard() {
             )}
 
             {/* Control Panel */}
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between px-4 py-2 bg-background border-b shrink-0">
-                <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between px-4 py-2.5 bg-background border-b shrink-0">
+                <div className="flex items-center gap-2">
                     {!isCustom && (
-                        <div className="flex items-center gap-2">
-                            <Tabs
-                                value={activeTab}
-                                onValueChange={(val) => setActiveTab(val as "sellers" | "properties")}
-                                className="w-auto"
+                        <div className="flex bg-muted rounded-lg p-0.5">
+                            <button
+                                onClick={() => setActiveTab("sellers")}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                                    activeTab === "sellers"
+                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                }`}
                             >
-                                <TabsList>
-                                    <TabsTrigger value="sellers">Продавцы</TabsTrigger>
-                                    <TabsTrigger value="properties">Объекты</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
+                                Продавцы
+                            </button>
+                            <button
+                                onClick={() => setActiveTab("properties")}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                                    activeTab === "properties"
+                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                }`}
+                            >
+                                Объекты
+                            </button>
                         </div>
                     )}
 
-                    {/* Custom Funnel Selector */}
                     {isCustom && (
                         <div className="flex items-center gap-2">
                             {isLoadingFunnels ? (
-                                <Skeleton className="h-9 w-[200px]" />
+                                <Skeleton className="h-8 w-[180px]" />
                             ) : (
                                 <Select value={activeFunnelId || ""} onValueChange={setActiveFunnelId}>
-                                    <SelectTrigger className="w-[200px]">
+                                    <SelectTrigger className="w-[180px] h-8 text-xs">
                                         <SelectValue placeholder="Выберите воронку" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -329,63 +339,76 @@ export function KanbanBoard() {
                                 </Select>
                             )}
                             <Link href="/dashboard/settings/funnels">
-                                <Button variant="ghost" size="icon">
-                                    <Settings className="h-4 w-4" />
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <Settings className="h-3.5 w-3.5" />
                                 </Button>
                             </Link>
                         </div>
                     )}
+
+                    <div className="w-px h-5 bg-border mx-1" />
+
+                    {/* View mode toggle */}
+                    {!isCustom && (
+                        <div className="flex bg-muted rounded-lg p-0.5">
+                            <button
+                                onClick={() => setViewMode("kanban")}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                                    viewMode === "kanban"
+                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                }`}
+                            >
+                                <LayoutGrid className="h-3.5 w-3.5" />
+                                Канбан
+                            </button>
+                            <button
+                                onClick={() => setViewMode("list")}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                                    viewMode === "list"
+                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                }`}
+                            >
+                                <List className="h-3.5 w-3.5" />
+                                Список
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="w-px h-5 bg-border mx-1" />
+
+                    {/* Strategies button */}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2.5 text-xs gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
+                        onClick={() => setStrategiesOpen(true)}
+                    >
+                        <Target className="h-3.5 w-3.5" />
+                        Стратегии
+                    </Button>
                 </div>
 
-                {!isCustom && (
-                    <div className="flex gap-2 items-center flex-wrap relative z-10">
-                        <div className="flex bg-muted rounded-lg p-1">
-                            <Button
-                                variant={viewMode === "kanban" ? "secondary" : "ghost"}
-                                size="sm"
-                                className="h-7 px-3"
-                                onClick={() => {
-                                    console.log("Switching to Kanban");
-                                    setViewMode("kanban");
-                                }}
-                            >
-                                <LayoutGrid className="h-4 w-4 mr-2" />
-                                Канбан
-                            </Button>
-                            <Button
-                                variant={viewMode === "list" ? "secondary" : "ghost"}
-                                size="sm"
-                                className="h-7 px-3"
-                                onClick={() => {
-                                    console.log("Switching to List");
-                                    setViewMode("list");
-                                }}
-                            >
-                                <List className="h-4 w-4 mr-2" />
-                                Список
-                            </Button>
-                        </div>
-                    </div>
-                )}
-
-                {userRole === "ADMIN" && (
-                    <BrokerFilter
-                        value={brokerFilter}
-                        onChange={setBrokerFilter}
-                        className="w-[180px]"
-                    />
-                )}
-                {userRole === "BROKER" && userId && (
-                    <FormLinksButton userId={userId} />
-                )}
-                <MonthFilter date={monthFilter} setDate={setMonthFilter} />
-
-                {(activeTab === "sellers" || isCustom) && (
-                    <Button size="sm" onClick={() => setIsSellerFormOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        {isCustom ? "Новая сделка" : "Новый продавец"}
-                    </Button>
-                )}
+                <div className="flex items-center gap-2">
+                    {userRole === "ADMIN" && (
+                        <BrokerFilter
+                            value={brokerFilter}
+                            onChange={setBrokerFilter}
+                            className="w-[160px]"
+                        />
+                    )}
+                    {userRole === "BROKER" && userId && (
+                        <FormLinksButton userId={userId} />
+                    )}
+                    <DateFilter date={monthFilter} setDate={setMonthFilter} />
+                    {(activeTab === "sellers" || isCustom) && (
+                        <Button size="sm" className="h-7 text-xs" onClick={() => setIsSellerFormOpen(true)}>
+                            <Plus className="mr-1 h-3.5 w-3.5" />
+                            {isCustom ? "Новая сделка" : "Новый продавец"}
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className="flex-1 min-h-0 overflow-hidden bg-slate-100">

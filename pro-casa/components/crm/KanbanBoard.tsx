@@ -487,22 +487,6 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, is
 
     return (
         <div className="h-full flex flex-col">
-            <div className="flex justify-end items-center py-1 px-2 shrink-0">
-                <div className="flex items-center gap-2">
-                    {userRole !== "REALTOR" && userRole !== "AGENCY" && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setStrategiesSheetOpen(true)}
-                            className="hidden md:flex gap-2"
-                        >
-                            <Target className="w-4 h-4 text-primary" />
-                            Стратегии
-                        </Button>
-                    )}
-                </div>
-            </div>
-
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCorners}
