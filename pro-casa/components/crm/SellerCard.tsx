@@ -49,10 +49,10 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                 style={style}
                 {...attributes}
                 {...listeners}
-                className={`mb-3 cursor-grab hover:shadow-md transition-shadow active:cursor-grabbing border group touch-action-none ${isOverlay ? "shadow-xl scale-105 rotate-2 cursor-grabbing" : ""} ${isDragging ? "opacity-50" : ""}`}
+                className={`mb-2 cursor-grab transition-all active:cursor-grabbing border group touch-action-none ${isOverlay ? "shadow-xl scale-105 rotate-2 cursor-grabbing" : ""} ${isDragging ? "opacity-50" : ""}`}
                 onClick={() => onInterviewClick && onInterviewClick(seller.id)}
             >
-                <CardHeader className="p-4 pb-2 flex flex-row justify-between items-start space-y-0">
+                <CardHeader className="p-3 pb-1 flex flex-row justify-between items-start space-y-0">
                     <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                             <AvatarFallback className="bg-primary/10 text-primary text-xs">
@@ -145,7 +145,7 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                         )}
                     </div>
                 </CardHeader>
-                <CardContent className="p-4 pt-2">
+                <CardContent className="p-3 pt-1 max-h-[60px] group-hover:max-h-[600px] overflow-hidden transition-all duration-300 ease-in-out">
                     {/* Status Badge */}
                     <div className="mb-3">
                         {seller.deadline ? (

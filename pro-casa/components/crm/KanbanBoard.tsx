@@ -552,11 +552,11 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, is
                 {
                     typeof window !== "undefined" && createPortal(
                         <DragOverlay dropAnimation={{
-                            duration: 200,
-                            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+                            duration: 150,
+                            easing: 'ease-out',
                         }}>
                             {activeItem ? (
-                                <div className="opacity-90 rotate-[2deg] scale-105 shadow-2xl">
+                                <div className="opacity-95 shadow-lg">
                                 {activeItem.type === "Seller" ? (
                                     <SellerCardBase seller={activeItem.item as Seller} isOverlay />
                                 ) : (

@@ -101,7 +101,7 @@ export function PropertyCardBase({ property, style, setNodeRef, attributes, list
                 {...attributes}
                 {...listeners}
                 className={cn(
-                    "mb-3 hover:shadow-md transition-shadow border group relative overflow-hidden touch-action-none",
+                    "mb-2 transition-all border group relative overflow-hidden touch-action-none",
                     isSold ? "cursor-not-allowed opacity-75" : "cursor-grab active:cursor-grabbing",
                     isOverlay ? "shadow-xl scale-105 rotate-2 cursor-grabbing" : "",
                     isDragging ? "opacity-50" : ""
@@ -205,7 +205,7 @@ export function PropertyCardBase({ property, style, setNodeRef, attributes, list
                     </p>
                 </CardHeader>
 
-                <CardContent className="p-3 pt-2">
+                <CardContent className="p-3 pt-1 max-h-[40px] group-hover:max-h-[500px] overflow-hidden transition-all duration-300 ease-in-out">
                     {/* COVER IMAGE */}
                     {property.images && property.images.length > 0 && !imgError ? (
                         <div className="mb-2 -mx-3 -mt-2">
