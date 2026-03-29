@@ -1117,6 +1117,8 @@ model CrmProperty {
   isIlliquid            Boolean         @default(false) @map("is_illiquid")
   illiquidReason        String?         @map("illiquid_reason")
   activeStrategy        StrategyType?   @map("active_strategy")
+  recommendedStrategy   StrategyType?   @map("recommended_strategy") // Рассчитанная системой
+  isStrategyManual      Boolean         @default(false) @map("is_strategy_manual") // Брокер изменил вручную
   strategyExplanation   String?         @map("strategy_explanation") @db.Text
   
   // === Воронка объекта ===

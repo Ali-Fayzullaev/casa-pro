@@ -174,6 +174,7 @@ async function runPropertyCalculation(
         isIlliquid: liquidityResult.isIlliquid,
         illiquidReason: liquidityResult.hardTrigger || null,
         activeStrategy,
+        recommendedStrategy: activeStrategy,
         strategyExplanation,
         pricePerSqm: Number(propertyData.price) / Number(propertyData.area),
     };
@@ -765,6 +766,12 @@ crmPropertiesRouter.put(
                     existing.seller,
                     previousData
                 );
+
+                // If broker manually set strategy, don't overwrite activeStrategy
+                if (existing.isStrategyManual) {
+                    delete (calculationResult as any).activeStrategy;
+                    delete (calculationResult as any).strategyExplanation;
+                }
 
                 const finalProperty = await prisma.crmProperty.update({
                     where: { id },
@@ -1447,3 +1454,60 @@ crmPropertiesRouter.post('/:id/close', async (req: Request, res: Response) => {
         res.status(500).json({ error: "Failed to close deal" });
     }
 });
+
+// =========================================
+// PUT /api/crm-properties/:id/strategy - Ручная смена стратегии брокером
+// =========================================
+crmPropertiesRouter.put(
+    '/:id/strategy',
+    requireRole('BROKER', 'ADMIN', 'REALTOR', 'AGENCY', 'DEVELOPER'),
+    async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { id } = req.params;
+            const { activeStrategy, resetToRecommended } = req.body;
+
+            const existing = await prisma.crmProperty.findUnique({ where: { id } });
+            if (!existing) {
+                res.status(404).json({ error: 'Объект не найден' });
+                return;
+            }
+
+            const restrictedRoles = ['BROKER', 'REALTOR', 'AGENCY', 'DEVELOPER'];
+            if (restrictedRoles.includes(req.user?.role || '') && existing.brokerId !== req.user!.userId) {
+                res.status(403).json({ error: 'Доступ запрещен' });
+                return;
+            }
+
+            if (resetToRecommended) {
+                // Сбросить на рекомендуемую системой
+                const updated = await prisma.crmProperty.update({
+                    where: { id },
+                    data: {
+                        activeStrategy: existing.recommendedStrategy,
+                        isStrategyManual: false,
+                    },
+                });
+                res.json(updated);
+                return;
+            }
+
+            if (!activeStrategy) {
+                res.status(400).json({ error: 'activeStrategy обязателен' });
+                return;
+            }
+
+            const updated = await prisma.crmProperty.update({
+                where: { id },
+                data: {
+                    activeStrategy,
+                    isStrategyManual: true,
+                },
+            });
+
+            res.json(updated);
+        } catch (error) {
+            console.error('Update strategy error:', error);
+            res.status(500).json({ error: 'Ошибка изменения стратегии' });
+        }
+    }
+);
