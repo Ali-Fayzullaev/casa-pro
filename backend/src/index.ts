@@ -33,7 +33,10 @@ import { customFunnelsRouter } from './routes/custom-funnels.routes';
 import { customFieldsRouter } from './routes/custom-fields.routes';
 import { agencyRouter } from './routes/agency.routes';
 import { eventsRouter } from './routes/events.routes';
+import { exportRouter } from './routes/export.routes';
 import { errorHandler } from './middleware/error.middleware';
+import { auditMiddleware } from './middleware/audit.middleware';
+import { prisma } from './lib/prisma';
 import { initializeBucket } from './lib/minio';
 
 dotenv.config();
@@ -53,11 +56,27 @@ app.use(cors({
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(auditMiddleware);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/health', async (_req, res) => {
+  try {
+    // Check DB connection
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      db: 'connected',
+    });
+  } catch {
+    res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      db: 'disconnected',
+    });
+  }
 });
 
 // API Routes
@@ -101,6 +120,7 @@ app.use('/api/custom-funnels', customFunnelsRouter);
 app.use('/api/custom-fields', customFieldsRouter);
 app.use('/api/agency', agencyRouter);
 app.use('/api/events', eventsRouter);
+app.use('/api/export', exportRouter);
 
 // Error handling
 app.use(errorHandler);
@@ -112,4 +132,14 @@ app.listen(PORT, async () => {
 
   // Initialize MinIO bucket
   await initializeBucket();
+
+  // Self health-check every 15 minutes
+  setInterval(async () => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      console.log(`[Health] OK — ${new Date().toISOString()}`);
+    } catch (e) {
+      console.error(`[Health] DB connection failed — ${new Date().toISOString()}`, e);
+    }
+  }, 15 * 60 * 1000);
 });

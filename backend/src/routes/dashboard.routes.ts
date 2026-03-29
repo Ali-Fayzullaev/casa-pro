@@ -227,3 +227,65 @@ dashboardRouter.get('/recent-properties', async (req: Request, res: Response): P
     res.status(500).json({ error: 'Ошибка получения списка объектов' });
   }
 });
+
+
+// GET /api/dashboard/recent-activity - последние действия пользователя
+dashboardRouter.get('/recent-activity', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const userRole = req.user!.role;
+    const isRestricted = ['BROKER', 'REALTOR', 'AGENCY'].includes(userRole);
+    const where: any = isRestricted ? { brokerId: userId } : {};
+
+    const [recentClients, recentBookings, recentDeals] = await Promise.all([
+      prisma.client.findMany({
+        where,
+        take: 5,
+        orderBy: { updatedAt: 'desc' },
+        select: { id: true, firstName: true, lastName: true, status: true, updatedAt: true },
+      }),
+      prisma.booking.findMany({
+        where,
+        take: 5,
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true, status: true, updatedAt: true,
+          client: { select: { firstName: true, lastName: true } },
+          apartment: { select: { number: true, project: { select: { name: true } } } },
+        },
+      }),
+      prisma.deal.findMany({
+        where,
+        take: 5,
+        orderBy: { updatedAt: 'desc' },
+        select: { id: true, status: true, stage: true, amount: true, updatedAt: true },
+      }),
+    ]);
+
+    const activity = [
+      ...recentClients.map(c => ({
+        id: c.id, type: 'client' as const,
+        title: `Клиент: ${c.firstName} ${c.lastName}`,
+        description: `Статус: ${c.status}`,
+        date: c.updatedAt.toISOString(),
+      })),
+      ...recentBookings.map(b => ({
+        id: b.id, type: 'booking' as const,
+        title: `Бронь: ${b.apartment?.project?.name || ''} кв. ${b.apartment?.number || ''}`,
+        description: `${b.client?.firstName || ''} ${b.client?.lastName || ''} — ${b.status}`,
+        date: b.updatedAt.toISOString(),
+      })),
+      ...recentDeals.map(d => ({
+        id: d.id, type: 'deal' as const,
+        title: `Сделка: ${Number(d.amount).toLocaleString()} ₸`,
+        description: `${d.stage} — ${d.status}`,
+        date: d.updatedAt.toISOString(),
+      })),
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
+
+    res.json(activity);
+  } catch (error) {
+    console.error('Get recent activity error:', error);
+    res.status(500).json({ error: 'Ошибка получения последних действий' });
+  }
+});

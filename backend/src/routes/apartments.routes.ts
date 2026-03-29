@@ -389,3 +389,60 @@ apartmentsRouter.put('/:id/status', async (req: Request, res: Response): Promise
     res.status(500).json({ error: 'Ошибка обновления статуса квартиры' });
   }
 });
+
+
+// POST /api/apartments/import - bulk import apartments from JSON (parsed from Excel on frontend)
+apartmentsRouter.post('/import', requireRole('DEVELOPER', 'ADMIN'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { projectId, apartments } = req.body;
+
+    if (!projectId || !Array.isArray(apartments) || apartments.length === 0) {
+      res.status(400).json({ error: 'projectId и массив apartments обязательны' });
+      return;
+    }
+
+    // Verify project belongs to developer
+    if (req.user?.role === 'DEVELOPER') {
+      const project = await prisma.project.findFirst({
+        where: { id: projectId, developerId: req.user.userId },
+      });
+      if (!project) {
+        res.status(403).json({ error: 'Нет доступа к этому проекту' });
+        return;
+      }
+    }
+
+    const results = { created: 0, skipped: 0, errors: [] as string[] };
+
+    for (const apt of apartments) {
+      try {
+        const number = String(apt.number || apt['Номер'] || '').trim();
+        const floor = parseInt(apt.floor || apt['Этаж']);
+        const rooms = parseInt(apt.rooms || apt['Комнат']);
+        const area = parseFloat(apt.area || apt['Площадь']);
+        const price = parseFloat(apt.price || apt['Цена']);
+
+        if (!number || isNaN(floor) || isNaN(rooms) || isNaN(area) || isNaN(price)) {
+          results.errors.push(`Пропущена квартира: невалидные данные (${number || 'без номера'})`);
+          results.skipped++;
+          continue;
+        }
+
+        await prisma.apartment.upsert({
+          where: { projectId_number: { projectId, number } },
+          update: { floor, rooms, area, price, status: 'AVAILABLE' },
+          create: { projectId, number, floor, rooms, area, price, status: 'AVAILABLE' },
+        });
+        results.created++;
+      } catch (e: any) {
+        results.errors.push(`Ошибка: ${e.message}`);
+        results.skipped++;
+      }
+    }
+
+    res.json({ message: `Импортировано: ${results.created}, пропущено: ${results.skipped}`, ...results });
+  } catch (error) {
+    console.error('Import apartments error:', error);
+    res.status(500).json({ error: 'Ошибка импорта квартир' });
+  }
+});
