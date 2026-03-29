@@ -89,10 +89,8 @@ export function FileUpload({
         })
 
         const response = await fetch(`${API_URL}/upload/multiple`, {
+          credentials: 'include',
           method: "POST",
-          headers: {
-
-          },
           body: formData,
         })
 
@@ -108,10 +106,8 @@ export function FileUpload({
         formData.append("file", selectedFiles[0])
 
         const response = await fetch(`${API_URL}/upload/single`, {
+          credentials: 'include',
           method: "POST",
-          headers: {
-
-          },
           body: formData,
         })
 

@@ -74,10 +74,7 @@ export default function EditApartmentPage() {
       const response = await fetch(
         getApiUrl(`/apartments/${params.apartmentId}`),
         {
-          headers: {
-
-          },
-        }
+          }
       );
 
       if (!response.ok) throw new Error('Failed to fetch apartment');
@@ -126,9 +123,7 @@ export default function EditApartmentPage() {
             rooms: parseInt(formData.rooms),
             area: parseFloat(formData.area),
             price: parseFloat(formData.price),
-            description: formData.description || undefined,
-            credentials: 'include',
-          }),
+            description: formData.description || undefined}),
         }
       );
 
@@ -165,10 +160,7 @@ export default function EditApartmentPage() {
         getApiUrl(`/apartments/${params.apartmentId}`),
         {
           method: 'DELETE',
-          headers: {
-
-          },
-        }
+          }
       );
 
       if (!response.ok) {

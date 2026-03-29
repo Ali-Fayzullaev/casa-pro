@@ -54,9 +54,7 @@ export default function NewDealPage() {
                     source,
                     stage,
                     notes,
-                    title: clientName
-                  credentials: 'include',
-                }),
+                    title: clientName}),
             });
 
             if (!res.ok) {

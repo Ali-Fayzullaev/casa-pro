@@ -58,8 +58,6 @@ export default function EditPropertyPage() {
 
   const fetchProperty = async () => {
 
-    if (!token) return
-
     try {
       const res = await fetch(`${API_URL}/properties/${propertyId}`, {
         credentials: 'include',
@@ -97,8 +95,6 @@ export default function EditPropertyPage() {
 
   const fetchSellers = async () => {
 
-    if (!token) return
-
     try {
       const res = await fetch(`${API_URL}/clients?clientType=SELLER&limit=100`, {
         credentials: 'include',
@@ -116,8 +112,6 @@ export default function EditPropertyPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-
-    if (!token) return
 
     try {
       const payload = {

@@ -58,6 +58,7 @@ export default function NewFormPage() {
     const fetchBrokers = async () => {
         try {
             const res = await fetch(getApiUrl('/users?role=BROKER'), {
+                credentials: 'include',
                 headers: getAuthHeaders()
             });
             if (res.ok) {
@@ -86,6 +87,7 @@ export default function NewFormPage() {
         try {
             setIsLoading(true);
             const res = await fetch(getApiUrl('/forms'), {
+                credentials: 'include',
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -95,9 +97,7 @@ export default function NewFormPage() {
                     title,
                     distributionType,
                     fields,
-                    brokerIds: selectedBrokers
-                  credentials: 'include',
-                }),
+                    brokerIds: selectedBrokers}),
             });
 
             if (!res.ok) throw new Error("Failed to create");

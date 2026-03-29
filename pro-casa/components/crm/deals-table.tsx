@@ -56,6 +56,7 @@ export function DealsTable() {
     const handleDelete = async (id: string) => {
         try {
             const res = await fetch(getApiUrl(`/deals/${id}`), {
+                credentials: 'include',
                 method: 'DELETE',
                 headers: getAuthHeaders(),
             });

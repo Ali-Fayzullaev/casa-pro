@@ -63,10 +63,7 @@ export default function EditProjectPage() {
       const response = await fetch(
         getApiUrl(`/projects/${params.id}`),
         {
-          headers: {
-
-          },
-        }
+          }
       );
 
       if (!response.ok) throw new Error('Failed to fetch project');

@@ -158,6 +158,7 @@ export default function BrokerDetailPage({ params }: { params: Promise<{ id: str
     try {
 
       const res = await fetch(`${API_URL}/courses/assign`, {
+        credentials: 'include',
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -165,9 +166,7 @@ export default function BrokerDetailPage({ params }: { params: Promise<{ id: str
         },
         body: JSON.stringify({
           courseId: selectedCourseId,
-          brokerId: id,
-          credentials: 'include',
-        }),
+          brokerId: id}),
       });
       
       if (res.ok) {
@@ -212,6 +211,7 @@ export default function BrokerDetailPage({ params }: { params: Promise<{ id: str
     try {
 
       const res = await fetch(`${API_URL}/payments`, {
+        credentials: 'include',
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -221,9 +221,7 @@ export default function BrokerDetailPage({ params }: { params: Promise<{ id: str
           brokerId: id,
           amount: parseFloat(paymentForm.amount),
           type: paymentForm.type,
-          description: paymentForm.description,
-          credentials: 'include',
-        }),
+          description: paymentForm.description}),
       });
       
       if (res.ok) {

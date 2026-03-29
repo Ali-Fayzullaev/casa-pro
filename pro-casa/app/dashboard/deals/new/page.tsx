@@ -83,8 +83,6 @@ export default function NewDealPage() {
     e.preventDefault()
     setLoading(true)
 
-    if (!token) return
-
     try {
       const payload = {
         amount: parseFloat(formData.amount),

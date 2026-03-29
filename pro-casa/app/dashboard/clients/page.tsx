@@ -79,8 +79,6 @@ export default function ClientsPage() {
 
   const fetchClients = async () => {
 
-    if (!token) return
-
     try {
       const params = new URLSearchParams({
         page: page.toString(),

@@ -174,10 +174,7 @@ export default function ApartmentsGridPage() {
         getApiUrl(`/apartments/${apartmentToDelete.id}`),
         {
           method: 'DELETE',
-          headers: {
-
-          },
-        }
+          }
       );
 
       if (!response.ok) {

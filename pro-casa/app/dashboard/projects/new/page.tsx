@@ -119,6 +119,7 @@ export default function NewProjectPage() {
 
     try {
       const response = await fetch(`${API_URL}/projects`, {
+        credentials: 'include',
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -129,9 +130,7 @@ export default function NewProjectPage() {
           lat: values.lat || selectedLocation?.lat,
           lng: values.lng || selectedLocation?.lng,
           images: projectImages,
-          mortgagePrograms: selectedMortgagePrograms,
-          credentials: 'include',
-        }),
+          mortgagePrograms: selectedMortgagePrograms}),
       })
 
       if (response.ok) {

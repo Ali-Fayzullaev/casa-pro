@@ -163,6 +163,7 @@ export default function NewBookingPage() {
     try {
 
       const res = await fetch(`${API_URL}/bookings`, {
+        credentials: 'include',
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -172,9 +173,7 @@ export default function NewBookingPage() {
           clientId: selectedClientId,
           apartmentId: selectedApartmentId,
           notes,
-          expirationDays: parseInt(expirationDays),
-          credentials: 'include',
-        }),
+          expirationDays: parseInt(expirationDays)}),
       })
 
       if (res.ok) {

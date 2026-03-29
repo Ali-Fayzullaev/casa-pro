@@ -51,8 +51,6 @@ export default function NewPropertyPage() {
 
   const fetchSellers = async () => {
 
-    if (!token) return
-
     try {
       const res = await fetch(`${API_URL}/clients?clientType=SELLER&limit=100`, {
         credentials: 'include',
@@ -70,8 +68,6 @@ export default function NewPropertyPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-
-    if (!token) return
 
     try {
       const payload = {

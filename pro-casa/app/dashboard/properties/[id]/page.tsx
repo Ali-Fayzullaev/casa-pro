@@ -90,8 +90,6 @@ export default function PropertyDetailPage() {
 
   const fetchProperty = async () => {
 
-    if (!token) return
-
     try {
       const res = await fetch(`${API_URL}/properties/${params.id}`, {
         credentials: 'include',
@@ -109,8 +107,6 @@ export default function PropertyDetailPage() {
   }
 
   const fetchBuyers = async () => {
-
-    if (!token) return
 
     try {
       const res = await fetch(`${API_URL}/clients?clientType=BUYER&limit=100`, {

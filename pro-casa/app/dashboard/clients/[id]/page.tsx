@@ -149,9 +149,7 @@ export default function ClientDetailPage() {
     try {
 
       const response = await fetch(`${API_URL}/clients/${params.id}`, {
-        headers: {
-
-        },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -174,11 +172,9 @@ export default function ClientDetailPage() {
 
       
       const response = await fetch(`${API_URL}/clients/${params.id}`, {
+        credentials: 'include',
         method: 'DELETE',
-        headers: {
-
-        },
-      });
+        });
 
       if (!response.ok) {
         throw new Error('Failed to delete client');

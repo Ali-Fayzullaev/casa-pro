@@ -31,8 +31,6 @@ export default function MortgageProgramsPage() {
 
     const fetchPrograms = async () => {
 
-        if (!token) return
-
         try {
             const response = await fetch(`${API_URL}/mortgage-programs`, {
                 credentials: 'include',

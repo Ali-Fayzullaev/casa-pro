@@ -109,6 +109,7 @@ export default function BookApartmentPage() {
       expiresAt.setHours(expiresAt.getHours() + parseInt(expiresInHours));
 
       const response = await fetch(getApiUrl('/bookings'), {
+        credentials: 'include',
         method: 'POST',
         headers: {
 
@@ -118,9 +119,7 @@ export default function BookApartmentPage() {
           clientId,
           apartmentId: params.apartmentId,
           expiresAt: expiresAt.toISOString(),
-          notes,
-          credentials: 'include',
-        }),
+          notes}),
       });
 
       const data = await response.json();

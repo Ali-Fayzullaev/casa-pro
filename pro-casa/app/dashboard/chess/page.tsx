@@ -51,10 +51,7 @@ export default function ChessboardSelectPage() {
       const response = await fetch(
         getApiUrl('/projects'),
         {
-          headers: {
-
-          },
-        }
+          }
       );
 
       if (!response.ok) throw new Error('Failed to fetch projects');

@@ -53,6 +53,7 @@ export default function FormsListPage() {
     const fetchForms = async () => {
         try {
             const res = await fetch(getApiUrl('/forms'), {
+                credentials: 'include',
                 headers: getAuthHeaders()
             });
             if (!res.ok) throw new Error('Failed to fetch');
@@ -69,6 +70,7 @@ export default function FormsListPage() {
     const handleToggle = async (form: LeadForm) => {
         try {
             const res = await fetch(getApiUrl(`/forms/${form.id}/toggle`), {
+                credentials: 'include',
                 method: 'PATCH',
                 headers: getAuthHeaders()
             });
@@ -85,6 +87,7 @@ export default function FormsListPage() {
         if (!formToDelete) return;
         try {
             const res = await fetch(getApiUrl(`/forms/${formToDelete.id}`), {
+                credentials: 'include',
                 method: 'DELETE',
                 headers: getAuthHeaders()
             });

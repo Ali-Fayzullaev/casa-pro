@@ -226,7 +226,7 @@ export default function MortgagePage() {
           "Content-Type": "application/json",
 
         },
-        body: JSON.stringify(calculationData)
+        body: JSON.stringify(calculationData),
         credentials: 'include',
       })
 

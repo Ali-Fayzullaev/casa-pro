@@ -55,10 +55,8 @@ export default function NewApartmentPage() {
       formDataUpload.append('file', file);
 
       const response = await fetch(`${API_URL}/upload/single`, {
+        credentials: 'include',
         method: 'POST',
-        headers: {
-
-        },
         body: formDataUpload,
       });
 
@@ -107,9 +105,7 @@ export default function NewApartmentPage() {
           price: parseFloat(formData.price),
           status: 'AVAILABLE',
           layoutImage: layoutImage || undefined,
-          description: formData.description || undefined,
-          credentials: 'include',
-        }),
+          description: formData.description || undefined}),
       });
 
       if (!response.ok) {

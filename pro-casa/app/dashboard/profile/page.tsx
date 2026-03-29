@@ -264,6 +264,7 @@ export default function ProfilePage() {
     try {
 
       const res = await fetch(`${API_URL}/auth/change-password`, {
+        credentials: 'include',
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -271,9 +272,7 @@ export default function ProfilePage() {
         },
         body: JSON.stringify({
           currentPassword: passwordForm.currentPassword,
-          newPassword: passwordForm.newPassword,
-          credentials: 'include',
-        }),
+          newPassword: passwordForm.newPassword}),
       });
 
       if (res.ok) {

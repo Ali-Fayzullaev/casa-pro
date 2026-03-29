@@ -63,9 +63,7 @@ export default function UsersPage() {
 
 
       const response = await fetch(getApiUrl('/admin/users'), {
-        headers: {
-
-        },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -102,11 +100,9 @@ export default function UsersPage() {
 
 
       const response = await fetch(getApiUrl(`/admin/users/${deleteUserId}`), {
+        credentials: 'include',
         method: 'DELETE',
-        headers: {
-
-        },
-      });
+        });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

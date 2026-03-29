@@ -68,8 +68,6 @@ export default function DealsPage() {
 
   const fetchDeals = async () => {
 
-    if (!token) return
-
     try {
       const params = new URLSearchParams({
         page: page.toString(),

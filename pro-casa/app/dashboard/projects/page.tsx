@@ -113,8 +113,6 @@ export default function ProjectsCatalogPage() {
 
   const fetchProjects = async () => {
 
-    if (!token) return
-
     try {
       const params = new URLSearchParams()
       if (district !== "ALL") params.append("district", district)
@@ -161,11 +159,9 @@ export default function ProjectsCatalogPage() {
     try {
 
       const response = await fetch(`${API_URL}/projects/${deleteProjectId}`, {
+        credentials: 'include',
         method: 'DELETE',
-        headers: {
-
-        },
-      })
+        })
 
       if (!response.ok) {
         throw new Error('Failed to delete project')

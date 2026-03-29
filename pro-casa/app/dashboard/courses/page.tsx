@@ -200,6 +200,7 @@ export default function CoursesAdminPage() {
     try {
 
       const res = await fetch(`${API_URL}/courses/assign`, {
+        credentials: 'include',
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -207,9 +208,7 @@ export default function CoursesAdminPage() {
         },
         body: JSON.stringify({
           courseId: selectedCourseForAssign,
-          brokerId: selectedBrokerId,
-          credentials: 'include',
-        }),
+          brokerId: selectedBrokerId}),
       });
 
       if (res.ok) {

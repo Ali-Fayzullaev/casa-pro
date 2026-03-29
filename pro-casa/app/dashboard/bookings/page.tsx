@@ -106,9 +106,7 @@ export default function BookingsPage() {
       console.log('Fetching from:', url);
 
       const response = await fetch(url, {
-        headers: {
-
-        },
+        credentials: 'include',
       });
 
       if (!response.ok) throw new Error('Failed to fetch bookings');

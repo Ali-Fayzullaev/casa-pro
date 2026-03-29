@@ -91,8 +91,6 @@ export default function PropertiesPage() {
 
   const fetchProperties = async () => {
 
-    if (!token) return
-
     try {
       const params = new URLSearchParams({
         page: page.toString(),

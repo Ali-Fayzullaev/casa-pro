@@ -86,8 +86,6 @@ export default function DealDetailPage() {
   }, [currentUser])
 
   const fetchCurrentUser = async () => {
-
-    if (!token) return
     try {
       const res = await fetch(`${API_URL}/users/me`, {
         credentials: 'include'
@@ -102,8 +100,6 @@ export default function DealDetailPage() {
   }
 
   const fetchBrokers = async () => {
-
-    if (!token) return
     try {
       const res = await fetch(`${API_URL}/users?role=BROKER&limit=100`, {
         credentials: 'include'
@@ -118,8 +114,6 @@ export default function DealDetailPage() {
   }
 
   const fetchDeal = async () => {
-
-    if (!token) return
     try {
       const res = await fetch(`${API_URL}/deals/${dealId}`, {
         credentials: 'include',
@@ -530,8 +524,6 @@ export default function DealDetailPage() {
             />
             <Button
               onClick={async () => {
-
-                if (!token) return;
 
                 setUpdating(true);
                 try {

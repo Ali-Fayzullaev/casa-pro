@@ -31,8 +31,6 @@ export default function NotificationsPage() {
 
   const fetchNotifications = async () => {
 
-    if (!token) return
-
     setLoading(true)
     try {
       const res = await fetch(`${API_URL}/notifications?page=${page}&limit=20`, {
@@ -54,8 +52,6 @@ export default function NotificationsPage() {
 
   const markAsRead = async (id: string) => {
 
-    if (!token) return
-
     try {
       await fetch(`${API_URL}/notifications/${id}/read`, {
         method: "PATCH",
@@ -69,8 +65,6 @@ export default function NotificationsPage() {
 
   const markAllAsRead = async () => {
 
-    if (!token) return
-
     try {
       await fetch(`${API_URL}/notifications/read-all`, {
         method: "PATCH",
@@ -83,8 +77,6 @@ export default function NotificationsPage() {
   }
 
   const deleteNotification = async (id: string) => {
-
-    if (!token) return
 
     try {
       await fetch(`${API_URL}/notifications/${id}`, {

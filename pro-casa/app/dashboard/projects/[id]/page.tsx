@@ -115,8 +115,6 @@ export default function ProjectDetailsPage() {
 
   const fetchProjectDetails = async () => {
 
-    if (!token) return
-
     try {
       const response = await fetch(`${API_URL}/projects/${params.id}`, {
         credentials: 'include',
