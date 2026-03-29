@@ -10,7 +10,7 @@ import {
     DragStartEvent,
     DragEndEvent,
     TouchSensor,
-    closestCorners,
+    closestCenter,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -184,13 +184,13 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, is
     const sensors = useSensors(
         useSensor(MouseSensor, {
             activationConstraint: {
-                distance: 10,
+                distance: 5,
             },
         }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 250,
-                tolerance: 5,
+                delay: 150,
+                tolerance: 8,
             },
         })
     );
@@ -503,7 +503,7 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, is
         <div className="h-full flex flex-col">
             <DndContext
                 sensors={sensors}
-                collisionDetection={closestCorners}
+                collisionDetection={closestCenter}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 autoScroll={true}
@@ -551,13 +551,18 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, is
 
                 {
                     typeof window !== "undefined" && createPortal(
-                        <DragOverlay dropAnimation={null}>
+                        <DragOverlay dropAnimation={{
+                            duration: 200,
+                            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+                        }}>
                             {activeItem ? (
-                                activeItem.type === "Seller" ? (
+                                <div className="opacity-90 rotate-[2deg] scale-105 shadow-2xl">
+                                {activeItem.type === "Seller" ? (
                                     <SellerCardBase seller={activeItem.item as Seller} isOverlay />
                                 ) : (
                                     <PropertyCardBase property={activeItem.item as CrmProperty} isOverlay />
-                                )
+                                )}
+                                </div>
                             ) : null}
                         </DragOverlay>,
                         document.body
