@@ -1,9 +1,7 @@
-import { getAuthHeaders } from './auth-utils';
 import { API_URL } from './api-client';
 
 export async function exportToExcel(endpoint: string, filename: string) {
   const res = await fetch(`${API_URL}/export/${endpoint}?format=xlsx`, {
-    headers: getAuthHeaders(),
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Export failed');
@@ -13,7 +11,6 @@ export async function exportToExcel(endpoint: string, filename: string) {
 
 export async function exportToCsv(endpoint: string, filename: string) {
   const res = await fetch(`${API_URL}/export/${endpoint}?format=csv`, {
-    headers: getAuthHeaders(),
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Export failed');

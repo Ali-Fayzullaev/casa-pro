@@ -13,16 +13,33 @@ export const getApiUrl = (path: string): string => {
   return `${API_URL}/${cleanPath}`;
 };
 
-/** @deprecated Авторизация через httpOnly cookie. Используйте credentials: 'include'. */
-export const getAuthHeaders = (): Record<string, string> => ({});
+export const getAuthHeaders = (): Record<string, string> => {
+  if (typeof window === 'undefined') return {};
+  const token = localStorage.getItem('token');
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+};
 
-// Axios instance — cookie-based auth
+// Axios instance — cookie + token fallback
 const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
-          credentials: 'include',
 });
+
+// Request interceptor — attach token as fallback for dev mode
+api.interceptors.request.use(
+  (config) => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Response interceptor — 401 = сессия истекла
 api.interceptors.response.use(

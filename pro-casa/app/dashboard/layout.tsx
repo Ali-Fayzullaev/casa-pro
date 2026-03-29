@@ -15,15 +15,31 @@ export default function DashboardLayout({
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check auth via cookie-based endpoint
-    fetch(`${API_URL}/auth/check`, { credentials: 'include' })
+    // Check auth: try cookie first, fallback to localStorage token
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+
+    if (!user && !token) {
+      router.push("/login");
+      return;
+    }
+
+    // Verify with server
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    fetch(`${API_URL}/auth/check`, {
+      credentials: 'include',
+      headers,
+    })
       .then(res => {
         if (!res.ok) throw new Error('Not authenticated');
         setLoading(false);
       })
       .catch(() => {
-        localStorage.removeItem("user")
-        router.push("/login")
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        router.push("/login");
       });
   }, [router])
 

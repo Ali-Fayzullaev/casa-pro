@@ -51,7 +51,7 @@ const allowedOrigins = process.env.CORS_ORIGIN
   : ['http://localhost:3000'];
 
 app.use(cors({
-  origin: process.env.NODE_ENV === 'development' ? true : allowedOrigins,
+  origin: allowedOrigins,
   credentials: true,
 }));
 app.use(helmet());

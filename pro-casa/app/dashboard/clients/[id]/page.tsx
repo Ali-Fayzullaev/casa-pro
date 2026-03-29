@@ -455,6 +455,66 @@ export default function ClientDetailPage() {
         </Card>
       )}
 
+      {/* Documents Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Документы ({client.documents?.length || 0})
+            </CardTitle>
+            <label htmlFor="doc-upload">
+              <Button variant="outline" size="sm" asChild>
+                <span><Plus className="h-4 w-4 mr-1" />Загрузить</span>
+              </Button>
+            </label>
+            <input
+              id="doc-upload"
+              type="file"
+              className="hidden"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const formData = new FormData();
+                formData.append('file', file);
+                try {
+                  const res = await fetch(`${API_URL}/upload/single`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData,
+                  });
+                  if (res.ok) {
+                    toast({ title: 'Документ загружен' });
+                    fetchClient();
+                  }
+                } catch { toast({ title: 'Ошибка загрузки', variant: 'destructive' }); }
+                e.target.value = '';
+              }}
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {(!client.documents || client.documents.length === 0) ? (
+            <p className="text-sm text-muted-foreground">Нет загруженных документов</p>
+          ) : (
+            <div className="space-y-2">
+              {client.documents.map((doc: any) => (
+                <div key={doc.id} className="flex items-center justify-between p-2 border rounded">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{doc.name}</span>
+                  </div>
+                  <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                    Скачать
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Linked Properties Section */}
       <Collapsible open={showProperties} onOpenChange={setShowProperties}>
         <Card>

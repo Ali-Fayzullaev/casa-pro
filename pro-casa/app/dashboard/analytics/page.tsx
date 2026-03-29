@@ -17,9 +17,11 @@ import {
   Line,
   Legend
 } from 'recharts';
-import { ArrowUpRight, DollarSign, Users, Briefcase, Activity, AlertTriangle } from 'lucide-react';
+import { ArrowUpRight, DollarSign, Users, Briefcase, Activity, AlertTriangle, Download } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { exportToExcel, exportToPdf } from "@/lib/export-utils";
 
 interface AnalyticsData {
   kpi: {
@@ -121,7 +123,21 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Аналитика</h2>
         <div className="flex items-center space-x-2">
-          {/* DateRangePicker can go here */}
+          <Button variant="outline" size="sm" onClick={() => exportToExcel('analytics', 'Аналитика')}>
+            <Download className="mr-2 h-4 w-4" />Excel
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => exportToPdf(
+            'Аналитика PRO.casa.kz',
+            ['Показатель', 'Значение'],
+            [
+              ['Активные сделки', String(data?.kpi?.activeDeals || 0)],
+              ['Прогноз комиссии', `${(data?.kpi?.commissionForecast || 0).toLocaleString()} ₸`],
+              ['Горячие лиды', String(data?.kpi?.hotLeads || 0)],
+              ['Конверсия', `${(data?.kpi?.conversionRate || 0).toFixed(1)}%`],
+            ]
+          )}>
+            <Download className="mr-2 h-4 w-4" />PDF
+          </Button>
         </div>
       </div>
 

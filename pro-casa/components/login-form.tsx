@@ -57,6 +57,8 @@ export function LoginForm({
 
       // Сохранить данные пользователя (токен хранится в httpOnly cookie)
       localStorage.setItem("user", JSON.stringify(data.user))
+      // Fallback: also store token for dev mode (different ports)
+      if (data.token) localStorage.setItem("token", data.token)
 
       // Перенаправить на dashboard
       router.push("/dashboard")
