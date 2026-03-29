@@ -78,7 +78,7 @@ export default function ClientsPage() {
   }, [page, statusFilter, typeFilter, cityFilter])
 
   const fetchClients = async () => {
-    const token = localStorage.getItem("token")
+
     if (!token) return
 
     try {
@@ -93,7 +93,7 @@ export default function ClientsPage() {
       if (search) params.append("search", search)
 
       const response = await fetch(`${API_URL}/clients?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       })
 
       if (response.ok) {

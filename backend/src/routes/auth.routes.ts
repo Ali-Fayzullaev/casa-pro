@@ -213,3 +213,8 @@ authRouter.post('/logout', (_req: Request, res: Response) => {
   res.clearCookie('token', { path: '/' });
   res.json({ message: 'Вы вышли из системы' });
 });
+
+// GET /api/auth/check - проверка авторизации (cookie-based)
+authRouter.get('/check', auth, (_req: Request, res: Response) => {
+  res.json({ authenticated: true, user: _req.user });
+});

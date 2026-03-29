@@ -96,6 +96,7 @@ export default function NewFormPage() {
                     distributionType,
                     fields,
                     brokerIds: selectedBrokers
+                  credentials: 'include',
                 }),
             });
 

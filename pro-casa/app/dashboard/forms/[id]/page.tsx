@@ -116,6 +116,7 @@ export default function EditFormPage({ params }: { params: Promise<{ id: string 
                     distributionType,
                     fields,
                     brokerIds: selectedBrokers
+                  credentials: 'include',
                 }),
             });
 

@@ -105,9 +105,9 @@ export default function AdminProjectsPage() {
 
   const fetchProjects = async () => {
     try {
-      const token = localStorage.getItem("token")
+
       const res = await fetch(`${API_URL}/projects?limit=100`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       })
       if (res.ok) {
         const data = await res.json()
@@ -124,10 +124,10 @@ export default function AdminProjectsPage() {
     if (!projectToDelete) return
 
     try {
-      const token = localStorage.getItem("token")
+
       const res = await fetch(`${API_URL}/projects/${projectToDelete.id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       })
 
       if (res.ok) {

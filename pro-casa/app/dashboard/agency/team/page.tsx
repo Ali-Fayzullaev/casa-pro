@@ -87,9 +87,9 @@ export default function AgencyTeamPage() {
     useEffect(() => {
         const fetchTeam = async () => {
             try {
-                const token = localStorage.getItem('token');
+
                 const res = await fetch(getApiUrl('/agency/team'), {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    credentials: 'include'
                 });
 
                 if (!res.ok) throw new Error('Failed to fetch team');
@@ -119,14 +119,15 @@ export default function AgencyTeamPage() {
 
         setInviting(true);
         try {
-            const token = localStorage.getItem('token');
+
             const res = await fetch(getApiUrl('/agency/team'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+
                 },
                 body: JSON.stringify(inviteForm)
+              credentials: 'include',
             });
 
             if (!res.ok) {
@@ -166,14 +167,15 @@ export default function AgencyTeamPage() {
         if (!editingMember) return;
         setInviting(true);
         try {
-            const token = localStorage.getItem('token');
+
             const res = await fetch(getApiUrl(`/agency/team/${editingMember.id}`), {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+
                 },
                 body: JSON.stringify(editForm)
+              credentials: 'include',
             });
 
             if (!res.ok) throw new Error('Failed to update');
@@ -193,10 +195,10 @@ export default function AgencyTeamPage() {
         if (!deletingMember) return;
         setInviting(true);
         try {
-            const token = localStorage.getItem('token');
+
             const res = await fetch(getApiUrl(`/agency/team/${deletingMember.id}`), {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+                credentials: 'include'
             });
 
             if (!res.ok) throw new Error('Failed to delete');

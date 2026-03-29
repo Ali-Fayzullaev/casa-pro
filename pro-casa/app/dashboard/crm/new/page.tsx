@@ -55,6 +55,7 @@ export default function NewDealPage() {
                     stage,
                     notes,
                     title: clientName
+                  credentials: 'include',
                 }),
             });
 

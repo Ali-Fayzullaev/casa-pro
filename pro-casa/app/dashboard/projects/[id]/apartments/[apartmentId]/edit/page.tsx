@@ -69,13 +69,13 @@ export default function EditApartmentPage() {
 
   const fetchApartment = async () => {
     try {
-      const token = localStorage.getItem('token');
+
 
       const response = await fetch(
         getApiUrl(`/apartments/${params.apartmentId}`),
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
+
           },
         }
       );
@@ -110,14 +110,14 @@ export default function EditApartmentPage() {
     setSubmitting(true);
 
     try {
-      const token = localStorage.getItem('token');
+
 
       const response = await fetch(
         getApiUrl(`/apartments/${params.apartmentId}`),
         {
           method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${token}`,
+
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -127,6 +127,7 @@ export default function EditApartmentPage() {
             area: parseFloat(formData.area),
             price: parseFloat(formData.price),
             description: formData.description || undefined,
+            credentials: 'include',
           }),
         }
       );
@@ -158,14 +159,14 @@ export default function EditApartmentPage() {
     setDeleting(true);
 
     try {
-      const token = localStorage.getItem('token');
+
 
       const response = await fetch(
         getApiUrl(`/apartments/${params.apartmentId}`),
         {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${token}`,
+
           },
         }
       );

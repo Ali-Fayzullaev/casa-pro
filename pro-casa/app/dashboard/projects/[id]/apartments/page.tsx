@@ -92,13 +92,13 @@ export default function ApartmentsGridPage() {
 
   const fetchProjectAndApartments = async () => {
     try {
-      const token = localStorage.getItem('token');
+
 
       // Получаем проект
       const projectRes = await fetch(
         getApiUrl(`/projects/${params.id}`),
         {
-          headers: { 'Authorization': `Bearer ${token}` },
+          credentials: 'include',
         }
       );
       const projectData = await projectRes.json();
@@ -108,7 +108,7 @@ export default function ApartmentsGridPage() {
       const apartmentsRes = await fetch(
         getApiUrl(`/apartments?projectId=${params.id}&limit=1000`),
         {
-          headers: { 'Authorization': `Bearer ${token}` },
+          credentials: 'include',
         }
       );
       const apartmentsData = await apartmentsRes.json();
@@ -169,13 +169,13 @@ export default function ApartmentsGridPage() {
 
     setDeleting(true);
     try {
-      const token = localStorage.getItem('token');
+
       const response = await fetch(
         getApiUrl(`/apartments/${apartmentToDelete.id}`),
         {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${token}`,
+
           },
         }
       );

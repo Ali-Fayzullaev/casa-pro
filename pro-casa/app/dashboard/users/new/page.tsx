@@ -44,9 +44,9 @@ export default function NewUserPage() {
   useEffect(() => {
     const fetchAgencies = async () => {
       try {
-        const token = localStorage.getItem('token');
+
         const res = await fetch(getApiUrl('/admin/users?role=AGENCY'), {
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include'
         });
         if (res.ok) {
           const data = await res.json();
@@ -83,15 +83,16 @@ export default function NewUserPage() {
     setSubmitting(true);
 
     try {
-      const token = localStorage.getItem('token');
+
 
       const response = await fetch(getApiUrl('/admin/users'), {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
+        credentials: 'include',
       });
 
       if (!response.ok) {

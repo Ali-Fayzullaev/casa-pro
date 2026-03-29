@@ -80,7 +80,7 @@ export function FileUpload({
     setProgress(0)
 
     try {
-      const token = localStorage.getItem("token")
+
       const formData = new FormData()
 
       if (multiple && selectedFiles.length > 1) {
@@ -91,7 +91,7 @@ export function FileUpload({
         const response = await fetch(`${API_URL}/upload/multiple`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`,
+
           },
           body: formData,
         })
@@ -110,7 +110,7 @@ export function FileUpload({
         const response = await fetch(`${API_URL}/upload/single`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`,
+
           },
           body: formData,
         })

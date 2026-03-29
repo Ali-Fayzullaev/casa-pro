@@ -30,12 +30,12 @@ export default function MortgageProgramsPage() {
     }, [])
 
     const fetchPrograms = async () => {
-        const token = localStorage.getItem("token")
+
         if (!token) return
 
         try {
             const response = await fetch(`${API_URL}/mortgage-programs`, {
-                headers: { Authorization: `Bearer ${token}` },
+                credentials: 'include',
             })
 
             if (response.ok) {

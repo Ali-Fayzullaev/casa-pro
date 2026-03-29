@@ -89,12 +89,12 @@ export default function PropertyDetailPage() {
   }, [params.id])
 
   const fetchProperty = async () => {
-    const token = localStorage.getItem("token")
+
     if (!token) return
 
     try {
       const res = await fetch(`${API_URL}/properties/${params.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       })
 
       if (res.ok) {
@@ -109,12 +109,12 @@ export default function PropertyDetailPage() {
   }
 
   const fetchBuyers = async () => {
-    const token = localStorage.getItem("token")
+
     if (!token) return
 
     try {
       const res = await fetch(`${API_URL}/clients?clientType=BUYER&limit=100`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       })
 
       if (res.ok) {
@@ -130,16 +130,17 @@ export default function PropertyDetailPage() {
     if (!selectedBuyer || !property) return
 
     setAssigning(true)
-    const token = localStorage.getItem("token")
+
 
     try {
       const res = await fetch(`${API_URL}/properties/${property.id}/assign-buyer`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+
         },
         body: JSON.stringify({ buyerId: selectedBuyer }),
+        credentials: 'include',
       })
 
       if (res.ok) {
@@ -163,15 +164,15 @@ export default function PropertyDetailPage() {
 
     if (!confirm("Снять покупателя с объекта?")) return
 
-    const token = localStorage.getItem("token")
 
     try {
       const res = await fetch(`${API_URL}/properties/${property.id}/unassign-buyer`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+
         },
+        credentials: 'include',
       })
 
       if (res.ok) {
@@ -190,16 +191,17 @@ export default function PropertyDetailPage() {
     if (!property) return
     
     setUpdatingStatus(true)
-    const token = localStorage.getItem("token")
+
 
     try {
       const res = await fetch(`${API_URL}/properties/${property.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+
         },
         body: JSON.stringify({ status: newStatus }),
+        credentials: 'include',
       })
 
       if (res.ok) {

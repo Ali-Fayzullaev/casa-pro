@@ -147,12 +147,12 @@ export default function MortgagePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("token")
+
 
         // Загружаем ипотечные программы из БД
         try {
           const progRes = await fetch(`${API_URL}/mortgage-programs`, {
-            headers: { Authorization: `Bearer ${token}` }
+            credentials: 'include'
           })
           if (progRes.ok) {
             const progData = await progRes.json()
@@ -164,7 +164,7 @@ export default function MortgagePage() {
 
         // Fetch clients
         const clientsResponse = await fetch(`${API_URL}/clients?limit=100`, {
-          headers: { Authorization: `Bearer ${token}` }
+          credentials: 'include'
         })
         if (clientsResponse.ok) {
           const data = await clientsResponse.json()
@@ -173,7 +173,7 @@ export default function MortgagePage() {
         
         // Fetch available apartments
         const apartmentsResponse = await fetch(`${API_URL}/apartments?status=AVAILABLE&limit=100`, {
-          headers: { Authorization: `Bearer ${token}` }
+          credentials: 'include'
         })
         if (apartmentsResponse.ok) {
           const data = await apartmentsResponse.json()
@@ -199,7 +199,7 @@ export default function MortgagePage() {
 
     setSavingCalculation(true)
     try {
-      const token = localStorage.getItem("token")
+
       const program = mortgagePrograms.find(p => p.rate === selectedRate)
       const hasApartment = selectedApartmentId && selectedApartmentId !== "none"
       const apartment = hasApartment ? apartments.find(a => a.id === selectedApartmentId) : null
@@ -224,9 +224,10 @@ export default function MortgagePage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+
         },
         body: JSON.stringify(calculationData)
+        credentials: 'include',
       })
 
       if (response.ok) {

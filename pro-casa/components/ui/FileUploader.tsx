@@ -75,6 +75,7 @@ export function FileUploader({
 
                 const res = await api.post(endpoint, formData, {
                     headers: { "Content-Type": "multipart/form-data" },
+                  credentials: 'include',
                 });
 
                 if (res.data.url) {

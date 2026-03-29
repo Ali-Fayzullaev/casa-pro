@@ -86,11 +86,11 @@ export default function DealDetailPage() {
   }, [currentUser])
 
   const fetchCurrentUser = async () => {
-    const token = localStorage.getItem("token")
+
     if (!token) return
     try {
       const res = await fetch(`${API_URL}/users/me`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
       })
       if (res.ok) {
         const data = await res.json()
@@ -102,11 +102,11 @@ export default function DealDetailPage() {
   }
 
   const fetchBrokers = async () => {
-    const token = localStorage.getItem("token")
+
     if (!token) return
     try {
       const res = await fetch(`${API_URL}/users?role=BROKER&limit=100`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
       })
       if (res.ok) {
         const data = await res.json()
@@ -118,11 +118,11 @@ export default function DealDetailPage() {
   }
 
   const fetchDeal = async () => {
-    const token = localStorage.getItem("token")
+
     if (!token) return
     try {
       const res = await fetch(`${API_URL}/deals/${dealId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       })
       if (res.ok) {
         const data = await res.json()
@@ -140,7 +140,7 @@ export default function DealDetailPage() {
   }
 
   const handleStatusChange = async (newStatus: string) => {
-    const token = localStorage.getItem("token")
+
     if (!token || !deal) return
 
     setUpdating(true)
@@ -149,9 +149,10 @@ export default function DealDetailPage() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+
         },
         body: JSON.stringify({ status: newStatus }),
+        credentials: 'include',
       })
 
       if (res.ok) {
@@ -170,7 +171,7 @@ export default function DealDetailPage() {
   }
 
   const handleBrokerChange = async (brokerId: string) => {
-    const token = localStorage.getItem("token")
+
     if (!token || !deal) return
 
     setUpdating(true)
@@ -179,9 +180,10 @@ export default function DealDetailPage() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+
         },
         body: JSON.stringify({ brokerId }),
+        credentials: 'include',
       })
 
       if (res.ok) {
@@ -528,7 +530,7 @@ export default function DealDetailPage() {
             />
             <Button
               onClick={async () => {
-                const token = localStorage.getItem("token");
+
                 if (!token) return;
 
                 setUpdating(true);
@@ -537,9 +539,10 @@ export default function DealDetailPage() {
                     method: "PUT",
                     headers: {
                       "Content-Type": "application/json",
-                      Authorization: `Bearer ${token}`,
+
                     },
                     body: JSON.stringify({ notes: deal.notes }),
+                    credentials: 'include',
                   });
 
                   if (res.ok) {

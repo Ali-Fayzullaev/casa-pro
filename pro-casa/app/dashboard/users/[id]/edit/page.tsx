@@ -52,9 +52,9 @@ export default function EditUserPage() {
 
     const fetchUser = async () => {
         try {
-            const token = localStorage.getItem('token');
+
             const response = await fetch(getApiUrl(`/admin/users/${id}/full`), {
-                headers: { 'Authorization': `Bearer ${token}` }
+                credentials: 'include'
             });
 
             if (!response.ok) throw new Error('Failed to fetch user');
@@ -85,15 +85,16 @@ export default function EditUserPage() {
         setSubmitting(true);
 
         try {
-            const token = localStorage.getItem('token');
+
 
             const response = await fetch(getApiUrl(`/admin/users/${id}`), {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(formData),
+              credentials: 'include',
             });
 
             if (!response.ok) {
@@ -131,14 +132,15 @@ export default function EditUserPage() {
 
         setResettingPassword(true);
         try {
-            const token = localStorage.getItem('token');
+
             const response = await fetch(getApiUrl(`/admin/users/${id}/reset-password`), {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ newPassword }),
+              credentials: 'include',
             });
 
             if (!response.ok) throw new Error('Failed to reset password');

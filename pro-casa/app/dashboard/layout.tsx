@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
-import { getToken, isTokenExpired } from "@/lib/auth-utils"
+import { API_URL } from "@/lib/api-client"
 
 export default function DashboardLayout({
   children,
@@ -15,14 +15,16 @@ export default function DashboardLayout({
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = getToken()
-    if (!token || isTokenExpired(token)) {
-      localStorage.removeItem("token")
-      localStorage.removeItem("user")
-      router.push("/login")
-    } else {
-      setLoading(false)
-    }
+    // Check auth via cookie-based endpoint
+    fetch(`${API_URL}/auth/check`, { credentials: 'include' })
+      .then(res => {
+        if (!res.ok) throw new Error('Not authenticated');
+        setLoading(false);
+      })
+      .catch(() => {
+        localStorage.removeItem("user")
+        router.push("/login")
+      });
   }, [router])
 
   if (loading) {

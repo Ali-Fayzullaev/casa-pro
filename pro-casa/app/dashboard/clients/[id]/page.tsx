@@ -147,10 +147,10 @@ export default function ClientDetailPage() {
 
   const fetchClient = async () => {
     try {
-      const token = localStorage.getItem('token');
+
       const response = await fetch(`${API_URL}/clients/${params.id}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+
         },
       });
 
@@ -171,12 +171,12 @@ export default function ClientDetailPage() {
   const handleDelete = async () => {
     try {
       setDeleting(true);
-      const token = localStorage.getItem('token');
+
       
       const response = await fetch(`${API_URL}/clients/${params.id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
+
         },
       });
 
@@ -196,9 +196,9 @@ export default function ClientDetailPage() {
   // Fetch available properties for linking
   const fetchAvailableProperties = async () => {
     try {
-      const token = localStorage.getItem('token');
+
       const response = await fetch(`${API_URL}/properties?limit=100`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       });
       if (response.ok) {
         const data = await response.json();
@@ -218,14 +218,15 @@ export default function ClientDetailPage() {
 
     setLinking(true);
     try {
-      const token = localStorage.getItem('token');
+
       const response = await fetch(`${API_URL}/clients/${params.id}/link-property`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+
         },
         body: JSON.stringify({ propertyId: selectedPropertyId, role: linkRole }),
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -247,14 +248,15 @@ export default function ClientDetailPage() {
   // Unlink property from client
   const handleUnlinkProperty = async (propertyId: string, role: 'seller' | 'buyer') => {
     try {
-      const token = localStorage.getItem('token');
+
       const response = await fetch(`${API_URL}/clients/${params.id}/unlink-property`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+
         },
         body: JSON.stringify({ propertyId, role }),
+        credentials: 'include',
       });
 
       if (response.ok) {

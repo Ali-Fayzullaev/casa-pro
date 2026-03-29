@@ -115,14 +115,14 @@ export default function NewProjectPage() {
 
   async function onSubmit(values: FormValues) {
     setLoading(true)
-    const token = localStorage.getItem("token")
+
 
     try {
       const response = await fetch(`${API_URL}/projects`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+
         },
         body: JSON.stringify({
           ...values,
@@ -130,6 +130,7 @@ export default function NewProjectPage() {
           lng: values.lng || selectedLocation?.lng,
           images: projectImages,
           mortgagePrograms: selectedMortgagePrograms,
+          credentials: 'include',
         }),
       })
 

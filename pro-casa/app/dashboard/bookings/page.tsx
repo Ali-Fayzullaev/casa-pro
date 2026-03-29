@@ -97,7 +97,7 @@ export default function BookingsPage() {
   const fetchBookings = async () => {
     try {
       console.log('Fetching bookings with filter:', statusFilter);
-      const token = localStorage.getItem('token');
+
       const params = new URLSearchParams();
       
       if (statusFilter !== 'all') params.append('status', statusFilter);
@@ -107,7 +107,7 @@ export default function BookingsPage() {
 
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+
         },
       });
 
@@ -128,7 +128,7 @@ export default function BookingsPage() {
 
     try {
       setProcessing(true);
-      const token = localStorage.getItem('token');
+
       
       let url = `${API_URL}/bookings/${selectedBooking.id}`;
       let method = 'PUT';
@@ -152,10 +152,11 @@ export default function BookingsPage() {
       const response = await fetch(url, {
         method,
         headers: {
-          'Authorization': `Bearer ${token}`,
+
           'Content-Type': 'application/json',
         },
         body: actionType === 'complete' ? JSON.stringify({}) : JSON.stringify(body),
+        credentials: 'include',
       });
 
       console.log('Response status:', response.status);

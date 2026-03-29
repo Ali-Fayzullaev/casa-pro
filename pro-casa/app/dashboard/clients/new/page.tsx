@@ -50,19 +50,20 @@ export default function NewClientPage() {
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
+
 
       const response = await fetch(getApiUrl('/clients'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+
         },
         body: JSON.stringify({
           ...formData,
           middleName: formData.middleName || undefined,
           email: formData.email || undefined,
           notes: formData.notes || undefined,
+          credentials: 'include',
         }),
       });
 

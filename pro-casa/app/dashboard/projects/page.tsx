@@ -112,7 +112,7 @@ export default function ProjectsCatalogPage() {
   }, [district, status, housingClass, minPrice, maxPrice, rooms, mortgageProgram])
 
   const fetchProjects = async () => {
-    const token = localStorage.getItem("token")
+
     if (!token) return
 
     try {
@@ -126,7 +126,7 @@ export default function ProjectsCatalogPage() {
       if (mortgageProgram !== "ALL") params.append("mortgageProgram", mortgageProgram)
 
       const response = await fetch(`${API_URL}/projects?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       })
 
       if (response.ok) {
@@ -159,11 +159,11 @@ export default function ProjectsCatalogPage() {
     if (!deleteProjectId) return
     
     try {
-      const token = localStorage.getItem('token')
+
       const response = await fetch(`${API_URL}/projects/${deleteProjectId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
+
         },
       })
 

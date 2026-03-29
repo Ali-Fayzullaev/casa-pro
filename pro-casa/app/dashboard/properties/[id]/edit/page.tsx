@@ -57,12 +57,12 @@ export default function EditPropertyPage() {
   }, [propertyId])
 
   const fetchProperty = async () => {
-    const token = localStorage.getItem("token")
+
     if (!token) return
 
     try {
       const res = await fetch(`${API_URL}/properties/${propertyId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       })
 
       if (res.ok) {
@@ -96,12 +96,12 @@ export default function EditPropertyPage() {
   }
 
   const fetchSellers = async () => {
-    const token = localStorage.getItem("token")
+
     if (!token) return
 
     try {
       const res = await fetch(`${API_URL}/clients?clientType=SELLER&limit=100`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       })
 
       if (res.ok) {
@@ -117,7 +117,6 @@ export default function EditPropertyPage() {
     e.preventDefault()
     setSaving(true)
 
-    const token = localStorage.getItem("token")
     if (!token) return
 
     try {
@@ -134,9 +133,10 @@ export default function EditPropertyPage() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+
         },
         body: JSON.stringify(payload),
+        credentials: 'include',
       })
 
       if (res.ok) {

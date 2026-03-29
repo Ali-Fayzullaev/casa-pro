@@ -79,9 +79,9 @@ export default function AnalyticsPage() {
 
   const fetchAnalytics = async () => {
     try {
-      const token = localStorage.getItem('token');
+
       const res = await fetch(getApiUrl('/analytics/dashboard'), {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to fetch analytics');
       const result = await res.json();

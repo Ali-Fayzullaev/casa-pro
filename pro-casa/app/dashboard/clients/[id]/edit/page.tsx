@@ -62,10 +62,10 @@ export default function EditClientPage() {
 
   const fetchClient = async () => {
     try {
-      const token = localStorage.getItem('token');
+
       const response = await fetch(getApiUrl(`/clients/${params.id}`), {
         headers: {
-          'Authorization': `Bearer ${token}`,
+
         },
       });
 
@@ -105,13 +105,13 @@ export default function EditClientPage() {
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
+
 
       const response = await fetch(getApiUrl(`/clients/${params.id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+
         },
         body: JSON.stringify({
           iin: formData.iin,
@@ -124,6 +124,7 @@ export default function EditClientPage() {
           status: formData.status,
           monthlyIncome: formData.monthlyIncome ? parseFloat(formData.monthlyIncome) : undefined,
           initialPayment: formData.initialPayment ? parseFloat(formData.initialPayment) : undefined,
+          credentials: 'include',
         }),
       });
 

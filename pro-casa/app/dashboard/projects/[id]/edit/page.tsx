@@ -58,13 +58,13 @@ export default function EditProjectPage() {
 
   const fetchProject = async () => {
     try {
-      const token = localStorage.getItem('token');
+
 
       const response = await fetch(
         getApiUrl(`/projects/${params.id}`),
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
+
           },
         }
       );
@@ -107,14 +107,14 @@ export default function EditProjectPage() {
     setSubmitting(true);
 
     try {
-      const token = localStorage.getItem('token');
+
 
       const response = await fetch(
         getApiUrl(`/projects/${params.id}`),
         {
           method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${token}`,
+
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(formData),
@@ -129,6 +129,7 @@ export default function EditProjectPage() {
       toast({
         title: '✅ Проект обновлен!',
         description: `Изменения в "${formData.name}" успешно сохранены`,
+        credentials: 'include',
       });
 
       router.push(`/dashboard/projects/${params.id}`);

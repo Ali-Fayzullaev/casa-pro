@@ -56,12 +56,12 @@ export default function NewDealPage() {
   }, [propertyId])
 
   const fetchProperty = async () => {
-    const token = localStorage.getItem("token")
+
     if (!token || !propertyId) return
 
     try {
       const res = await fetch(`${API_URL}/properties/${propertyId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       })
 
       if (res.ok) {
@@ -83,7 +83,6 @@ export default function NewDealPage() {
     e.preventDefault()
     setLoading(true)
 
-    const token = localStorage.getItem("token")
     if (!token) return
 
     try {
@@ -101,9 +100,10 @@ export default function NewDealPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+
         },
         body: JSON.stringify(payload),
+        credentials: 'include',
       })
 
       if (res.ok) {
