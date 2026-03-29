@@ -63,8 +63,10 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                                 {seller.firstName} {seller.lastName}
                             </h4>
                             <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                                <Phone className="h-3 w-3" />
-                                {seller.phone}
+                                <a href={`https://wa.me/${seller.phone?.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-green-600 transition-colors">
+                                    <Phone className="h-3 w-3" />
+                                    {seller.phone}
+                                </a>
                             </div>
                         </div>
                     </div>

@@ -10,10 +10,15 @@ import {
     Briefcase,
     CheckCircle2,
     Clock,
-    ArrowRight
+    ArrowRight,
+    UserPlus,
+    CalendarPlus,
+    Home,
+    Calculator
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import api from "@/lib/api-client";
@@ -110,6 +115,14 @@ export function HomePage() {
                 <p className="text-muted-foreground mt-2">
                     Вот сводка вашей эффективности на сегодня.
                 </p>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex flex-wrap gap-3">
+                <Link href="/dashboard/clients/new"><Button className="gap-2"><UserPlus className="h-4 w-4" />Добавить клиента</Button></Link>
+                <Link href="/dashboard/crm"><Button variant="outline" className="gap-2"><Home className="h-4 w-4" />Добавить объект</Button></Link>
+                <Link href="/dashboard/calculator"><Button variant="outline" className="gap-2"><Calculator className="h-4 w-4" />Рассчитать ипотеку</Button></Link>
+                <Link href="/dashboard/bookings/new"><Button variant="outline" className="gap-2"><CalendarPlus className="h-4 w-4" />Создать бронь</Button></Link>
             </div>
 
             {/* KPI Cards */}

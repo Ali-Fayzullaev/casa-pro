@@ -189,8 +189,12 @@ usersAdminRouter.put('/:id', async (req: Request, res: Response): Promise<void> 
       message: 'Пользователь успешно обновлен',
       user: updatedUser,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update user error:', error);
+    if (error.code === 'P2002') {
+      res.status(400).json({ error: 'Email уже используется' });
+      return;
+    }
     res.status(500).json({ error: 'Ошибка обновления пользователя' });
   }
 });
