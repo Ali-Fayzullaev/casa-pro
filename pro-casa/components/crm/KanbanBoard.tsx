@@ -60,9 +60,11 @@ interface KanbanBoardProps {
     onDragEnd: (id: string, newStage: string) => void;
     onAddProperty?: (sellerId: string) => void;
     isCustom?: boolean;
+    strategiesOpen?: boolean;
+    onStrategiesOpenChange?: (open: boolean) => void;
 }
 
-export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, isCustom = false }: KanbanBoardProps) {
+export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, isCustom = false, strategiesOpen: externalStrategiesOpen, onStrategiesOpenChange }: KanbanBoardProps) {
     const [activeItem, setActiveItem] = useState<KanbanItem | null>(null);
     const router = useRouter();
     const queryClient = useQueryClient();
@@ -82,6 +84,18 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, is
 
     // Strategies Sheet State
     const [strategiesSheetOpen, setStrategiesSheetOpen] = useState(false);
+
+    // Sync external strategies open
+    useEffect(() => {
+        if (externalStrategiesOpen !== undefined) {
+            setStrategiesSheetOpen(externalStrategiesOpen);
+        }
+    }, [externalStrategiesOpen]);
+
+    const handleStrategiesOpenChange = (open: boolean) => {
+        setStrategiesSheetOpen(open);
+        onStrategiesOpenChange?.(open);
+    };
 
     // AI Dialog State
     const [aiParams, setAiParams] = useState<{
@@ -495,7 +509,7 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, is
                 autoScroll={true}
             >
 
-                <div className="flex gap-3 flex-1 min-h-0 overflow-x-auto px-2 py-2">
+                <div className="flex gap-3 flex-1 min-h-0 overflow-x-auto px-2 py-2 scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                     {columns.map((col) => (
                         <KanbanColumn
                             key={col.id}
@@ -606,7 +620,7 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, is
 
             <StrategiesSheet
                 open={strategiesSheetOpen}
-                onOpenChange={setStrategiesSheetOpen}
+                onOpenChange={handleStrategiesOpenChange}
             />
 
             {/* AI Magic Overlay */}

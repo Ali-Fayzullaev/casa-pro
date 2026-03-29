@@ -53,6 +53,7 @@ export function KanbanBoard() {
     const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
     const [isSellerFormOpen, setIsSellerFormOpen] = useState(false);
     const [monthFilter, setMonthFilter] = useState<Date | undefined>(undefined);
+    const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
     const [strategiesOpen, setStrategiesOpen] = useState(false);
     const [brokerFilter, setBrokerFilter] = useState<string | undefined>(undefined);
     const [userRole, setUserRole] = useState<string | null>(null);
@@ -182,16 +183,19 @@ export function KanbanBoard() {
     });
 
     // --- FILTERING & GROUPING LOGIC ---
-    const filterByMonth = (items: any[]) => {
-        if (!monthFilter) return items;
+    const filterByDateRange = (items: any[]) => {
+        if (!dateRange.from) return items;
         return items.filter(item => {
-            if (!item.createdAt) return true; // Fallback
-            return isSameMonth(parseISO(item.createdAt), monthFilter);
+            if (!item.createdAt) return true;
+            const d = parseISO(item.createdAt);
+            if (dateRange.from && d < dateRange.from) return false;
+            if (dateRange.to && d > dateRange.to) return false;
+            return true;
         });
     };
 
-    const sellersFiltered = filterByMonth(sellersData?.sellers || []);
-    const propertiesFiltered = filterByMonth(propertiesData?.properties || []);
+    const sellersFiltered = filterByDateRange(sellersData?.sellers || []);
+    const propertiesFiltered = filterByDateRange(propertiesData?.properties || []);
 
     // Helper to get stage ID (Standard vs Custom)
     const getStageId = (item: Seller | CrmProperty) => {
@@ -401,7 +405,7 @@ export function KanbanBoard() {
                     {userRole === "BROKER" && userId && (
                         <FormLinksButton userId={userId} />
                     )}
-                    <DateFilter date={monthFilter} setDate={setMonthFilter} />
+                    <DateFilter dateRange={dateRange} setDateRange={setDateRange} />
                     {(activeTab === "sellers" || isCustom) && (
                         <Button size="sm" className="h-7 text-xs" onClick={() => setIsSellerFormOpen(true)}>
                             <Plus className="mr-1 h-3.5 w-3.5" />
@@ -437,6 +441,8 @@ export function KanbanBoard() {
                                     items={sellersGrouped}
                                     onAddProperty={handleAddProperty}
                                     isCustom={isCustom}
+                                    strategiesOpen={strategiesOpen}
+                                    onStrategiesOpenChange={setStrategiesOpen}
                                     onDragEnd={(id, stage) => {
                                         updateSellerStageMutation.mutate({ id, stage, isCustom });
                                     }}
@@ -461,6 +467,8 @@ export function KanbanBoard() {
                                     items={propertiesGrouped}
                                     onDragEnd={handlePropertyDragEnd}
                                     isCustom={isCustom}
+                                    strategiesOpen={strategiesOpen}
+                                    onStrategiesOpenChange={setStrategiesOpen}
                                     onEditProperty={(prop: CrmProperty) => {
                                         setSelectedProperty(prop);
                                         setIsPropertyFormOpen(true);

@@ -77,10 +77,11 @@ export function KanbanColumn({ id, title, count = 0, description, children, vari
                 </span>
             </div>
 
-            {/* Cards — scrollable */}
+            {/* Cards — scrollable, hidden scrollbar */}
             <div
                 ref={setNodeRef}
-                className="flex-1 overflow-y-auto p-2 space-y-2 min-h-0"
+                className="flex-1 overflow-y-auto p-2 space-y-2 min-h-0 scrollbar-none"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {isOver && (
                     <div className="h-12 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 flex items-center justify-center animate-in fade-in">
