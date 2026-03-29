@@ -23,6 +23,7 @@ export const StrategyDescriptions: Record<string, {
     applies: string[];
     goal: string;
     duration: string;
+    tactics: string[];
 }> = {
     MARKET_SALE: {
         code: "S1",
@@ -36,7 +37,8 @@ export const StrategyDescriptions: Record<string, {
             "Есть эксклюзив или высокий уровень доверия"
         ],
         goal: "Максимально возможная рыночная цена в стандартные сроки",
-        duration: "2–6 недель"
+        duration: "2–6 недель",
+        tactics: ["Полная упаковка объекта", "Активный маркетинг", "Контролируемые показы", "Управляемые переговоры", "Корректировка цены только по фактам спроса"]
     },
     URGENT_SALE: {
         code: "S2",
@@ -49,7 +51,8 @@ export const StrategyDescriptions: Record<string, {
             "Продавец осознанно готов к скидке"
         ],
         goal: "Быстро закрыть сделку с контролируемым снижением цены",
-        duration: "1–3 недели"
+        duration: "1–3 недели",
+        tactics: ["Цена ниже рынка (5–10%)", "Работа с горячей базой", "Минимум показов", "Быстрые переговоры и задатки"]
     },
     SALE_TO_PURCHASE: {
         code: "S3",
@@ -62,7 +65,8 @@ export const StrategyDescriptions: Record<string, {
             "Возможна ипотека или новостройка"
         ],
         goal: "Бесшовный переход от продажи к покупке",
-        duration: "3–6 недель"
+        duration: "3–6 недель",
+        tactics: ["Параллельная работа по продаже и подбору", "Координация сроков, задатков и сделок", "Связка с ипотекой / застройщиком"]
     },
     EXPECTATION_ALIGNMENT: {
         code: "S4",
@@ -75,7 +79,8 @@ export const StrategyDescriptions: Record<string, {
             "Продавец эмоционально защищает цену"
         ],
         goal: "Либо привести цену к рынку, либо выйти из объекта",
-        duration: "7–14 дней"
+        duration: "7–14 дней",
+        tactics: ["Тест спроса (7–14 дней)", "Ограниченная реклама", "Фиксация статистики", "Контрольная корректировка цены"]
     },
     LIMITED_ENGAGEMENT: {
         code: "S5",
@@ -89,7 +94,8 @@ export const StrategyDescriptions: Record<string, {
             "Работает с другими агентами"
         ],
         goal: "Не тратить ресурсы Casa без осознанного согласия продавца",
-        duration: "7–14 дней"
+        duration: "7–14 дней",
+        tactics: ["Фиксация условий", "Разъяснение правил работы", "Ожидание решения"]
     },
     INVESTMENT_EXIT: {
         code: "S6",
@@ -102,7 +108,8 @@ export const StrategyDescriptions: Record<string, {
             "Важны доходность, срок и альтернативы"
         ],
         goal: "Оптимальный момент и формат выхода из инвестиции",
-        duration: "Зависит от рынка"
+        duration: "Зависит от рынка",
+        tactics: ["Анализ доходности", "Расчёт альтернатив", "Оптимизация момента выхода"]
     },
     LEGAL_COMPLEX: {
         code: "S7",
@@ -116,7 +123,8 @@ export const StrategyDescriptions: Record<string, {
             "Наследство / доверенность"
         ],
         goal: "Безопасная и чистая сделка",
-        duration: "Зависит от ситуации"
+        duration: "Зависит от ситуации",
+        tactics: ["Юридическая проверка", "Работа с банком/нотариусом", "Снятие обременений", "Контроль документов"]
     },
     LOW_LIQUIDITY: {
         code: "S8",
@@ -130,7 +138,8 @@ export const StrategyDescriptions: Record<string, {
             "Существенные минусы объекта"
         ],
         goal: "Реалистичная продажа без иллюзий и потери времени",
-        duration: "3+ месяца"
+        duration: "3+ месяца",
+        tactics: ["Корректные ожидания по срокам", "Честная цена", "Работа с узкой аудиторией"]
     },
     ALTERNATIVE_EXIT: {
         code: "S9",
@@ -144,7 +153,8 @@ export const StrategyDescriptions: Record<string, {
             "Ограниченный контроль процесса"
         ],
         goal: "Реалистичный выход с учётом ограничений",
-        duration: "Зависит от ситуации"
+        duration: "Зависит от ситуации",
+        tactics: ["Адаптация под ограничения", "Гибкий формат сделки", "Минимизация рисков"]
     },
     REJECT_OBJECT: {
         code: "S10",
@@ -158,7 +168,8 @@ export const StrategyDescriptions: Record<string, {
             "Продавец нарушает правила Casa"
         ],
         goal: "Защитить команду и бренд Casa",
-        duration: "—"
+        duration: "—",
+        tactics: ["Фиксация причин отказа", "Уведомление продавца", "Закрытие карточки"]
     },
     HIGH_TICKET_SALE: {
         code: "S11",
@@ -171,7 +182,8 @@ export const StrategyDescriptions: Record<string, {
             "Спрос ниже, но объект не неликвид"
         ],
         goal: "Продать без преждевременного давления на цену",
-        duration: "Удлинённые сроки"
+        duration: "Удлинённые сроки",
+        tactics: ["Удлинённые сроки теста спроса", "Акцент на качестве лидов", "Персональная упаковка и маркетинг"]
     },
     PRICE_DISCOVERY: {
         code: "S12",
@@ -185,7 +197,8 @@ export const StrategyDescriptions: Record<string, {
             "Расхождение ожиданий и рынка"
         ],
         goal: "Определить реальную рыночную цену",
-        duration: "14–30 дней"
+        duration: "14–30 дней",
+        tactics: ["Фиксированная цена", "Срок теста: 14–30 дней", "Жёсткая фиксация статистики спроса"]
     }
 };
 

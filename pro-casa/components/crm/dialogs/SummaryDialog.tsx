@@ -17,11 +17,11 @@ import { InterestTab } from "./InterestTab";
 import { toast } from "sonner";
 import {
     PropertyClassLabels,
-    StrategyTypeLabels,
     FunnelStageLabels,
     RepairStateLabels,
     LiquidityLevelLabels
 } from "@/lib/translations";
+import { useStrategy } from "@/lib/strategy-context";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api-client";
 import { useState } from "react";
@@ -38,6 +38,7 @@ interface SummaryDialogProps {
 }
 
 export function SummaryDialog({ open, onOpenChange, data, type, initialActivePropertyId }: SummaryDialogProps) {
+    const { getLabel } = useStrategy();
     // 1. Internal Navigation State
     const [activePropertyId, setActivePropertyId] = useState<string | null>(initialActivePropertyId || null);
 
@@ -143,7 +144,7 @@ export function SummaryDialog({ open, onOpenChange, data, type, initialActivePro
                         {/* Badges */}
                         {isProperty && property?.activeStrategy && (
                             <Badge className="bg-indigo-600 hover:bg-indigo-700">
-                                {StrategyTypeLabels[property.activeStrategy] || property.activeStrategy}
+                                {getLabel(property.activeStrategy) || property.activeStrategy}
                             </Badge>
                         )}
                         {fullSeller && fullSeller.funnelStage && (
@@ -230,7 +231,7 @@ export function SummaryDialog({ open, onOpenChange, data, type, initialActivePro
                                                         AI Strategy Verdict
                                                     </div>
                                                     <div className="text-lg font-bold text-indigo-900 flex items-center gap-2">
-                                                        {StrategyTypeLabels[property.activeStrategy] || property.activeStrategy}
+                                                        {getLabel(property.activeStrategy) || property.activeStrategy}
                                                         {property.calculatedClass && (
                                                             <span className="text-xs font-normal text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
                                                                 {property.calculatedClass}
@@ -463,7 +464,7 @@ export function SummaryDialog({ open, onOpenChange, data, type, initialActivePro
                                                                 {p.residentialComplex}
                                                                 {p.activeStrategy && (
                                                                     <Badge variant="outline" className="text-[10px] h-4 px-1 bg-indigo-50 text-indigo-700 border-indigo-200">
-                                                                        {StrategyTypeLabels[p.activeStrategy] || p.activeStrategy}
+                                                                        {getLabel(p.activeStrategy) || p.activeStrategy}
                                                                     </Badge>
                                                                 )}
                                                             </div>

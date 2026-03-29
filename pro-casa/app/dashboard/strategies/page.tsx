@@ -1,6 +1,5 @@
 "use client";
 
-import { StrategyDescriptions } from "@/lib/translations";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StrategyGrid } from "@/components/crm/StrategyGrid";
 
@@ -18,7 +17,7 @@ export default function StrategiesPage() {
 
             <ScrollArea className="flex-1 h-full pb-10">
                 <div className="pb-20">
-                    <StrategyGrid readOnly />
+                    <StrategyGrid />
                 </div>
             </ScrollArea>
         </div>

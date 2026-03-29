@@ -22,13 +22,15 @@ import { defaultAnimateLayoutChanges } from "@dnd-kit/sortable";
 import { useState } from "react";
 import { Eye } from "lucide-react";
 import { SummaryDialog } from "./dialogs/SummaryDialog";
-import { DeadlineLabels, FunnelStageLabels, StrategyTypeLabels } from "@/lib/translations";
+import { DeadlineLabels, FunnelStageLabels } from "@/lib/translations";
+import { useStrategy } from "@/lib/strategy-context";
 
 export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDelete, onStageChange, style, setNodeRef, attributes, listeners, isDragging, isOverlay }: any) {
     const [summaryOpen, setSummaryOpen] = useState(false);
     const [initialPropertyId, setInitialPropertyId] = useState<string | null>(null);
     const [user, setUser] = useState<any>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const { getLabel } = useStrategy();
 
     // Load user for role check
     useState(() => {
@@ -215,7 +217,7 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                                             <div className="mt-1 flex flex-col gap-1">
                                                 <div className="flex items-center">
                                                     <Badge variant="secondary" className="w-fit text-[8px] h-3.5 px-1">
-                                                        {StrategyTypeLabels[p.activeStrategy] || p.activeStrategy}
+                                                        {getLabel(p.activeStrategy) || p.activeStrategy}
                                                     </Badge>
                                                 </div>
 

@@ -23,7 +23,8 @@ const CLASS_COLORS: Record<PropertyClass, string> = {
     OLD_FUND: "bg-muted text-muted-foreground border-border",
 };
 
-import { PropertyClassLabels, StrategyTypeLabels, FunnelStageLabels } from "@/lib/translations";
+import { PropertyClassLabels, FunnelStageLabels } from "@/lib/translations";
+import { useStrategy } from "@/lib/strategy-context";
 
 import { defaultAnimateLayoutChanges } from "@dnd-kit/sortable";
 
@@ -40,6 +41,7 @@ import { StrategyLoader } from "@/components/ui/StrategyLoader";
 export function PropertyCardBase({ property, style, setNodeRef, attributes, listeners, isDragging, isOverlay, isSold, onDelete, onStageChange }: { property: CrmProperty; style?: any; setNodeRef?: any; attributes?: any; listeners?: any; isDragging?: boolean; isOverlay?: boolean; isSold?: boolean; onDelete?: (id: string) => void; onStageChange?: (id: string, stage: PropertyFunnelStage) => void }) {
     const queryClient = useQueryClient();
     const [isGenerating, setIsGenerating] = useState(false);
+    const { getLabel } = useStrategy();
     const [summaryOpen, setSummaryOpen] = useState(false);
     const [imgError, setImgError] = useState(false);
     const [user, setUser] = useState<any>(null);
@@ -128,7 +130,7 @@ export function PropertyCardBase({ property, style, setNodeRef, attributes, list
                                     variant={isCritical ? "destructive" : "secondary"}
                                     className={cn("text-[10px] h-5 transition-all duration-500", !isGenerating && "animate-in fade-in zoom-in")} // Animate badge appearance
                                 >
-                                    {StrategyTypeLabels[property.activeStrategy] || property.activeStrategy}
+                                    {getLabel(property.activeStrategy) || property.activeStrategy}
                                 </Badge>
                             </div>
                         )}

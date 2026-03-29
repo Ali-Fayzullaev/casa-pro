@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { getToken, isTokenExpired } from "@/lib/auth-utils"
+import { StrategyProvider } from "@/lib/strategy-context"
 
 export default function DashboardLayout({
   children,
@@ -35,6 +36,7 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider>
+      <StrategyProvider>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <main className="flex-1 overflow-auto bg-muted/5">
@@ -45,6 +47,7 @@ export default function DashboardLayout({
           <div className="container mx-auto p-4 md:p-6 lg:p-8">{children}</div>
         </main>
       </div>
+      </StrategyProvider>
     </SidebarProvider>
   )
 }
