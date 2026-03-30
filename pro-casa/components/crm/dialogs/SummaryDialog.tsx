@@ -265,15 +265,21 @@ export function SummaryDialog({ open, onOpenChange, data, type, initialActivePro
                                                             </Button>
                                                         )}
                                                         <select
-                                                            className="text-xs border rounded px-2 py-1 bg-white"
+                                                            className="text-xs border rounded px-2 py-1 bg-white cursor-pointer"
                                                             value={property.activeStrategy}
+                                                            onClick={(e) => e.stopPropagation()}
                                                             onChange={async (e) => {
+                                                                const newStrategy = e.target.value;
+                                                                console.log('Changing strategy to:', newStrategy, 'for property:', property.id);
                                                                 try {
-                                                                    await api.put(`/crm-properties/${property.id}/strategy`, { activeStrategy: e.target.value });
+                                                                    await api.put(`/crm-properties/${property.id}/strategy`, { activeStrategy: newStrategy });
                                                                     toast.success("Стратегия изменена");
                                                                     queryClient.invalidateQueries({ queryKey: ["sellers"] });
                                                                     queryClient.invalidateQueries({ queryKey: ["properties"] });
-                                                                } catch { toast.error("Ошибка смены стратегии"); }
+                                                                } catch (err: any) {
+                                                                    console.error('Strategy change error:', err);
+                                                                    toast.error(err?.response?.data?.error || "Ошибка смены стратегии");
+                                                                }
                                                             }}
                                                         >
                                                             {Object.entries(StrategyDescriptions).map(([key, s]) => (
