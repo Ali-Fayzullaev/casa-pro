@@ -87,7 +87,7 @@ export default function FunnelsPage() {
                         Настройте собственные воронки продаж и этапы сделок.
                     </p>
                 </div>
-                <Button onClick={handleCreate}>
+                <Button onClick={handleCreate} className="bg-[#2E7D5E] hover:bg-[#1B5E40] text-white">
                     <Plus className="mr-2 h-4 w-4" />
                     Создать воронку
                 </Button>

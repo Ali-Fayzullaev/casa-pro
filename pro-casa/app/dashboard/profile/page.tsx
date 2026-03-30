@@ -15,6 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import { API_URL } from "@/lib/config";
 import { User, Pencil, Lock, BookOpen, GraduationCap, Phone, Mail, MessageCircle, DollarSign, CreditCard, ChevronDown, Clock, CheckCircle2, Circle, Play, FileText, ListChecks, ExternalLink, Download, TrendingUp, Users, Target, BarChart3, Award, Building } from "lucide-react";
 import DOMPurify from "dompurify";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface UserProfile {
   id: number;
@@ -316,8 +317,17 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <div><Skeleton className="h-9 w-32" /><Skeleton className="h-4 w-56 mt-1" /></div>
+        <Skeleton className="h-10 w-full max-w-md" />
+        <Card>
+          <CardHeader><Skeleton className="h-5 w-40" /><Skeleton className="h-4 w-56" /></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              {[1,2,3,4,5,6].map(i => (<div key={i} className="space-y-2"><Skeleton className="h-3 w-20" /><Skeleton className="h-5 w-32" /></div>))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -721,7 +731,7 @@ export default function ProfilePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600">
+                <div className="text-3xl font-bold text-[#2E7D5E]">
                   {(profile?.balance || 0).toLocaleString("ru-RU")} ₸
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
@@ -741,7 +751,7 @@ export default function ProfilePage() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Всего получено:</span>
-                    <span className="font-medium text-green-600">
+                    <span className="font-medium text-[#2E7D5E]">
                       +{payments.filter(p => p.type === 'income').reduce((sum, p) => sum + p.amount, 0).toLocaleString("ru-RU")} ₸
                     </span>
                   </div>
@@ -778,9 +788,9 @@ export default function ProfilePage() {
                       className="flex items-center justify-between p-3 rounded-lg border"
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full ${payment.type === 'income' ? 'bg-green-100' : 'bg-red-100'}`}>
+                        <div className={`p-2 rounded-full ${payment.type === 'income' ? 'bg-[#2E7D5E]/10' : 'bg-red-100'}`}>
                           {payment.type === 'income' ? (
-                            <DollarSign className="h-4 w-4 text-green-600" />
+                            <DollarSign className="h-4 w-4 text-[#2E7D5E]" />
                           ) : (
                             <CreditCard className="h-4 w-4 text-red-600" />
                           )}
@@ -792,7 +802,7 @@ export default function ProfilePage() {
                           </p>
                         </div>
                       </div>
-                      <div className={`font-medium ${payment.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                      <div className={`font-medium ${payment.type === 'income' ? 'text-[#2E7D5E]' : 'text-red-600'}`}>
                         {payment.type === 'income' ? '+' : '-'}{payment.amount.toLocaleString("ru-RU")} ₸
                       </div>
                     </div>

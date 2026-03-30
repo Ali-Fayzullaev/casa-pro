@@ -19,7 +19,7 @@ import {
   Legend
 } from 'recharts';
 import { ArrowUpRight, DollarSign, Users, Briefcase, Activity, AlertTriangle, Download } from 'lucide-react';
-import { Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
@@ -102,8 +102,20 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex-1 space-y-4 p-8 pt-6">
+        <Skeleton className="h-9 w-48" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i}>
+              <CardHeader className="pb-2"><Skeleton className="h-4 w-28" /></CardHeader>
+              <CardContent><Skeleton className="h-8 w-20" /><Skeleton className="h-3 w-16 mt-1" /></CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <Card className="col-span-4"><CardHeader><Skeleton className="h-5 w-32" /></CardHeader><CardContent><Skeleton className="h-80 w-full" /></CardContent></Card>
+          <Card className="col-span-3"><CardHeader><Skeleton className="h-5 w-40" /></CardHeader><CardContent><Skeleton className="h-80 w-full" /></CardContent></Card>
+        </div>
       </div>
     );
   }
@@ -152,7 +164,9 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Активные объекты</CardTitle>
-                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                <div className="h-8 w-8 rounded-lg bg-[#2E7D5E]/10 flex items-center justify-center">
+                  <Briefcase className="h-4 w-4 text-[#2E7D5E]" />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{data.kpi.activeDeals}</div>
@@ -162,7 +176,9 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Прогноз комиссии</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <div className="h-8 w-8 rounded-lg bg-[#FFD700]/10 flex items-center justify-center">
+                  <DollarSign className="h-4 w-4 text-[#D4A843]" />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{formatCurrency(data.kpi.commissionForecast)}</div>
@@ -172,7 +188,9 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Горячие лиды</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <div className="h-8 w-8 rounded-lg bg-[#3A9D73]/10 flex items-center justify-center">
+                  <Users className="h-4 w-4 text-[#3A9D73]" />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{data.kpi.hotLeads}</div>
@@ -182,7 +200,9 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Конверсия</CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
+                <div className="h-8 w-8 rounded-lg bg-[#2E7D5E]/10 flex items-center justify-center">
+                  <Activity className="h-4 w-4 text-[#2E7D5E]" />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{data.kpi.conversionRate}%</div>
@@ -205,7 +225,7 @@ export default function AnalyticsPage() {
                       contentStyle={{ background: '#333', border: 'none', borderRadius: '4px', color: '#fff' }}
                       cursor={{ fill: 'transparent' }}
                     />
-                    <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="value" fill="#2E7D5E" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -221,7 +241,7 @@ export default function AnalyticsPage() {
                     <XAxis dataKey="date" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
                     <Tooltip />
-                    <Line type="monotone" dataKey="value" stroke="#8884d8" strokeWidth={2} />
+                    <Line type="monotone" dataKey="value" stroke="#FFD700" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -315,7 +335,7 @@ export default function AnalyticsPage() {
                           <div className="text-xs text-muted-foreground">{deal.address}</div>
                         </td>
                         <td className="p-4 align-middle font-medium">{formatCurrency(deal.finalPrice)}</td>
-                        <td className="p-4 align-middle text-green-600">{formatCurrency(deal.commission)}</td>
+                        <td className="p-4 align-middle text-[#2E7D5E] font-medium">{formatCurrency(deal.commission)}</td>
                         <td className="p-4 align-middle">{deal.seller}</td>
                         <td className="p-4 align-middle">{deal.buyer}</td>
                         <td className="p-4 align-middle">{deal.broker}</td>

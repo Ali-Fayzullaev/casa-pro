@@ -48,6 +48,24 @@ const PROPERTY_COLUMNS = [
     { id: PropertyFunnelStage.CANCELLED, title: "Отмена", variant: "default" },
 ] as const;
 
+/* CRM Skeleton */
+function CrmSkeleton() {
+    return (
+        <div className="flex-1 flex gap-4 p-4 overflow-hidden">
+            {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="w-[272px] shrink-0 rounded-xl overflow-hidden">
+                    <Skeleton className="h-9 w-full rounded-b-none" />
+                    <div className="bg-[#F0FAF5] p-2 space-y-2 min-h-[300px]">
+                        <Skeleton className="h-24 w-full rounded-lg" />
+                        <Skeleton className="h-24 w-full rounded-lg" />
+                        <Skeleton className="h-16 w-full rounded-lg" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 export function KanbanBoard() {
     const [activeTab, setActiveTab] = useState<"sellers" | "properties">("sellers");
     const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
@@ -395,7 +413,7 @@ export function KanbanBoard() {
                     <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 px-2.5 text-xs gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
+                        className="h-7 px-2.5 text-xs gap-1.5 border-[#2E7D5E]/20 text-[#2E7D5E] hover:bg-[#2E7D5E]/5"
                         onClick={() => setStrategiesOpen(true)}
                     >
                         <Target className="h-3.5 w-3.5" />
@@ -424,7 +442,7 @@ export function KanbanBoard() {
                 </div>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-hidden bg-slate-100">
+            <div className="flex-1 min-h-0 overflow-hidden bg-[#F5FAF7]">
                 {isCustom && !activeFunnel ? (
                     <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
                         <p>У вас еще нет воронок. Создайте свою первую воронку!</p>
@@ -436,7 +454,7 @@ export function KanbanBoard() {
                     <>
                         {(activeTab === "sellers" || isCustom) ? (
                             isLoadingSellers ? (
-                                <div className="flex items-center justify-center h-full text-muted-foreground">Загрузка продавцов...</div>
+                                <CrmSkeleton />
                             ) : viewMode === "list" ? (
                                 <SellersListView
                                     onEdit={handleEditSeller}
@@ -459,7 +477,7 @@ export function KanbanBoard() {
                             )
                         ) : (
                             isLoadingProperties ? (
-                                <div className="flex items-center justify-center h-full text-muted-foreground">Загрузка объектов...</div>
+                                <CrmSkeleton />
                             ) : viewMode === "list" ? (
                                 <PropertiesListView
                                     onEdit={(prop) => {

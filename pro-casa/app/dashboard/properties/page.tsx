@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { API_URL } from "@/lib/config"
 import {
   Select,
@@ -166,9 +167,9 @@ export default function PropertiesPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "ACTIVE": return "#10b981"
-      case "RESERVED": return "#f59e0b"
-      case "SOLD": return "#6366f1"
+      case "ACTIVE": return "#2E7D5E"
+      case "RESERVED": return "#D4A843"
+      case "SOLD": return "#1B5E40"
       case "ARCHIVED": return "#ef4444"
       default: return "#6b7280"
     }
@@ -198,7 +199,7 @@ export default function PropertiesPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Объекты вторички</h2>
-        <Button onClick={() => router.push("/dashboard/properties/new")}>
+        <Button onClick={() => router.push("/dashboard/properties/new")} className="bg-[#2E7D5E] hover:bg-[#1B5E40] text-white">
           <Plus className="mr-2 h-4 w-4" />
           Добавить объект
         </Button>
@@ -280,11 +281,18 @@ export default function PropertiesPage() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
-                    Загрузка...
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><div className="flex items-center gap-2"><Skeleton className="h-12 w-12 rounded" /><div className="space-y-1"><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-20" /></div></div></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8 ml-auto rounded" /></TableCell>
+                  </TableRow>
+                ))
               ) : properties.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
@@ -303,7 +311,7 @@ export default function PropertiesPage() {
                             className="h-12 w-12 rounded object-cover"
                           />
                         ) : (
-                          <div className="h-12 w-12 rounded bg-muted flex items-center justify-center">
+                          <div className="h-12 w-12 rounded bg-[#2E7D5E]/5 flex items-center justify-center text-[#2E7D5E]">
                             {getPropertyTypeIcon(property.propertyType)}
                           </div>
                         )}
@@ -338,7 +346,7 @@ export default function PropertiesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="font-semibold">
+                      <span className="font-semibold text-[#2E7D5E]">
                         {Number(property.price).toLocaleString()} ₸
                       </span>
                     </TableCell>
@@ -407,7 +415,7 @@ export default function PropertiesPage() {
                           )}
                           {property.status !== 'SOLD' && (
                             <DropdownMenuItem onClick={() => handleStatusChange(property.id, 'SOLD')}>
-                              <span className="mr-2 h-2 w-2 rounded-full bg-indigo-500"></span>
+                              <span className="mr-2 h-2 w-2 rounded-full bg-[#1B5E40]"></span>
                               Продан
                             </DropdownMenuItem>
                           )}

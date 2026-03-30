@@ -19,19 +19,19 @@ interface KanbanColumnProps {
 }
 
 const VARIANT_HEADER: Record<string, string> = {
-    blue: "bg-blue-600 text-white",
-    pink: "bg-rose-500 text-white",
-    green: "bg-emerald-600 text-white",
-    cyan: "bg-cyan-500 text-white",
-    default: "bg-gray-700 text-white",
+    blue: "bg-[#2E7D5E] text-white",
+    pink: "bg-[#D4A843] text-white",
+    green: "bg-[#1B5E40] text-white",
+    cyan: "bg-[#3A9D73] text-white",
+    default: "bg-[#4A5568] text-white",
 };
 
 const VARIANT_BG: Record<string, string> = {
-    blue: "bg-blue-50",
-    pink: "bg-rose-50",
-    green: "bg-emerald-50",
-    cyan: "bg-cyan-50",
-    default: "bg-gray-50",
+    blue: "bg-[#F0FAF5]",
+    pink: "bg-[#FFFBF0]",
+    green: "bg-[#ECFDF5]",
+    cyan: "bg-[#F0FDF9]",
+    default: "bg-[#F7FAFC]",
 };
 
 export function KanbanColumn({ id, title, count = 0, description, children, variant = "default", color }: KanbanColumnProps) {
@@ -45,9 +45,9 @@ export function KanbanColumn({ id, title, count = 0, description, children, vari
 
     return (
         <div className={cn(
-            "flex flex-col rounded-xl shrink-0 w-[272px]",
+            "flex flex-col rounded-xl shrink-0 w-[272px] shadow-sm border border-border/40",
             bgClass,
-            isOver && "ring-2 ring-primary/40"
+            isOver && "ring-2 ring-[#FFD700]/60 shadow-md"
         )}>
             {/* Header — fixed */}
             <div
@@ -72,7 +72,7 @@ export function KanbanColumn({ id, title, count = 0, description, children, vari
                         </TooltipProvider>
                     )}
                 </div>
-                <span className="bg-white/20 text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                <span className="bg-white/25 text-xs font-bold px-2 py-0.5 rounded-full min-w-[22px] text-center backdrop-blur-sm">
                     {count}
                 </span>
             </div>
@@ -84,8 +84,8 @@ export function KanbanColumn({ id, title, count = 0, description, children, vari
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {isOver && (
-                    <div className="h-12 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 flex items-center justify-center animate-in fade-in">
-                        <span className="text-xs text-muted-foreground">Отпустите здесь</span>
+                    <div className="h-12 rounded-lg border-2 border-dashed border-[#2E7D5E]/40 bg-[#2E7D5E]/5 flex items-center justify-center animate-in fade-in">
+                        <span className="text-xs text-[#2E7D5E] font-medium">Отпустите здесь</span>
                     </div>
                 )}
                 {children}
