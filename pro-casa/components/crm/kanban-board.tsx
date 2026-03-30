@@ -175,6 +175,7 @@ export function KanbanBoard() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["properties"] });
+            queryClient.invalidateQueries({ queryKey: ["sellers"] });
             toast.success("Этап обновлён");
         },
         onError: (error: any) => {

@@ -482,7 +482,8 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, is
 
             toast.success("Стратегия применена!");
             handleValidationSuccess();
-            router.refresh();
+            queryClient.invalidateQueries({ queryKey: ["sellers"] });
+            queryClient.invalidateQueries({ queryKey: ["properties"] });
 
         } catch (error) {
             console.error("Strategy save error", error);
@@ -614,8 +615,9 @@ export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, is
                 onConfirm={() => {
                     setAiParams(prev => ({ ...prev, open: false }));
                     toast.success("Стратегия подтверждена!");
-                    handleValidationSuccess(); // Proceed move
-                    router.refresh();
+                    handleValidationSuccess();
+                    queryClient.invalidateQueries({ queryKey: ["sellers"] });
+                    queryClient.invalidateQueries({ queryKey: ["properties"] });
                 }}
                 onChange={() => {
                     setAiParams(prev => ({ ...prev, open: false }));
