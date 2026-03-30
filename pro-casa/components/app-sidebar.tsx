@@ -27,7 +27,6 @@ import {
   LayoutList,
   Archive,
   Upload,
-  Crown,
 } from "lucide-react"
 import {
   Sidebar,
@@ -247,26 +246,43 @@ export function AppSidebar() {
   const visibleItems = getVisibleItems()
 
   return (
-    <Sidebar className="border-r border-border/50">
-      <SidebarHeader className="border-b border-border/50 p-4">
+    <Sidebar className="border-r border-sidebar-border">
+      {/* Header — Logo */}
+      <SidebarHeader className="border-b border-sidebar-border px-5 py-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/1.png" alt="Casa Pro" className="h-10 w-10 rounded-lg object-contain" />
+            <img
+              src="/logo.png"
+              alt="Casa Pro"
+              className="h-9 w-9 rounded-lg object-contain"
+            />
             <div>
-              <h2 className="text-sm font-semibold tracking-tight">Casa Pro</h2>
+              <h2 className="text-sm font-bold tracking-tight text-sidebar-foreground">
+                Casa Pro
+              </h2>
+              <p className="text-[10px] font-medium uppercase tracking-widest text-sidebar-foreground/40">
+                CRM Platform
+              </p>
             </div>
           </div>
           {user.role !== "ADMIN" && <NotificationBell />}
         </div>
       </SidebarHeader>
-      <SidebarContent>
+
+      {/* Navigation */}
+      <SidebarContent className="px-3 py-4">
         <SidebarGroup>
-          <SidebarGroupLabel>Меню</SidebarGroupLabel>
+          <SidebarGroupLabel className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
+            Навигация
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {visibleItems.map((item) => (
-                item.subItems ? (
-                  // Collapsible menu item with sub-items
+            <SidebarMenu className="space-y-0.5">
+              {visibleItems.map((item) => {
+                const isActive = item.url
+                  ? pathname === item.url
+                  : item.subItems?.some(sub => pathname === sub.url || pathname.startsWith(sub.url.split("?")[0]))
+
+                return item.subItems ? (
                   <Collapsible
                     key={item.title}
                     asChild
@@ -276,63 +292,93 @@ export function AppSidebar() {
                   >
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
-                        <SidebarMenuButton tooltip={item.title}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                          <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                        <SidebarMenuButton
+                          tooltip={item.title}
+                          className={cn(
+                            "relative h-9 rounded-lg px-3 text-sidebar-foreground/70 transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                            isActive && "bg-sidebar-accent text-sidebar-foreground"
+                          )}
+                        >
+                          {isActive && (
+                            <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[#FFD700]" />
+                          )}
+                          <item.icon className={cn(
+                            "h-4 w-4 shrink-0",
+                            isActive && "text-[#FFD700]"
+                          )} />
+                          <span className="text-[13px] font-medium">{item.title}</span>
+                          <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0 text-sidebar-foreground/30 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {item.subItems.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton
-                                asChild
-                                isActive={pathname === subItem.url || pathname.startsWith(subItem.url.split("?")[0])}
-                              >
-                                <a href={subItem.url}>
-                                  {subItem.icon && <subItem.icon className="h-3 w-3 mr-2" />}
-                                  <span>{subItem.title}</span>
-                                </a>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
+                        <SidebarMenuSub className="ml-5 mt-1 space-y-0.5 border-l border-sidebar-border pl-3">
+                          {item.subItems.map((subItem) => {
+                            const isSubActive = pathname === subItem.url || pathname.startsWith(subItem.url.split("?")[0])
+                            return (
+                              <SidebarMenuSubItem key={subItem.title}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={isSubActive}
+                                  className={cn(
+                                    "h-8 rounded-md px-2 text-sidebar-foreground/50 transition-colors duration-150 hover:text-sidebar-foreground",
+                                    isSubActive && "text-[#FFD700] hover:text-[#FFD700]"
+                                  )}
+                                >
+                                  <a href={subItem.url}>
+                                    {subItem.icon && <subItem.icon className="mr-2 h-3.5 w-3.5 shrink-0" />}
+                                    <span className="text-[12px] font-medium">{subItem.title}</span>
+                                  </a>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            )
+                          })}
                         </SidebarMenuSub>
                       </CollapsibleContent>
                     </SidebarMenuItem>
                   </Collapsible>
                 ) : (
-                  // Simple menu item without sub-items
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
                       isActive={pathname === item.url}
                       tooltip={item.title}
+                      className={cn(
+                        "relative h-9 rounded-lg px-3 text-sidebar-foreground/70 transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                        pathname === item.url && "bg-sidebar-accent text-sidebar-foreground"
+                      )}
                     >
                       <a href={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                        {pathname === item.url && (
+                          <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[#FFD700]" />
+                        )}
+                        <item.icon className={cn(
+                          "h-4 w-4 shrink-0",
+                          pathname === item.url && "text-[#FFD700]"
+                        )} />
+                        <span className="text-[13px] font-medium">{item.title}</span>
                       </a>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )
-              ))}
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-border/50 p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-primary/10 text-xs">
+
+      {/* Footer — User info + Logout */}
+      <SidebarFooter className="border-t border-sidebar-border p-4">
+        <div className="flex items-center gap-3 rounded-lg bg-sidebar-accent/50 p-2.5">
+          <Avatar className="h-8 w-8 shrink-0 ring-2 ring-[#2E7D5E]">
+            <AvatarFallback className="bg-[#2E7D5E] text-[10px] font-bold text-white">
               {getUserInitials()}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">
+            <p className="truncate text-[13px] font-semibold text-sidebar-foreground">
               {user.firstName} {user.lastName}
             </p>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="truncate text-[10px] font-medium text-[#FFD700]/70">
               {user.role === "ADMIN" && "Администратор"}
               {user.role === "BROKER" && "Брокер"}
               {user.role === "DEVELOPER" && "Застройщик"}
@@ -344,10 +390,10 @@ export function AppSidebar() {
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start"
+          className="mt-1 w-full justify-start rounded-lg px-3 text-[13px] font-medium text-sidebar-foreground/50 transition-colors duration-200 hover:bg-sidebar-accent hover:text-red-400"
           onClick={handleLogout}
         >
-          <LogOut className="h-4 w-4 mr-2" />
+          <LogOut className="mr-2 h-4 w-4" />
           Выйти
         </Button>
       </SidebarFooter>

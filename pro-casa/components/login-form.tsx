@@ -71,20 +71,12 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="border-border/50 shadow-sm">
         <CardHeader className="space-y-2 text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6"
-            >
-              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
+          <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center">
+            <img
+              src="/logo.png"
+              alt="Casa Pro"
+              className="h-14 w-14 rounded-xl object-contain"
+            />
           </div>
           <CardTitle className="text-2xl font-semibold tracking-tight">
             PRO.casa.kz

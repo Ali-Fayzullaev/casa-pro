@@ -4,40 +4,41 @@
  */
 
 export const designTokens = {
-    // Colors from v1.2 design
+    // Colors — Casa PRO green + gold palette
     colors: {
         // Primary brand colors
         primary: {
-            main: 'hsl(222, 47%, 11%)', // Dark blue-black from mockups
-            light: 'hsl(222, 47%, 20%)',
-            dark: 'hsl(222, 47%, 5%)',
+            main: '#2E7D5E',     // Main green
+            light: '#3A9D73',    // Lighter green
+            dark: '#1A5A42',     // Darker green
         },
         // Accent colors
         accent: {
-            blue: 'hsl(217, 91%, 60%)', // Bright blue for CTAs
-            green: 'hsl(142, 76%, 36%)', // Success green
-            orange: 'hsl(24, 100%, 50%)', // Warning/highlight orange
-            red: 'hsl(0, 84%, 60%)', // Error/danger red
+            gold: '#FFD700',     // Gold — highlights, active states
+            green: '#2E7D5E',    // Brand green
+            blue: 'hsl(217, 91%, 60%)',
+            orange: 'hsl(24, 100%, 50%)',
+            red: 'hsl(0, 84%, 60%)',
         },
         // Status colors
         status: {
-            new: 'hsl(217, 91%, 60%)',
-            inProgress: 'hsl(45, 93%, 47%)',
-            completed: 'hsl(142, 76%, 36%)',
+            new: '#2E7D5E',
+            inProgress: '#FFD700',
+            completed: '#3A9D73',
             cancelled: 'hsl(0, 84%, 60%)',
         },
         // Neutral colors
         neutral: {
-            50: 'hsl(220, 13%, 95%)',
-            100: 'hsl(220, 13%, 91%)',
-            200: 'hsl(220, 13%, 81%)',
-            300: 'hsl(220, 13%, 69%)',
-            400: 'hsl(220, 13%, 57%)',
-            500: 'hsl(220, 13%, 45%)',
-            600: 'hsl(220, 13%, 33%)',
-            700: 'hsl(220, 13%, 21%)',
-            800: 'hsl(220, 13%, 13%)',
-            900: 'hsl(220, 13%, 9%)',
+            50: 'hsl(150, 8%, 95%)',
+            100: 'hsl(150, 8%, 91%)',
+            200: 'hsl(150, 8%, 81%)',
+            300: 'hsl(150, 8%, 69%)',
+            400: 'hsl(150, 8%, 57%)',
+            500: 'hsl(150, 8%, 45%)',
+            600: 'hsl(150, 8%, 33%)',
+            700: 'hsl(150, 8%, 21%)',
+            800: 'hsl(150, 10%, 13%)',
+            900: 'hsl(150, 12%, 9%)',
         },
     },
 
