@@ -107,7 +107,7 @@ uploadRouter.post('/multiple', upload.array('files', 10), async (req: Request, r
         const ext = path.extname(file.originalname);
         const fileName = `${category}/${uuidv4()}${ext}`;
 
-        await minioClient.putObject(
+        await minioClient!.putObject(
           MINIO_BUCKET,
           fileName,
           file.buffer,
@@ -141,7 +141,7 @@ uploadRouter.delete('/:fileName(*)', async (req: Request, res: Response): Promis
   try {
     const { fileName } = req.params;
 
-    await minioClient.removeObject(MINIO_BUCKET, fileName);
+    await minioClient!.removeObject(MINIO_BUCKET, fileName);
 
     res.json({
       success: true,
@@ -168,7 +168,7 @@ uploadRouter.get('/presigned/:category', async (req: Request, res: Response): Pr
     const objectName = `${category}/${uuidv4()}${ext}`;
 
     // Generate presigned URL valid for 1 hour
-    const presignedUrl = await minioClient.presignedPutObject(
+    const presignedUrl = await minioClient!.presignedPutObject(
       MINIO_BUCKET,
       objectName,
       60 * 60 // 1 hour

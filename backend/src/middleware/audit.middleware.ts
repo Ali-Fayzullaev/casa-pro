@@ -39,7 +39,7 @@ export const auditMiddleware = (req: Request, res: Response, next: NextFunction)
         ).catch(() => {});
       }
 
-      return originalEnd.apply(res, args);
+      return originalEnd.apply(res, args as any);
     } as any;
   }
 

@@ -397,7 +397,7 @@ export default function MortgagePage() {
                         {program.bank}
                       </CardDescription>
                     </div>
-                    <Badge className={program.type === "Государственная" ? "bg-green-500" : "bg-blue-500"}>
+                    <Badge className={program.type === "Государственная" ? "bg-[#2E7D5E]" : "bg-[#D4A843]"}>
                       {program.rate}%
                     </Badge>
                   </div>
@@ -748,10 +748,10 @@ export default function MortgagePage() {
                   return (
                     <Card 
                       key={p.id} 
-                      className={`relative overflow-hidden ${isLowestRate ? 'ring-2 ring-green-500 bg-green-500/5' : ''}`}
+                      className={`relative overflow-hidden ${isLowestRate ? 'ring-2 ring-[#2E7D5E] bg-[#2E7D5E]/5' : ''}`}
                     >
                       {isLowestRate && (
-                        <div className="absolute top-0 right-0 px-3 py-1 bg-green-500 text-white text-xs font-medium rounded-bl-lg">
+                        <div className="absolute top-0 right-0 px-3 py-1 bg-[#2E7D5E] text-white text-xs font-medium rounded-bl-lg">
                           🏆 Лучшая ставка
                         </div>
                       )}
@@ -774,7 +774,7 @@ export default function MortgagePage() {
                       <CardContent className="space-y-4">
                         {/* Rate */}
                         <div className="text-center p-4 bg-muted rounded-lg">
-                          <div className={`text-4xl font-bold ${isLowestRate ? 'text-green-600' : ''}`}>
+                          <div className={`text-4xl font-bold ${isLowestRate ? 'text-[#2E7D5E]' : ''}`}>
                             {p.rate}%
                           </div>
                           <div className="text-sm text-muted-foreground">годовая ставка</div>
@@ -789,7 +789,7 @@ export default function MortgagePage() {
                         {/* Overpayment */}
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Переплата</span>
-                          <span className={`font-bold ${isLowestOverpayment ? 'text-green-600' : 'text-orange-500'}`}>
+                          <span className={`font-bold ${isLowestOverpayment ? 'text-[#2E7D5E]' : 'text-[#D4A843]'}`}>
                             {formatPrice(Math.round(overpayment))} ₸
                           </span>
                         </div>
@@ -808,7 +808,7 @@ export default function MortgagePage() {
                           </div>
                           <div className="h-2 bg-muted rounded-full overflow-hidden">
                             <div 
-                              className={`h-full transition-all ${isLowestOverpayment ? 'bg-green-500' : 'bg-orange-500'}`}
+                              className={`h-full transition-all ${isLowestOverpayment ? 'bg-[#2E7D5E]' : 'bg-[#D4A843]'}`}
                               style={{ width: `${Math.min(overpayment / totalPayment * 100, 100)}%` }}
                             />
                           </div>
@@ -857,7 +857,7 @@ export default function MortgagePage() {
                           const isLowest = p.rate === Math.min(...comparedPrograms.map(pr => pr.rate))
                           return (
                             <TableCell key={p.id}>
-                              <Badge className={isLowest ? "bg-green-500" : "bg-blue-500"}>
+                              <Badge className={isLowest ? "bg-[#2E7D5E]" : "bg-[#D4A843]"}>
                                 {p.rate}%
                               </Badge>
                             </TableCell>
@@ -899,7 +899,7 @@ export default function MortgagePage() {
                             <ul className="text-xs space-y-1">
                               {p.requirements.map((req, i) => (
                                 <li key={i} className="flex items-start gap-1">
-                                  <Check className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
+                                  <Check className="h-3 w-3 text-[#2E7D5E] mt-0.5 flex-shrink-0" />
                                   {req}
                                 </li>
                               ))}
@@ -920,7 +920,7 @@ export default function MortgagePage() {
                           })
                           const isLowest = Math.abs(payment - Math.min(...allPayments)) < 100
                           return (
-                            <TableCell key={p.id} className={`font-bold ${isLowest ? 'text-green-600' : ''}`}>
+                            <TableCell key={p.id} className={`font-bold ${isLowest ? 'text-[#2E7D5E]' : ''}`}>
                               {formatPrice(Math.round(payment))} ₸
                             </TableCell>
                           )
@@ -942,7 +942,7 @@ export default function MortgagePage() {
                           })
                           const isLowest = Math.abs(overpayment - Math.min(...allOverpayments)) < 1000
                           return (
-                            <TableCell key={p.id} className={`font-bold ${isLowest ? 'text-green-600' : 'text-orange-500'}`}>
+                            <TableCell key={p.id} className={`font-bold ${isLowest ? 'text-[#2E7D5E]' : 'text-[#D4A843]'}`}>
                               {formatPrice(Math.round(overpayment))} ₸
                             </TableCell>
                           )

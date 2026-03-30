@@ -42,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { getStatusColor, getClientTypeColor } from "@/lib/design-tokens"
 import { API_URL } from "@/lib/config"
 
@@ -123,7 +124,7 @@ export default function ClientsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => router.push('/dashboard/crm')}>
+          <Button variant="outline" size="icon" onClick={() => router.push('/dashboard/crm')} className="border-[#2E7D5E]/20 text-[#2E7D5E] hover:bg-[#2E7D5E]/5">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </Button>
           <div>
@@ -133,7 +134,7 @@ export default function ClientsPage() {
             </p>
           </div>
         </div>
-        <Button onClick={() => router.push("/dashboard/clients/new")}>
+        <Button onClick={() => router.push("/dashboard/clients/new")} className="bg-[#2E7D5E] hover:bg-[#1B5E40] text-white">
           <Plus className="mr-2 h-4 w-4" />
           Добавить клиента
         </Button>
@@ -214,11 +215,18 @@ export default function ClientsPage() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    Загрузка...
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><div className="space-y-1"><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-24" /></div></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
               ) : clients.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
@@ -309,7 +317,7 @@ export default function ClientsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          className="h-8 w-8 text-[#2E7D5E] hover:text-[#1B5E40] hover:bg-[#2E7D5E]/5"
                           onClick={() => window.open(getWhatsAppLink(client.phone), '_blank')}
                         >
                           <MessageCircle className="h-4 w-4" />

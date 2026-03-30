@@ -158,7 +158,8 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                 sellerId: sellerId,
             });
         }
-    }, [open, sellerId, initialData, form]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, sellerId, initialData]);
 
     // Calculate progress (Approximate) derived
     const filled = [
@@ -297,7 +298,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                     <FormItem className="col-span-2">
                                                         <FormLabel>Жилой Комплекс</FormLabel>
                                                         <FormControl>
-                                                            <Input placeholder="Название ЖК" {...field} />
+                                                            <Input placeholder="Название ЖК" {...field} value={field.value ?? ""} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -310,7 +311,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                     <FormItem>
                                                         <FormLabel>Район</FormLabel>
                                                         <FormControl>
-                                                            <Input placeholder="Район (Есильский...)" {...field} />
+                                                            <Input placeholder="Район (Есильский...)" {...field} value={field.value ?? ""} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -323,7 +324,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                     <FormItem>
                                                         <FormLabel>Комнатность</FormLabel>
                                                         <FormControl>
-                                                            <Input type="number" {...field} />
+                                                            <Input type="number" {...field} value={field.value ?? ""} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -336,7 +337,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                     <FormItem>
                                                         <FormLabel>Площадь (м²)</FormLabel>
                                                         <FormControl>
-                                                            <Input type="number" step="0.1" {...field} />
+                                                            <Input type="number" step="0.1" {...field} value={field.value ?? ""} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -349,7 +350,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                     <FormItem>
                                                         <FormLabel>Цена (KZT)</FormLabel>
                                                         <FormControl>
-                                                            <Input type="number" step="100000" className="font-bold" {...field} />
+                                                            <Input type="number" step="100000" className="font-bold" {...field} value={field.value ?? ""} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -363,7 +364,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                         <FormItem>
                                                             <FormLabel>Этаж</FormLabel>
                                                             <FormControl>
-                                                                <Input type="number" {...field} />
+                                                                <Input type="number" {...field} value={field.value ?? ""} />
                                                             </FormControl>
                                                         </FormItem>
                                                     )}
@@ -375,7 +376,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                         <FormItem>
                                                             <FormLabel>Всего</FormLabel>
                                                             <FormControl>
-                                                                <Input type="number" {...field} />
+                                                                <Input type="number" {...field} value={field.value ?? ""} />
                                                             </FormControl>
                                                         </FormItem>
                                                     )}
@@ -388,7 +389,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                     <FormItem className="col-span-2">
                                                         <FormLabel>Точный адрес</FormLabel>
                                                         <FormControl>
-                                                            <Input {...field} />
+                                                            <Input {...field} value={field.value ?? ""} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -442,7 +443,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                     <FormItem>
                                                         <FormLabel>Лифты (шт)</FormLabel>
                                                         <FormControl>
-                                                            <Input type="number" {...field} />
+                                                            <Input type="number" {...field} value={field.value ?? ""} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -455,7 +456,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                     <FormItem>
                                                         <FormLabel>Год постройки</FormLabel>
                                                         <FormControl>
-                                                            <Input type="number" {...field} />
+                                                            <Input type="number" {...field} value={field.value ?? ""} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -468,7 +469,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                     <FormItem>
                                                         <FormLabel>Потолки (м)</FormLabel>
                                                         <FormControl>
-                                                            <Input type="number" step="0.1" {...field} />
+                                                            <Input type="number" step="0.1" {...field} value={field.value ?? ""} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -481,7 +482,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                     <FormItem>
                                                         <FormLabel>Кухня (м²)</FormLabel>
                                                         <FormControl>
-                                                            <Input type="number" step="0.1" {...field} />
+                                                            <Input type="number" step="0.1" {...field} value={field.value ?? ""} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -597,7 +598,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                         <FormItem>
                                                             <FormLabel>Банк залогодержатель</FormLabel>
                                                             <FormControl>
-                                                                <Input placeholder="Например: Отбасы Банк" {...field} />
+                                                                <Input placeholder="Например: Отбасы Банк" {...field} value={field.value ?? ""} />
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -610,7 +611,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                         <FormItem>
                                                             <FormLabel>Остаток долга (KZT)</FormLabel>
                                                             <FormControl>
-                                                                <Input type="number" {...field} />
+                                                                <Input type="number" {...field} value={field.value ?? ""} />
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -623,7 +624,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                         <FormItem className="col-span-2">
                                                             <FormLabel>Как планируете снимать залог?</FormLabel>
                                                             <FormControl>
-                                                                <Textarea placeholder="Например: Погашение за счет задатка покупателя" {...field} />
+                                                                <Textarea placeholder="Например: Погашение за счет задатка покупателя" {...field} value={field.value ?? ""} />
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -760,7 +761,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <FormLabel>Krisha.kz</FormLabel>
-                                                            <Input placeholder="Ссылка..." {...field} />
+                                                            <Input placeholder="Ссылка..." {...field} value={field.value ?? ""} />
                                                         </FormItem>
                                                     )}
                                                 />
@@ -770,7 +771,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <FormLabel>Kn.kz</FormLabel>
-                                                            <Input placeholder="Ссылка..." {...field} />
+                                                            <Input placeholder="Ссылка..." {...field} value={field.value ?? ""} />
                                                         </FormItem>
                                                     )}
                                                 />
@@ -780,7 +781,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <FormLabel>Instagram</FormLabel>
-                                                            <Input placeholder="Ссылка..." {...field} />
+                                                            <Input placeholder="Ссылка..." {...field} value={field.value ?? ""} />
                                                         </FormItem>
                                                     )}
                                                 />
@@ -790,7 +791,7 @@ export function CreatePropertyForm({ open, onOpenChange, sellerId, initialData }
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <FormLabel>TikTok</FormLabel>
-                                                            <Input placeholder="Ссылка..." {...field} />
+                                                            <Input placeholder="Ссылка..." {...field} value={field.value ?? ""} />
                                                         </FormItem>
                                                     )}
                                                 />

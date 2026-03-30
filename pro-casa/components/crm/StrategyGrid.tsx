@@ -175,8 +175,8 @@ export function StrategyGrid({ selectedStrategy, onSelect, readOnly = false }: S
                             className={cn(
                                 "relative flex flex-col p-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer",
                                 isSelected
-                                    ? "border-primary bg-primary/5 shadow-sm"
-                                    : "border-transparent bg-white hover:border-indigo-100"
+                                    ? "border-[#2E7D5E] bg-[#2E7D5E]/5 shadow-sm"
+                                    : "border-transparent bg-white hover:border-[#2E7D5E]/20"
                             )}
                         >
                             <div className="flex justify-between items-start mb-2">

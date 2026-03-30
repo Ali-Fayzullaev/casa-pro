@@ -10,7 +10,7 @@ async function login(email: string, password: string): Promise<{ token: string; 
     body: JSON.stringify({ email, password }),
   });
   if (!res.ok) throw new Error(`Login failed for ${email}: ${res.status}`);
-  return res.json();
+  return res.json() as Promise<{ token: string; user: any }>;
 }
 
 // Helper: authenticated GET
@@ -18,7 +18,7 @@ async function get(path: string, token: string) {
   const res = await fetch(`${BASE}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  return { status: res.status, data: await res.json().catch(() => null) };
+  return { status: res.status, data: await res.json().catch(() => null) as any };
 }
 
 // Helper: authenticated POST
@@ -28,7 +28,7 @@ async function post(path: string, token: string, body?: any) {
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: body ? JSON.stringify(body) : undefined,
   });
-  return { status: res.status, data: await res.json().catch(() => null) };
+  return { status: res.status, data: await res.json().catch(() => null) as any };
 }
 
 // Helper: authenticated PUT
@@ -38,7 +38,7 @@ async function put(path: string, token: string, body?: any) {
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: body ? JSON.stringify(body) : undefined,
   });
-  return { status: res.status, data: await res.json().catch(() => null) };
+  return { status: res.status, data: await res.json().catch(() => null) as any };
 }
 
 // Helper: authenticated DELETE
@@ -47,7 +47,7 @@ async function del(path: string, token: string) {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
   });
-  return { status: res.status, data: await res.json().catch(() => null) };
+  return { status: res.status, data: await res.json().catch(() => null) as any };
 }
 
 // ── Tokens ──
@@ -108,7 +108,7 @@ describe('Auth', () => {
 describe('Health', () => {
   it('GET /health', async () => {
     const res = await fetch(`http://localhost:3001/health`);
-    const data = await res.json();
+    const data: any = await res.json();
     expect(res.status).toBe(200);
     expect(data.status).toBe('ok');
     expect(data.db).toBe('connected');

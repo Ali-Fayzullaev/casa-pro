@@ -24,14 +24,15 @@ const mortgageCalculationSchema = z.object({
 });
 
 // POST /api/mortgage/calculate - расчет ипотеки (сохранение)
-mortgageRouter.post('/calculate', async (req, res) => {
+mortgageRouter.post('/calculate', async (req, res): Promise<void> => {
   try {
     const userId = req.user?.userId;
     const userRole = req.user?.role;
     
     const validationResult = mortgageCalculationSchema.safeParse(req.body);
     if (!validationResult.success) {
-      return res.status(400).json({ error: 'Invalid data', details: validationResult.error.errors });
+      res.status(400).json({ error: 'Invalid data', details: validationResult.error.errors });
+      return;
     }
     
     const data = validationResult.data;
@@ -43,7 +44,7 @@ mortgageRouter.post('/calculate', async (req, res) => {
       });
       
       if (!client) {
-        return res.status(403).json({ error: 'Access denied to this client' });
+        return res.status(403).json({ error: 'Access denied to this client' }) as any;
       }
     }
     
@@ -98,7 +99,7 @@ mortgageRouter.post('/calculate', async (req, res) => {
 });
 
 // GET /api/mortgage/calculations/:clientId - get calculations for a client
-mortgageRouter.get('/calculations/:clientId', async (req, res) => {
+mortgageRouter.get('/calculations/:clientId', async (req, res): Promise<void> => {
   try {
     const { clientId } = req.params;
     const userId = req.user?.userId;
@@ -111,7 +112,7 @@ mortgageRouter.get('/calculations/:clientId', async (req, res) => {
       });
       
       if (!client) {
-        return res.status(403).json({ error: 'Access denied to this client' });
+        return res.status(403).json({ error: 'Access denied to this client' }) as any;
       }
     }
     

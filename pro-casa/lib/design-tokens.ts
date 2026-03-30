@@ -127,9 +127,9 @@ export const getStatusColor = (status: string) => {
 // Client type colors
 export const getClientTypeColor = (type: string) => {
     const typeMap: Record<string, string> = {
-        BUYER: designTokens.colors.accent.blue,
-        SELLER: designTokens.colors.accent.orange,
-        NEW_BUILDING: designTokens.colors.accent.green,
+        BUYER: '#3A9D73',      // Green — buyers
+        SELLER: '#D4A843',     // Gold — sellers
+        NEW_BUILDING: '#2E7D5E', // Brand green — new buildings
     };
     return typeMap[type] || designTokens.colors.neutral[500];
 };

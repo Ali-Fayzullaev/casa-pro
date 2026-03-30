@@ -59,12 +59,13 @@ interface KanbanBoardProps {
     items: Record<string, (Seller | CrmProperty)[]>;
     onDragEnd: (id: string, newStage: string) => void;
     onAddProperty?: (sellerId: string) => void;
+    onEditProperty?: (property: CrmProperty) => void;
     isCustom?: boolean;
     strategiesOpen?: boolean;
     onStrategiesOpenChange?: (open: boolean) => void;
 }
 
-export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, isCustom = false, strategiesOpen: externalStrategiesOpen, onStrategiesOpenChange }: KanbanBoardProps) {
+export function KanbanBoard({ type, columns, items, onDragEnd, onAddProperty, onEditProperty, isCustom = false, strategiesOpen: externalStrategiesOpen, onStrategiesOpenChange }: KanbanBoardProps) {
     const [activeItem, setActiveItem] = useState<KanbanItem | null>(null);
     const router = useRouter();
     const queryClient = useQueryClient();

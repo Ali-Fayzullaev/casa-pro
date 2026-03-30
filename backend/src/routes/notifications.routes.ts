@@ -27,7 +27,7 @@ notificationsRouter.get('/', async (req: Request, res: Response): Promise<void> 
         if (req.user?.role === 'DEVELOPER') {
             enrichedNotifications = await Promise.all(
                 notifications.map(async (notification) => {
-                    if (notification.type === 'BOOKING') {
+                    if ((notification.type as string) === 'BOOKING') {
                         // Ищем последнюю бронь от этого уведомления
                         const recentBooking = await prisma.booking.findFirst({
                             where: {

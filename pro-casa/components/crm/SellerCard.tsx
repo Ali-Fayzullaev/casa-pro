@@ -55,7 +55,7 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                 <CardHeader className="p-3 pb-1 flex flex-row justify-between items-start space-y-0 overflow-hidden">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                         <Avatar className="h-7 w-7 shrink-0">
-                            <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                            <AvatarFallback className="bg-[#2E7D5E]/10 text-[#2E7D5E] text-[10px]">
                                 {seller.firstName[0]}
                                 {seller.lastName?.[0] || ''}
                             </AvatarFallback>
@@ -65,7 +65,7 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                                 {seller.firstName} {seller.lastName}
                             </h4>
                             <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground">
-                                <a href={`https://wa.me/${seller.phone?.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-green-600 transition-colors truncate">
+                                <a href={`https://wa.me/${seller.phone?.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-[#2E7D5E] transition-colors truncate">
                                     <Phone className="h-2.5 w-2.5 shrink-0" />
                                     <span className="truncate">{seller.phone}</span>
                                 </a>
@@ -153,7 +153,7 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                                 Срочно: {DeadlineLabels[seller.deadline] || seller.deadline}
                             </Badge>
                         ) : (
-                            <Badge variant="secondary" className="h-5 text-[10px] px-2 w-full justify-center text-muted-foreground bg-gray-100">
+                            <Badge variant="secondary" className="h-5 text-[10px] px-2 w-full justify-center text-muted-foreground bg-[#F0FAF5]">
                                 Пассивный
                             </Badge>
                         )}
@@ -168,8 +168,8 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                                     <div
                                         key={p.id}
                                         className={`flex flex-col text-[10px] p-1.5 rounded border cursor-pointer transition-colors ${isSold
-                                            ? 'bg-green-50 border-green-200 hover:bg-green-100'
-                                            : 'bg-gray-50 hover:bg-gray-100'
+                                            ? 'bg-[#ECFDF5] border-[#2E7D5E]/20 hover:bg-[#D1FAE5]'
+                                            : 'bg-[#F7FAFC] hover:bg-[#F0FAF5]'
                                             }`}
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -178,7 +178,7 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                                         }}
                                     >
                                         <div className="flex items-center justify-between mb-1">
-                                            <span className={`font-medium truncate max-w-[100px] ${isSold ? 'text-green-700' : ''}`} title={p.residentialComplex}>
+                                            <span className={`font-medium truncate max-w-[100px] ${isSold ? 'text-[#1B5E40]' : ''}`} title={p.residentialComplex}>
                                                 {isSold && <span className="mr-1">✅</span>}
                                                 {p.residentialComplex}
                                             </span>
@@ -190,14 +190,14 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                                                         </span>
                                                     )}
                                                     {p.leadsCount > 0 && (
-                                                        <span className="flex items-center font-bold text-blue-600" title="Офферы">
+                                                        <span className="flex items-center font-bold text-[#2E7D5E]" title="Офферы">
                                                             <FileText className="h-3 w-3 mr-0.5" /> {p.leadsCount}
                                                         </span>
                                                     )}
                                                 </div>
                                                 <Badge
                                                     variant={isSold ? "default" : "outline"}
-                                                    className={`text-[9px] h-4 px-1 ${isSold ? 'bg-green-600 text-white' : 'bg-white'}`}
+                                                    className={`text-[9px] h-4 px-1 ${isSold ? 'bg-[#2E7D5E] text-white' : 'bg-white'}`}
                                                     style={p.customStage ? { borderColor: p.customStage.color, color: p.customStage.color } : {}}
                                                 >
                                                     {p.customStage?.name || FunnelStageLabels[p.funnelStage] || p.funnelStage}
@@ -207,7 +207,7 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
 
                                         {/* Show final price for SOLD properties */}
                                         {isSold && p.price && (
-                                            <div className="text-[10px] font-bold text-green-700 mt-1">
+                                            <div className="text-[10px] font-bold text-[#1B5E40] mt-1">
                                                 Продано: {Number(p.price).toLocaleString('ru-RU')} ₸
                                             </div>
                                         )}
@@ -299,7 +299,7 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                             <span className="opacity-70">Брокер:</span>
                             <div className="flex items-center gap-1 font-medium text-foreground">
                                 <Avatar className="h-4 w-4">
-                                    <AvatarFallback className="text-[8px] bg-indigo-100 text-indigo-700">
+                                    <AvatarFallback className="text-[8px] bg-[#2E7D5E]/10 text-[#2E7D5E]">
                                         {seller.broker.firstName?.[0]}{seller.broker.lastName?.[0]}
                                     </AvatarFallback>
                                 </Avatar>

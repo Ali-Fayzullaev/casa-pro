@@ -18,23 +18,27 @@ interface FileUploaderProps {
 
 export function FileUploader({
     propertyId,
-    images = [],
-    documents = [],
+    images,
+    documents,
     onImagesChange,
     onDocumentsChange
 }: FileUploaderProps) {
     const [uploading, setUploading] = useState(false);
-    const [localImages, setLocalImages] = useState<string[]>(images);
-    const [localDocuments, setLocalDocuments] = useState<string[]>(documents);
+    const [localImages, setLocalImages] = useState<string[]>(images || []);
+    const [localDocuments, setLocalDocuments] = useState<string[]>(documents || []);
 
-    // Sync props
+    // Sync props only when they actually change (not on every render)
     useEffect(() => {
-        setLocalImages(images);
-    }, [images]);
+        if (images) {
+            setLocalImages(images);
+        }
+    }, [JSON.stringify(images)]);
 
     useEffect(() => {
-        setLocalDocuments(documents);
-    }, [documents]);
+        if (documents) {
+            setLocalDocuments(documents);
+        }
+    }, [JSON.stringify(documents)]);
 
     // Fetch data on mount
     useEffect(() => {
@@ -45,15 +49,13 @@ export function FileUploader({
                 if (res.data) {
                     setLocalImages(res.data.images || []);
                     setLocalDocuments(res.data.documents || []);
-                    // Update parent if callbacks provided (optional, usually parent controls or we just control local)
-                    onImagesChange?.(res.data.images || []);
-                    onDocumentsChange?.(res.data.documents || []);
                 }
             } catch (e) {
                 console.error("Failed to fetch property files", e);
             }
         };
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [propertyId]);
 
     const onDrop = useCallback(async (acceptedFiles: File[]) => {

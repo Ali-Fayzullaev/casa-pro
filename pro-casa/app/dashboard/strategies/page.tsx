@@ -8,7 +8,7 @@ export default function StrategiesPage() {
         <div className="h-full flex flex-col space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">Стратегии Продажи</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Стратегии Продажи</h1>
                     <p className="text-muted-foreground mt-2 max-w-2xl">
                         Справочник 12 стратегий CASA для эффективной работы с объектами недвижимости. Продажа должна быть управляемым процессом.
                     </p>

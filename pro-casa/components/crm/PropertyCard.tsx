@@ -219,8 +219,8 @@ export function PropertyCardBase({ property, style, setNodeRef, attributes, list
                             />
                         </div>
                     ) : (property.images && property.images.length > 0 && imgError) && (
-                        <div className="mb-2 -mx-3 -mt-2 h-32 bg-gray-50 flex items-center justify-center border-b">
-                            <ImageOff className="h-8 w-8 text-gray-300" />
+                        <div className="mb-2 -mx-3 -mt-2 h-32 bg-[#F0FAF5] flex items-center justify-center border-b">
+                            <ImageOff className="h-8 w-8 text-[#2E7D5E]/30" />
                         </div>
                     )}
 
@@ -266,20 +266,20 @@ export function PropertyCardBase({ property, style, setNodeRef, attributes, list
                             {/* AI Button */}
                             {property.activeStrategy && (
                                 property.strategyExplanation ? (
-                                    <div className="text-green-600 flex items-center px-1" title="Обоснование готово">
+                                    <div className="text-[#2E7D5E] flex items-center px-1" title="Обоснование готово">
                                         <FileText className="h-4 w-4" />
                                     </div>
                                 ) : (
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-6 w-6 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                                        className="h-6 w-6 hover:bg-[#FFD700]/10 hover:text-[#D4A843] transition-colors"
                                         onClick={handleGenerateStrategy}
                                         disabled={isGenerating}
                                         title="Сгенерировать обоснование AI"
                                     >
                                         {isGenerating ? (
-                                            <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-600" />
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#D4A843]" />
                                         ) : (
                                             <Sparkles className="h-3.5 w-3.5" />
                                         )}
@@ -302,7 +302,7 @@ export function PropertyCardBase({ property, style, setNodeRef, attributes, list
                             <span className="opacity-70">Брокер:</span>
                             <div className="flex items-center gap-1 font-medium text-foreground">
                                 <Avatar className="h-4 w-4">
-                                    <AvatarFallback className="text-[8px] bg-indigo-100 text-indigo-700">
+                                    <AvatarFallback className="text-[8px] bg-[#2E7D5E]/10 text-[#2E7D5E]">
                                         {property.broker.firstName?.[0]}{property.broker.lastName?.[0]}
                                     </AvatarFallback>
                                 </Avatar>

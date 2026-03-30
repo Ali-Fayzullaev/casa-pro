@@ -174,12 +174,12 @@ export function CreateSellerForm({ open, onOpenChange, initialData, onSuccess, a
                 trustLevel: initialData.trustLevel ?? 3,
                 reason: initialData.reason as any,
                 deadline: initialData.deadline as any,
-                expectedPrice: initialData.expectedPrice,
-                minPrice: initialData.minPrice,
+                expectedPrice: initialData.expectedPrice ?? undefined,
+                minPrice: initialData.minPrice ?? undefined,
                 marketAssessment: initialData.marketAssessment as any,
                 nextPurchaseFormat: initialData.nextPurchaseFormat as any,
-                purchaseBudget: initialData.purchaseBudget,
-                loanPaymentAmount: initialData.loanPaymentAmount,
+                purchaseBudget: initialData.purchaseBudget ?? undefined,
+                loanPaymentAmount: initialData.loanPaymentAmount ?? undefined,
                 communicationChannel: initialData.communicationChannel || "",
                 preferredTime: initialData.preferredTime || "",
                 reasonOther: initialData.reasonOther || "",
@@ -188,7 +188,8 @@ export function CreateSellerForm({ open, onOpenChange, initialData, onSuccess, a
                 apartmentId: initialData.apartmentId || "",
             });
         }
-    }, [initialData, form, open]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialData, open]);
 
     // Watch for conditional fields
     const plansToPurchase = useWatch({ control: form.control, name: "plansToPurchase" });
