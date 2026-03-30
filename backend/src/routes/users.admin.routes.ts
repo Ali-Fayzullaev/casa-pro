@@ -222,12 +222,13 @@ usersAdminRouter.delete('/:id', async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Удаляем
-    await prisma.user.delete({
+    // Деактивируем вместо удаления (у пользователя могут быть связанные данные)
+    await prisma.user.update({
       where: { id },
+      data: { isActive: false },
     });
 
-    res.json({ message: 'Пользователь успешно удален' });
+    res.json({ message: 'Пользователь деактивирован' });
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ error: 'Ошибка удаления пользователя' });
