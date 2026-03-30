@@ -1,0 +1,617 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - img "Casa Pro" [ref=e10]
+        - heading "Casa Pro" [level=2] [ref=e12]
+      - generic [ref=e14]:
+        - generic [ref=e15]: Меню
+        - list [ref=e17]:
+          - listitem [ref=e18]:
+            - link "Главная" [ref=e19] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e20]
+              - generic [ref=e23]: Главная
+          - listitem [ref=e24]:
+            - link "Сделки (CRM)" [ref=e25] [cursor=pointer]:
+              - /url: /dashboard/crm
+              - img [ref=e26]
+              - generic [ref=e29]: Сделки (CRM)
+          - listitem [ref=e30]:
+            - link "Стратегии (CASA)" [ref=e31] [cursor=pointer]:
+              - /url: /dashboard/strategies
+              - img [ref=e32]
+              - generic [ref=e36]: Стратегии (CASA)
+          - listitem [ref=e37]:
+            - link "Мои объекты" [ref=e38] [cursor=pointer]:
+              - /url: /dashboard/properties
+              - img [ref=e39]
+              - generic [ref=e42]: Мои объекты
+          - listitem [ref=e43]:
+            - button "Новостройки" [ref=e44]:
+              - img [ref=e45]
+              - generic [ref=e49]: Новостройки
+              - img [ref=e50]
+          - listitem [ref=e52]:
+            - link "Ипотека" [ref=e53] [cursor=pointer]:
+              - /url: /dashboard/mortgage
+              - img [ref=e54]
+              - generic [ref=e56]: Ипотека
+          - listitem [ref=e57]:
+            - link "Профиль" [ref=e58] [cursor=pointer]:
+              - /url: /dashboard/profile
+              - img [ref=e59]
+              - generic [ref=e62]: Профиль
+          - listitem [ref=e63]:
+            - link "Формы" [ref=e64] [cursor=pointer]:
+              - /url: /dashboard/forms
+              - img [ref=e65]
+              - generic [ref=e68]: Формы
+          - listitem [ref=e69]:
+            - button "Настройки" [ref=e70]:
+              - img [ref=e71]
+              - generic [ref=e74]: Настройки
+              - img [ref=e75]
+          - listitem [ref=e77]:
+            - link "Архив" [ref=e78] [cursor=pointer]:
+              - /url: /dashboard/archives
+              - img [ref=e79]
+              - generic [ref=e82]: Архив
+          - listitem [ref=e83]:
+            - button "Управление" [ref=e84]:
+              - img [ref=e85]
+              - generic [ref=e87]: Управление
+              - img [ref=e88]
+      - generic [ref=e90]:
+        - generic [ref=e91]:
+          - generic [ref=e93]: аC
+          - generic [ref=e94]:
+            - paragraph [ref=e95]: амамамамам Casa
+            - paragraph [ref=e96]: Администратор
+        - button "Выйти" [ref=e97]:
+          - img
+          - text: Выйти
+    - main [ref=e98]:
+      - generic [ref=e101]:
+        - generic [ref=e102]:
+          - generic [ref=e103]:
+            - generic [ref=e104]:
+              - button "Продавцы" [ref=e105]
+              - button "Объекты" [ref=e106]
+            - generic [ref=e108]:
+              - button "Канбан" [ref=e109]:
+                - img [ref=e110]
+                - text: Канбан
+              - button "Список" [ref=e115]:
+                - img [ref=e116]
+                - text: Список
+            - button "Стратегии" [ref=e118]:
+              - img
+              - text: Стратегии
+          - generic [ref=e119]:
+            - combobox [ref=e120]:
+              - generic [ref=e121]:
+                - img
+                - generic: Все брокеры
+              - img
+            - generic [ref=e122]:
+              - generic [ref=e123]:
+                - button "Все" [ref=e124]
+                - button "Сегодня" [ref=e125]
+                - button "Неделя" [ref=e126]
+                - button "Месяц" [ref=e127]
+              - button [ref=e128]:
+                - img [ref=e129]
+            - button "Новый продавец" [ref=e131]:
+              - img
+              - text: Новый продавец
+        - generic [ref=e133]:
+          - generic [ref=e134]:
+            - generic [ref=e135]:
+              - generic [ref=e136]:
+                - generic [ref=e137]:
+                  - generic [ref=e138]: Контакт
+                  - button [ref=e139]:
+                    - img [ref=e140]
+                - generic [ref=e142]: "9"
+              - generic [ref=e144]:
+                - 'button "в вапвапв апвапв Пассивный Нет объектов Всего: 0 Объект Брокер: аC амамамамам Casa" [ref=e146]':
+                  - generic [ref=e147]:
+                    - generic [ref=e148]:
+                      - generic [ref=e150]: в
+                      - generic [ref=e151]:
+                        - heading "вапвапв" [level=4] [ref=e152]
+                        - link "апвапв" [ref=e154] [cursor=pointer]:
+                          - /url: https://wa.me/
+                          - img [ref=e155]
+                          - text: апвапв
+                    - generic [ref=e157]:
+                      - generic [ref=e158]:
+                        - img [ref=e159]
+                        - img [ref=e161]
+                        - img [ref=e163]
+                        - img [ref=e165]
+                        - img [ref=e167]
+                      - button [ref=e169]:
+                        - img
+                  - generic [ref=e170]:
+                    - generic [ref=e172]: Пассивный
+                    - generic [ref=e173]: Нет объектов
+                    - generic [ref=e174]:
+                      - generic [ref=e175]: "Всего: 0"
+                      - generic [ref=e176]:
+                        - button "Подробнее" [ref=e177] [cursor=pointer]:
+                          - img
+                        - button "Объект" [ref=e178] [cursor=pointer]:
+                          - img
+                          - text: Объект
+                    - generic [ref=e179]:
+                      - generic [ref=e180]: "Брокер:"
+                      - generic [ref=e181]:
+                        - generic [ref=e183]: аC
+                        - generic [ref=e184]: амамамамам Casa
+                - 'button "f fghfgh hfghfgh Пассивный Нет объектов Всего: 0 Объект Брокер: вы вапвап ывпывапывпаыв" [ref=e186]':
+                  - generic [ref=e187]:
+                    - generic [ref=e188]:
+                      - generic [ref=e190]: f
+                      - generic [ref=e191]:
+                        - heading "fghfgh" [level=4] [ref=e192]
+                        - link "hfghfgh" [ref=e194] [cursor=pointer]:
+                          - /url: https://wa.me/
+                          - img [ref=e195]
+                          - text: hfghfgh
+                    - generic [ref=e197]:
+                      - generic [ref=e198]:
+                        - img [ref=e199]
+                        - img [ref=e201]
+                        - img [ref=e203]
+                        - img [ref=e205]
+                        - img [ref=e207]
+                      - button [ref=e209]:
+                        - img
+                  - generic [ref=e210]:
+                    - generic [ref=e212]: Пассивный
+                    - generic [ref=e213]: Нет объектов
+                    - generic [ref=e214]:
+                      - generic [ref=e215]: "Всего: 0"
+                      - generic [ref=e216]:
+                        - button "Подробнее" [ref=e217] [cursor=pointer]:
+                          - img
+                        - button "Объект" [ref=e218] [cursor=pointer]:
+                          - img
+                          - text: Объект
+                    - generic [ref=e219]:
+                      - generic [ref=e220]: "Брокер:"
+                      - generic [ref=e221]:
+                        - generic [ref=e223]: вы
+                        - generic [ref=e224]: вапвап ывпывапывпаыв
+                - 'button "7 7777777777777777777 777777777777777777777777 Пассивный Нет объектов Всего: 0 Объект Брокер: вы вапвап ывпывапывпаыв" [ref=e226]':
+                  - generic [ref=e227]:
+                    - generic [ref=e228]:
+                      - generic [ref=e230]: "7"
+                      - generic [ref=e231]:
+                        - heading "7777777777777777777" [level=4] [ref=e232]
+                        - link "777777777777777777777777" [ref=e234] [cursor=pointer]:
+                          - /url: https://wa.me/777777777777777777777777
+                          - img [ref=e235]
+                          - text: "777777777777777777777777"
+                    - generic [ref=e237]:
+                      - generic [ref=e238]:
+                        - img [ref=e239]
+                        - img [ref=e241]
+                        - img [ref=e243]
+                        - img [ref=e245]
+                        - img [ref=e247]
+                      - button [ref=e249]:
+                        - img
+                  - generic [ref=e250]:
+                    - generic [ref=e252]: Пассивный
+                    - generic [ref=e253]: Нет объектов
+                    - generic [ref=e254]:
+                      - generic [ref=e255]: "Всего: 0"
+                      - generic [ref=e256]:
+                        - button "Подробнее" [ref=e257] [cursor=pointer]:
+                          - img
+                        - button "Объект" [ref=e258] [cursor=pointer]:
+                          - img
+                          - text: Объект
+                    - generic [ref=e259]:
+                      - generic [ref=e260]: "Брокер:"
+                      - generic [ref=e261]:
+                        - generic [ref=e263]: вы
+                        - generic [ref=e264]: вапвап ывпывапывпаыв
+                - 'button "d dfgdfgdfgdf gdfgdfgdfgdfg Пассивный Нет объектов Всего: 0 Объект Брокер: вы вапвап ывпывапывпаыв" [ref=e266]':
+                  - generic [ref=e267]:
+                    - generic [ref=e268]:
+                      - generic [ref=e270]: d
+                      - generic [ref=e271]:
+                        - heading "dfgdfgdfgdf" [level=4] [ref=e272]
+                        - link "gdfgdfgdfgdfg" [ref=e274] [cursor=pointer]:
+                          - /url: https://wa.me/
+                          - img [ref=e275]
+                          - text: gdfgdfgdfgdfg
+                    - generic [ref=e277]:
+                      - generic [ref=e278]:
+                        - img [ref=e279]
+                        - img [ref=e281]
+                        - img [ref=e283]
+                        - img [ref=e285]
+                        - img [ref=e287]
+                      - button [ref=e289]:
+                        - img
+                  - generic [ref=e290]:
+                    - generic [ref=e292]: Пассивный
+                    - generic [ref=e293]: Нет объектов
+                    - generic [ref=e294]:
+                      - generic [ref=e295]: "Всего: 0"
+                      - generic [ref=e296]:
+                        - button "Подробнее" [ref=e297] [cursor=pointer]:
+                          - img
+                        - button "Объект" [ref=e298] [cursor=pointer]:
+                          - img
+                          - text: Объект
+                    - generic [ref=e299]:
+                      - generic [ref=e300]: "Брокер:"
+                      - generic [ref=e301]:
+                        - generic [ref=e303]: вы
+                        - generic [ref=e304]: вапвап ывпывапывпаыв
+                - 'button "вв вапявапва вапвапва +77759419359 Пассивный Нет объектов Всего: 0 Объект Брокер: ?? ???????? ????????????" [ref=e306]':
+                  - generic [ref=e307]:
+                    - generic [ref=e308]:
+                      - generic [ref=e310]: вв
+                      - generic [ref=e311]:
+                        - heading "вапявапва вапвапва" [level=4] [ref=e312]
+                        - link "+77759419359" [ref=e314] [cursor=pointer]:
+                          - /url: https://wa.me/77759419359
+                          - img [ref=e315]
+                          - text: "+77759419359"
+                    - generic [ref=e317]:
+                      - generic [ref=e318]:
+                        - img [ref=e319]
+                        - img [ref=e321]
+                        - img [ref=e323]
+                        - img [ref=e325]
+                        - img [ref=e327]
+                      - button [ref=e329]:
+                        - img
+                  - generic [ref=e330]:
+                    - generic [ref=e332]: Пассивный
+                    - generic [ref=e333]: Нет объектов
+                    - generic [ref=e334]:
+                      - generic [ref=e335]: "Всего: 0"
+                      - generic [ref=e336]:
+                        - button "Подробнее" [ref=e337] [cursor=pointer]:
+                          - img
+                        - button "Объект" [ref=e338] [cursor=pointer]:
+                          - img
+                          - text: Объект
+                    - generic [ref=e339]:
+                      - generic [ref=e340]: "Брокер:"
+                      - generic [ref=e341]:
+                        - generic [ref=e343]: "??"
+                        - generic [ref=e344]: "???????? ????????????"
+                - 'button "фф фывфыв фывфыв +73333333333 Пассивный Нет объектов Всего: 0 Объект Брокер: ?? ???????? ????????????" [ref=e346]':
+                  - generic [ref=e347]:
+                    - generic [ref=e348]:
+                      - generic [ref=e350]: фф
+                      - generic [ref=e351]:
+                        - heading "фывфыв фывфыв" [level=4] [ref=e352]
+                        - link "+73333333333" [ref=e354] [cursor=pointer]:
+                          - /url: https://wa.me/73333333333
+                          - img [ref=e355]
+                          - text: "+73333333333"
+                    - generic [ref=e357]:
+                      - generic [ref=e358]:
+                        - img [ref=e359]
+                        - img [ref=e361]
+                        - img [ref=e363]
+                        - img [ref=e365]
+                        - img [ref=e367]
+                      - button [ref=e369]:
+                        - img
+                  - generic [ref=e370]:
+                    - generic [ref=e372]: Пассивный
+                    - generic [ref=e373]: Нет объектов
+                    - generic [ref=e374]:
+                      - generic [ref=e375]: "Всего: 0"
+                      - generic [ref=e376]:
+                        - button "Подробнее" [ref=e377] [cursor=pointer]:
+                          - img
+                        - button "Объект" [ref=e378] [cursor=pointer]:
+                          - img
+                          - text: Объект
+                    - generic [ref=e379]:
+                      - generic [ref=e380]: "Брокер:"
+                      - generic [ref=e381]:
+                        - generic [ref=e383]: "??"
+                        - generic [ref=e384]: "???????? ????????????"
+                - 'button "па протвар апрапр +75555555555 Пассивный Нет объектов Всего: 0 Объект Брокер: ?? ???????? ????????????" [ref=e386]':
+                  - generic [ref=e387]:
+                    - generic [ref=e388]:
+                      - generic [ref=e390]: па
+                      - generic [ref=e391]:
+                        - heading "протвар апрапр" [level=4] [ref=e392]
+                        - link "+75555555555" [ref=e394] [cursor=pointer]:
+                          - /url: https://wa.me/75555555555
+                          - img [ref=e395]
+                          - text: "+75555555555"
+                    - generic [ref=e397]:
+                      - generic [ref=e398]:
+                        - img [ref=e399]
+                        - img [ref=e401]
+                        - img [ref=e403]
+                        - img [ref=e405]
+                        - img [ref=e407]
+                      - button [ref=e409]:
+                        - img
+                  - generic [ref=e410]:
+                    - generic [ref=e412]: Пассивный
+                    - generic [ref=e413]: Нет объектов
+                    - generic [ref=e414]:
+                      - generic [ref=e415]: "Всего: 0"
+                      - generic [ref=e416]:
+                        - button "Подробнее" [ref=e417] [cursor=pointer]:
+                          - img
+                        - button "Объект" [ref=e418] [cursor=pointer]:
+                          - img
+                          - text: Объект
+                    - generic [ref=e419]:
+                      - generic [ref=e420]: "Брокер:"
+                      - generic [ref=e421]:
+                        - generic [ref=e423]: "??"
+                        - generic [ref=e424]: "???????? ????????????"
+                - 'button "сч смсм чсмчс +73434343333 Пассивный Нет объектов Всего: 0 Объект Брокер: ?? ???????? ????????????" [ref=e426]':
+                  - generic [ref=e427]:
+                    - generic [ref=e428]:
+                      - generic [ref=e430]: сч
+                      - generic [ref=e431]:
+                        - heading "смсм чсмчс" [level=4] [ref=e432]
+                        - link "+73434343333" [ref=e434] [cursor=pointer]:
+                          - /url: https://wa.me/73434343333
+                          - img [ref=e435]
+                          - text: "+73434343333"
+                    - generic [ref=e437]:
+                      - generic [ref=e438]:
+                        - img [ref=e439]
+                        - img [ref=e441]
+                        - img [ref=e443]
+                        - img [ref=e445]
+                        - img [ref=e447]
+                      - button [ref=e449]:
+                        - img
+                  - generic [ref=e450]:
+                    - generic [ref=e452]: Пассивный
+                    - generic [ref=e453]: Нет объектов
+                    - generic [ref=e454]:
+                      - generic [ref=e455]: "Всего: 0"
+                      - generic [ref=e456]:
+                        - button "Подробнее" [ref=e457] [cursor=pointer]:
+                          - img
+                        - button "Объект" [ref=e458] [cursor=pointer]:
+                          - img
+                          - text: Объект
+                    - generic [ref=e459]:
+                      - generic [ref=e460]: "Брокер:"
+                      - generic [ref=e461]:
+                        - generic [ref=e463]: "??"
+                        - generic [ref=e464]: "???????? ????????????"
+                - 'button "Б Без имени +77023090899 Пассивный Нет объектов Всего: 0 Объект Брокер: аC амамамамам Casa" [ref=e466]':
+                  - generic [ref=e467]:
+                    - generic [ref=e468]:
+                      - generic [ref=e470]: Б
+                      - generic [ref=e471]:
+                        - heading "Без имени" [level=4] [ref=e472]
+                        - link "+77023090899" [ref=e474] [cursor=pointer]:
+                          - /url: https://wa.me/77023090899
+                          - img [ref=e475]
+                          - text: "+77023090899"
+                    - generic [ref=e477]:
+                      - generic [ref=e478]:
+                        - img [ref=e479]
+                        - img [ref=e481]
+                        - img [ref=e483]
+                        - img [ref=e485]
+                        - img [ref=e487]
+                      - button [ref=e489]:
+                        - img
+                  - generic [ref=e490]:
+                    - generic [ref=e492]: Пассивный
+                    - generic [ref=e493]: Нет объектов
+                    - generic [ref=e494]:
+                      - generic [ref=e495]: "Всего: 0"
+                      - generic [ref=e496]:
+                        - button "Подробнее" [ref=e497] [cursor=pointer]:
+                          - img
+                        - button "Объект" [ref=e498] [cursor=pointer]:
+                          - img
+                          - text: Объект
+                    - generic [ref=e499]:
+                      - generic [ref=e500]: "Брокер:"
+                      - generic [ref=e501]:
+                        - generic [ref=e503]: аC
+                        - generic [ref=e504]: амамамамам Casa
+            - generic [ref=e505]:
+              - generic [ref=e506]:
+                - generic [ref=e507]:
+                  - generic [ref=e508]: Интервью
+                  - button [ref=e509]:
+                    - img [ref=e510]
+                - generic [ref=e512]: "3"
+              - generic [ref=e514]:
+                - 'button "фф фывфывфы фывфыв +73333333332 Пассивный Нет объектов Всего: 0 Объект Брокер: ?? ???????? ????????????" [ref=e516]':
+                  - generic [ref=e517]:
+                    - generic [ref=e518]:
+                      - generic [ref=e520]: фф
+                      - generic [ref=e521]:
+                        - heading "фывфывфы фывфыв" [level=4] [ref=e522]
+                        - link "+73333333332" [ref=e524] [cursor=pointer]:
+                          - /url: https://wa.me/73333333332
+                          - img [ref=e525]
+                          - text: "+73333333332"
+                    - generic [ref=e527]:
+                      - generic [ref=e528]:
+                        - img [ref=e529]
+                        - img [ref=e531]
+                        - img [ref=e533]
+                        - img [ref=e535]
+                        - img [ref=e537]
+                      - button [ref=e539]:
+                        - img
+                  - generic [ref=e540]:
+                    - generic [ref=e542]: Пассивный
+                    - generic [ref=e543]: Нет объектов
+                    - generic [ref=e544]:
+                      - generic [ref=e545]: "Всего: 0"
+                      - generic [ref=e546]:
+                        - button "Подробнее" [ref=e547] [cursor=pointer]:
+                          - img
+                        - button "Объект" [ref=e548] [cursor=pointer]:
+                          - img
+                          - text: Объект
+                    - generic [ref=e549]:
+                      - generic [ref=e550]: "Брокер:"
+                      - generic [ref=e551]:
+                        - generic [ref=e553]: "??"
+                        - generic [ref=e554]: "???????? ????????????"
+                - 'button "Яя ЯЧсяяч ячсяч +77759419359 Срочно: 1-3 месяца Нет объектов Всего: 0 Объект Брокер: аC амамамамам Casa" [ref=e556]':
+                  - generic [ref=e557]:
+                    - generic [ref=e558]:
+                      - generic [ref=e560]: Яя
+                      - generic [ref=e561]:
+                        - heading "ЯЧсяяч ячсяч" [level=4] [ref=e562]
+                        - link "+77759419359" [ref=e564] [cursor=pointer]:
+                          - /url: https://wa.me/77759419359
+                          - img [ref=e565]
+                          - text: "+77759419359"
+                    - generic [ref=e567]:
+                      - generic [ref=e568]:
+                        - img [ref=e569]
+                        - img [ref=e571]
+                        - img [ref=e573]
+                        - img [ref=e575]
+                        - img [ref=e577]
+                      - button [ref=e579]:
+                        - img
+                  - generic [ref=e580]:
+                    - generic [ref=e582]: "Срочно: 1-3 месяца"
+                    - generic [ref=e583]: Нет объектов
+                    - generic [ref=e584]:
+                      - generic [ref=e585]: "Всего: 0"
+                      - generic [ref=e586]:
+                        - button "Подробнее" [ref=e587] [cursor=pointer]:
+                          - img
+                        - button "Объект" [ref=e588] [cursor=pointer]:
+                          - img
+                          - text: Объект
+                    - generic [ref=e589]:
+                      - generic [ref=e590]: "Брокер:"
+                      - generic [ref=e591]:
+                        - generic [ref=e593]: аC
+                        - generic [ref=e594]: амамамамам Casa
+                - 'button "ыф ыфвывфы фывфы +77759419359 Пассивный Нет объектов Всего: 0 Объект Брокер: RT Realtor Test" [ref=e596]':
+                  - generic [ref=e597]:
+                    - generic [ref=e598]:
+                      - generic [ref=e600]: ыф
+                      - generic [ref=e601]:
+                        - heading "ыфвывфы фывфы" [level=4] [ref=e602]
+                        - link "+77759419359" [ref=e604] [cursor=pointer]:
+                          - /url: https://wa.me/77759419359
+                          - img [ref=e605]
+                          - text: "+77759419359"
+                    - generic [ref=e607]:
+                      - generic [ref=e608]:
+                        - img [ref=e609]
+                        - img [ref=e611]
+                        - img [ref=e613]
+                        - img [ref=e615]
+                        - img [ref=e617]
+                      - button [ref=e619]:
+                        - img
+                  - generic [ref=e620]:
+                    - generic [ref=e622]: Пассивный
+                    - generic [ref=e623]: Нет объектов
+                    - generic [ref=e624]:
+                      - generic [ref=e625]: "Всего: 0"
+                      - generic [ref=e626]:
+                        - button "Подробнее" [ref=e627] [cursor=pointer]:
+                          - img
+                        - button "Объект" [ref=e628] [cursor=pointer]:
+                          - img
+                          - text: Объект
+                    - generic [ref=e629]:
+                      - generic [ref=e630]: "Брокер:"
+                      - generic [ref=e631]:
+                        - generic [ref=e633]: RT
+                        - generic [ref=e634]: Realtor Test
+            - generic [ref=e636]:
+              - generic [ref=e637]:
+                - generic [ref=e638]: Стратегия
+                - button [ref=e639]:
+                  - img [ref=e640]
+              - generic [ref=e642]: "0"
+            - generic [ref=e645]:
+              - generic [ref=e646]:
+                - generic [ref=e647]:
+                  - generic [ref=e648]: Договор
+                  - button [ref=e649]:
+                    - img [ref=e650]
+                - generic [ref=e652]: "1"
+              - 'button "fs fgasdfgs sdfsdfs +77759419359 Пассивный ✅апрваапр Продано Продано: 41 414 141 ₸ Всего: 1 Объект Брокер: вы вапвап ывпывапывпаыв" [disabled] [ref=e656]':
+                - generic [ref=e657]:
+                  - generic [ref=e658]:
+                    - generic [ref=e660]: fs
+                    - generic [ref=e661]:
+                      - heading "fgasdfgs sdfsdfs" [level=4] [ref=e662]
+                      - link "+77759419359" [disabled] [ref=e664] [cursor=pointer]:
+                        - /url: https://wa.me/77759419359
+                        - img [ref=e665]
+                        - text: "+77759419359"
+                  - generic [ref=e667]:
+                    - generic [ref=e668]:
+                      - img [ref=e669]
+                      - img [ref=e671]
+                      - img [ref=e673]
+                      - img [ref=e675]
+                      - img [ref=e677]
+                    - button [disabled] [ref=e679]:
+                      - img
+                - generic [ref=e680]:
+                  - generic [ref=e682]: Пассивный
+                  - generic [ref=e684] [cursor=pointer]:
+                    - generic [ref=e685]:
+                      - generic "апрваапр" [ref=e686]: ✅апрваапр
+                      - generic [ref=e688]: Продано
+                    - generic [ref=e689]: "Продано: 41 414 141 ₸"
+                  - generic [ref=e690]:
+                    - generic [ref=e691]: "Всего: 1"
+                    - generic [ref=e692]:
+                      - button "Подробнее" [disabled] [ref=e693] [cursor=pointer]:
+                        - img
+                      - button "Объект" [disabled] [ref=e694] [cursor=pointer]:
+                        - img
+                        - text: Объект
+                  - generic [ref=e695]:
+                    - generic [ref=e696]: "Брокер:"
+                    - generic [ref=e697]:
+                      - generic [ref=e699]: вы
+                      - generic [ref=e700]: вапвап ывпывапывпаыв
+            - generic [ref=e702]:
+              - generic [ref=e703]:
+                - generic [ref=e704]: Отмена
+                - button [ref=e705]:
+                  - img [ref=e706]
+              - generic [ref=e708]: "0"
+          - status [ref=e711]
+  - region "Notifications (F8)":
+    - list
+  - generic [ref=e712]:
+    - img [ref=e714]
+    - button "Open Tanstack query devtools" [ref=e762] [cursor=pointer]:
+      - img [ref=e763]
+  - button "Open Next.js Dev Tools" [ref=e816] [cursor=pointer]:
+    - img [ref=e817]
+  - alert [ref=e820]
+```

@@ -52,32 +52,32 @@ export function SellerCardBase({ seller, onInterviewClick, onAddProperty, onDele
                 className={`mb-2 cursor-grab transition-all active:cursor-grabbing border group touch-action-none ${isOverlay ? "shadow-xl scale-105 rotate-2 cursor-grabbing" : ""} ${isDragging ? "opacity-50" : ""}`}
                 onClick={() => onInterviewClick && onInterviewClick(seller.id)}
             >
-                <CardHeader className="p-3 pb-1 flex flex-row justify-between items-start space-y-0">
-                    <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                <CardHeader className="p-3 pb-1 flex flex-row justify-between items-start space-y-0 overflow-hidden">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <Avatar className="h-7 w-7 shrink-0">
+                            <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
                                 {seller.firstName[0]}
-                                {seller.lastName[0]}
+                                {seller.lastName?.[0] || ''}
                             </AvatarFallback>
                         </Avatar>
-                        <div>
-                            <h4 className="text-sm font-semibold leading-none">
+                        <div className="min-w-0 flex-1">
+                            <h4 className="text-xs font-semibold leading-none truncate">
                                 {seller.firstName} {seller.lastName}
                             </h4>
-                            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                                <a href={`https://wa.me/${seller.phone?.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-green-600 transition-colors">
-                                    <Phone className="h-3 w-3" />
-                                    {seller.phone}
+                            <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground">
+                                <a href={`https://wa.me/${seller.phone?.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-green-600 transition-colors truncate">
+                                    <Phone className="h-2.5 w-2.5 shrink-0" />
+                                    <span className="truncate">{seller.phone}</span>
                                 </a>
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                        <div className="flex items-center gap-0.5">
+                    <div className="flex items-center gap-0.5 shrink-0 ml-1">
+                        <div className="flex items-center">
                             {Array.from({ length: 5 }).map((_, i) => (
                                 <Star
                                     key={i}
-                                    className={`h-3 w-3 ${i < seller.trustLevel ? trustLevelColor : "text-gray-200"
+                                    className={`h-2.5 w-2.5 ${i < seller.trustLevel ? trustLevelColor : "text-gray-200"
                                         } fill-current`}
                                 />
                             ))}
