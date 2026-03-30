@@ -222,13 +222,60 @@ usersAdminRouter.delete('/:id', async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Деактивируем вместо удаления (у пользователя могут быть связанные данные)
-    await prisma.user.update({
-      where: { id },
-      data: { isActive: false },
+    // Каскадное удаление всех связанных данных
+    await prisma.$transaction(async (tx) => {
+      // Удаляем custom field values связанные с продавцами и объектами пользователя
+      const sellerIds = (await tx.seller.findMany({ where: { brokerId: id }, select: { id: true } })).map(s => s.id);
+      const propertyIds = (await tx.crmProperty.findMany({ where: { brokerId: id }, select: { id: true } })).map(p => p.id);
+
+      if (sellerIds.length > 0) {
+        await tx.customFieldValue.deleteMany({ where: { sellerId: { in: sellerIds } } });
+        await tx.sellerDocument.deleteMany({ where: { sellerId: { in: sellerIds } } });
+      }
+      if (propertyIds.length > 0) {
+        await tx.customFieldValue.deleteMany({ where: { propertyId: { in: propertyIds } } });
+        await tx.propertyCalculationLog.deleteMany({ where: { propertyId: { in: propertyIds } } });
+        await tx.show.deleteMany({ where: { propertyId: { in: propertyIds } } });
+        await tx.offer.deleteMany({ where: { propertyId: { in: propertyIds } } });
+      }
+
+      // Удаляем CRM данные
+      await tx.crmProperty.deleteMany({ where: { brokerId: id } });
+      await tx.seller.deleteMany({ where: { brokerId: id } });
+      await tx.buyer.deleteMany({ where: { brokerId: id } });
+
+      // Удаляем сделки, клиентов, объекты вторички
+      await tx.deal.deleteMany({ where: { brokerId: id } });
+      await tx.booking.deleteMany({ where: { brokerId: id } });
+      await tx.property.deleteMany({ where: { brokerId: id } });
+      await tx.client.deleteMany({ where: { brokerId: id } });
+
+      // Удаляем проекты (для застройщиков)
+      const projectIds = (await tx.project.findMany({ where: { developerId: id }, select: { id: true } })).map(p => p.id);
+      if (projectIds.length > 0) {
+        await tx.apartment.deleteMany({ where: { projectId: { in: projectIds } } });
+        await tx.project.deleteMany({ where: { developerId: id } });
+      }
+
+      // Удаляем остальные связанные данные
+      await tx.payment.deleteMany({ where: { userId: id } });
+      await tx.notification.deleteMany({ where: { userId: id } });
+      await tx.task.deleteMany({ where: { userId: id } });
+      await tx.courseProgress.deleteMany({ where: { userId: id } });
+      await tx.event.deleteMany({ where: { userId: id } });
+      await tx.subscription.deleteMany({ where: { userId: id } });
+      await tx.mortgageApplication.deleteMany({ where: { brokerId: id } });
+      await tx.customFunnel.deleteMany({ where: { userId: id } });
+      await tx.customField.deleteMany({ where: { userId: id } });
+
+      // Отвязываем подчинённых (для агентств/кураторов)
+      await tx.user.updateMany({ where: { curatorId: id }, data: { curatorId: null } });
+
+      // Удаляем пользователя
+      await tx.user.delete({ where: { id } });
     });
 
-    res.json({ message: 'Пользователь деактивирован' });
+    res.json({ message: 'Пользователь и все связанные данные удалены' });
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ error: 'Ошибка удаления пользователя' });
