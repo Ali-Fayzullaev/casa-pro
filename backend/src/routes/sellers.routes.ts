@@ -447,10 +447,11 @@ sellersRouter.put(
 // PUT /api/sellers/:id/stage - Изменение этапа воронки
 // =========================================
 const updateStageSchema = z.object({
-    funnelStage: z.enum(['CONTACT', 'INTERVIEW', 'STRATEGY', 'CONTRACT_SIGNING', 'SOLD', 'ARCHIVED', 'CANCELLED']).optional(),
+    funnelStage: z.string().optional(),
     customStageId: z.string().optional(),
     cancellationReason: z.enum(['CLIENT_REFUSED', 'WE_REFUSED']).optional(),
     cancellationComment: z.string().optional(),
+    customFields: z.record(z.any()).optional(),
 }).refine(data => data.funnelStage || data.customStageId, {
     message: "Either funnelStage or customStageId must be provided"
 });

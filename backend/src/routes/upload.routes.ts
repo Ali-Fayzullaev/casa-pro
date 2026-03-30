@@ -23,6 +23,10 @@ const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.
     'video/mp4',
     'video/webm',
     'video/quicktime',
+    'video/x-matroska',
+    'video/matroska',
+    'video/avi',
+    'video/x-msvideo',
     // Documents
     'application/pdf',
     'application/msword',
@@ -64,16 +68,13 @@ uploadRouter.post('/single', upload.single('file'), async (req: Request, res: Re
     const ext = path.extname(file.originalname);
     const fileName = `${category}/${uuidv4()}${ext}`;
 
-    // Upload to MinIO
-    await minioClient.putObject(
-      MINIO_BUCKET,
-      fileName,
-      file.buffer,
-      file.size,
-      { 'Content-Type': file.mimetype }
-    );
+    // Upload to local storage (MinIO disabled)
+    const uploadDir = path.join(__dirname, '../../uploads', category);
+    const fs = await import('fs/promises');
+    await fs.mkdir(uploadDir, { recursive: true });
+    await fs.writeFile(path.join(uploadDir, `${path.basename(fileName)}`), file.buffer);
 
-    const url = getPublicUrl(fileName);
+    const url = `/uploads/${fileName}`;
 
     res.json({
       success: true,
