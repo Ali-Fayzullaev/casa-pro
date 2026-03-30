@@ -27,6 +27,7 @@ import {
   LayoutList,
   Archive,
   Upload,
+  CreditCard,
 } from "lucide-react"
 import {
   Sidebar,
@@ -138,6 +139,13 @@ const menuItems: MenuSection[] = [
     url: "/dashboard/mortgage",
     roles: ["ADMIN", "BROKER", "DEVELOPER", "REALTOR", "AGENCY"],
   },
+  // 4.1 Заявки в банки
+  {
+    title: "Заявки в банки",
+    icon: FileText,
+    url: "/dashboard/mortgage-applications",
+    roles: ["ADMIN", "BROKER", "REALTOR"],
+  },
   // 5. Профиль - одна кнопка без подразделов (табы внутри страницы)
   {
     title: "Профиль",
@@ -183,6 +191,7 @@ const adminMenuItem: MenuSection = {
     { title: "Все проекты", url: "/dashboard/admin/projects", icon: Building2 },
     { title: "Настройки AI", url: "/dashboard/admin/settings", icon: Settings },
     { title: "Импорт amoCRM", url: "/dashboard/admin/import", icon: Upload },
+    { title: "Подписки", url: "/dashboard/admin/subscriptions", icon: CreditCard },
   ],
 }
 

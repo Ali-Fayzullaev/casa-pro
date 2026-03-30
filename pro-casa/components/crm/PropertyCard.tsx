@@ -37,6 +37,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SummaryDialog } from "./dialogs/SummaryDialog";
 import { StrategyLoader } from "@/components/ui/StrategyLoader";
+import { TradeInButton } from "./TradeInButton";
 
 export function PropertyCardBase({ property, style, setNodeRef, attributes, listeners, isDragging, isOverlay, isSold, onDelete, onStageChange }: { property: CrmProperty; style?: any; setNodeRef?: any; attributes?: any; listeners?: any; isDragging?: boolean; isOverlay?: boolean; isSold?: boolean; onDelete?: (id: string) => void; onStageChange?: (id: string, stage: PropertyFunnelStage) => void }) {
     const queryClient = useQueryClient();
@@ -258,6 +259,9 @@ export function PropertyCardBase({ property, style, setNodeRef, attributes, list
                             >
                                 <Eye className="h-3.5 w-3.5" />
                             </Button>
+
+                            {/* TradeIn Button */}
+                            <TradeInButton property={property} />
 
                             {/* AI Button */}
                             {property.activeStrategy && (
