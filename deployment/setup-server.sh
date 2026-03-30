@@ -1,12 +1,12 @@
 #!/bin/bash
 # ============================================
 # PRO-CASA Server Setup & Deploy Script
-# Domain: pro-casa.raycon.kz
+# Domain: pro-casa.qaspilab.com
 # Server: 91.224.74.91
 # ============================================
 set -e
 
-DOMAIN="pro-casa.raycon.kz"
+DOMAIN="pro-casa.qaspilab.com"
 APP_DIR="/opt/pro-casa"
 REPO="https://github.com/AGGIB/pro-casa.git"
 BRANCH="part1"
@@ -111,7 +111,7 @@ events { worker_connections 128; }
 http {
     server {
         listen 80;
-        server_name pro-casa.raycon.kz;
+        server_name pro-casa.qaspilab.com;
         location /.well-known/acme-challenge/ { root /var/www/certbot; }
         location / { return 200 'Setting up SSL...'; add_header Content-Type text/plain; }
     }
@@ -134,7 +134,7 @@ NGINX_CONF
     certbot/certbot certonly \
       --webroot \
       --webroot-path=/var/www/certbot \
-      --email admin@raycon.kz \
+      --email admin@qaspilab.com \
       --agree-tos \
       --no-eff-email \
       -d "$DOMAIN"
